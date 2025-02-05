@@ -1,0 +1,35 @@
+name: Linting
+on:
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+jobs:
+  linting:
+    name: Lint with clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.4
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+
+      - name: Set up C environment
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+
+      - name: Run clang-tidy (C linter)
+        run: |
+          cd build
+          clang-tidy ../**/*.c -checks='*' --warnings-as-errors='*'
+
+      - name: Report status
+        run: echo "C code linting completed."

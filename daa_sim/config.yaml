@@ -1,0 +1,18 @@
+---
+auth:
+  # enable or disable authentication
+  enabled: true
+
+  # IAM api keys for /v1/token endpoint
+  iam_apikeys:
+    - demoapikey1
+    - demoapikey2
+
+  # client_id and shared token pairs (Deprecated)
+  shared_tokens:
+    demo1: token1
+    demo2: token2
+
+  # basic auth userid and password pairs for /v1/token endpoint (Deprecated)
+  token_endpoint_credentials:
+    demo: demopass

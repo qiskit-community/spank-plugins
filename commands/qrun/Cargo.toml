@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "da_rust",
+    "daapi",
     "qrun",
 ]
 resolver = "2"
@@ -12,4 +12,4 @@ repository = "https://github.com/Qiskit/direct-access-client"
 rust-version = "1.84.0" # Keep in sync with docs/client/*.md and rust-toolchain.toml.
 
 [workspace.dependencies]
-direct-access-api = { path = "da_rust", features = ["ibmcloud_appid_auth"] }
+direct-access-api = { path = "daapi", features = ["ibmcloud_appid_auth"] }

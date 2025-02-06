@@ -60,3 +60,10 @@ help:
 ## Setup local environment
 setup-local:
 	bash "$(shell pwd)/scripts/setup-local.sh"
+
+.PHONY: setup-slurm-cluster
+# Automates the setup of a Slurm cluster using Docker Compose based on a repository originally hosted at https://github.ibm.com/OHTANIM/slurm-docker-cluster.24-05-5-1
+# licensed under the MIT License.
+setup-slurm-cluster:
+	chmod +x scripts/setup_slurm_cluster.sh
+	bash "$(shell pwd)/scripts/setup_slurm_cluster.sh"

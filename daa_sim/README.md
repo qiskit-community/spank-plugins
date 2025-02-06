@@ -3,7 +3,7 @@
 This API simulator is a portable, locally executable application built with [Qiskit Aer Simulator](https://github.com/Qiskit/qiskit-aer) as a backend. Direct Access API client developers can use this API simulator to develop and test API clients without having access to the actual quantum backend or Direct Access API instance, increasing development productivity. Developers can use their Linux (RedHat, Ubuntu), MacOS and Windows machine to run this API simulator, and it supports Python 3.11 or above versions as runtime.
 
 <p align="center">
-  <img src="./simulator.png" width="640">
+  <img src="./docs/simulator.png" width="640">
 </p>
 
 To start this API simulator and run a job, the setup of S3 compatible storage such as MinIO or IBM Cloud Object Storage is required separately. Small HOWTO documents are available in [this directory](../docs/howtos) for your setup.
@@ -109,7 +109,7 @@ You can customize your installation with various parameters by editing the [conf
 | ---- | ---- | ---- |
 | $.host | str | Bind address of API endpoint. Default is "0.0.0.0". |
 | $.port | int | Bind port of API endpoint. Default is 8290. |
-| $.backends | list[dict[str, str]] | Backend list to override default backends. Refer [Customizing backend list](./customizing_backend_list.md)  for more details. |
+| $.backends | list[dict[str, str]] | Backend list to override default backends. Refer [Customizing backend list](./docs/customizing_backend_list.md)  for more details. |
 | $.api_workers | int | Number of API endpoint worker processes. Increase according to the frequency of API calls and their expected latency. Default is 1. |
 | $.max_execution_lanes | int | Maximum number of the execution lanes in Direct Access API. Default is 5. |
 | $.auth.enabled | bool | true if authentication is enabled, false otherwise. Default is true. |
@@ -117,13 +117,13 @@ You can customize your installation with various parameters by editing the [conf
 | $.auth.token_endpoint_credentials | dict[str, str] | Deprecated. userid and password used by basic authentication for /v1/token endpoint. Required when using access token-based authentication. |
 | $.auth.iam_apikeys | list[str] | IAM API keys for /v1/token endpoint. Required when using IAM API key-based authentication. |
 | $.auth.access_token.ttl | int | TTL of access token in seconds. Default is 3600. Required when using access token-based authentication.|
-| $.aer_options.estimatorV2 | dict | Optional for EstimatorV2 runtime. Options passed to `AerSimulator` with key `backend_options` and options passed to `AerSimulator.run()` with key `run_options`. Refer [this document](./aer_configuration.md) for more details. |
-| $.aer_options.samplerV2 | dict | Optional for SamplerV2 runtime. Options passed to `AerSimulator` with key `backend_options` and options passed to `AerSimulator.run()` with key `run_options`. Refer [this document](./aer_configuration.md) for more details. |
+| $.aer_options.estimatorV2 | dict | Optional for EstimatorV2 runtime. Options passed to `AerSimulator` with key `backend_options` and options passed to `AerSimulator.run()` with key `run_options`. Refer [this document](./docs/aer_configuration.md) for more details. |
+| $.aer_options.samplerV2 | dict | Optional for SamplerV2 runtime. Options passed to `AerSimulator` with key `backend_options` and options passed to `AerSimulator.run()` with key `run_options`. Refer [this document](./docs/aer_configuration.md) for more details. |
 
 
 ## Logging
 
-[logging.yaml](./direct_access/daa_sim/logging.yaml) is default configuration of logging. Logging output can be customized by specifying your file to `--log-config` argument.
+[logging.yaml](./direct_access_client/daa_sim/logging.yaml) is default configuration of logging. Logging output can be customized by specifying your file to `--log-config` argument.
 
 
 ## Run this application
@@ -136,7 +136,7 @@ You can customize your installation with various parameters by editing the [conf
 
 ## Jupyter Notebooks
 
-Once the API simulator is up and running, the API is ready to use. There are [2 examples](../tutorials/README.md), one is running SamplerV2 and another is running EstimatorV2 job, available in the form of Jupyter Notebook. Recommend to take a look at and run these examples for verifying your setup and getting started.
+Once the API simulator is up and running, the API is ready to use. There are [2 examples](./docs/tutorials/README.md), one is running SamplerV2 and another is running EstimatorV2 job, available in the form of Jupyter Notebook. Recommend to take a look at and run these examples for verifying your setup and getting started.
 
 
 ## API Document

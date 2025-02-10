@@ -1,7 +1,15 @@
 #!/bin/bash
 
-# Step 1: Clone the repository to a temporary directory
-temp_dir=$(mktemp -d)
+set -e
+
+# Step 1: Create a temporary directory for cloning the repository
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    temp_dir=$(mktemp -d | sed 's|/tmp|C:/tmp|g')  # Convert /tmp paths for Windows
+    temp_dir=$(cygpath -w "$temp_dir")
+else
+    temp_dir=$(mktemp -d)
+fi
+
 echo "Cloning repository to: $temp_dir"
 git clone https://github.com/giovtorres/slurm-docker-cluster.git "$temp_dir"
 
@@ -48,15 +56,6 @@ if [ ${#running_containers[@]} -ne 0 ]; then
     echo "Stopping running containers and waiting for termination..."
     docker kill $(docker ps --filter "name=$container_name" --format "{{.ID}}") && docker rm -f $(docker ps -a --filter "name=$container_name" --format "{{.ID}}")
 
-    # Ensure containers are fully stopped before continuing
-    for container_name in "${containers[@]}"; do
-      while docker ps --filter "name=$container_name" --format "{{.Names}}" | grep -q "$container_name"; do
-        echo "Waiting for container $container_name to stop..."
-        sleep 2
-      done
-    done
-
-    echo "Removing containers and volumes..."
     docker compose down -v
   else
     echo "Aborting setup."; exit 1;
@@ -65,30 +64,7 @@ fi
 
 # Step 6: Starting the Cluster
 echo "Starting the cluster using docker compose up -d..."
-
-docker compose up -d || {
-  echo "Container name conflict detected."
-  echo "Do you want to force remove conflicting containers and retry? (y/n)"
-  read -r response
-  if [[ "$response" == "y" || "$response" == "Y" ]]; then
-    echo "Stopping and removing conflicting containers..."
-    docker kill $(docker ps --filter "name=$container_name" --format "{{.ID}}") && docker rm -f $(docker ps -a --filter "name=$container_name" --format "{{.ID}}")
-
-    # Ensure containers are fully stopped before continuing
-    for container_name in "${containers[@]}"; do
-      while docker ps --filter "name=$container_name" --format "{{.Names}}" | grep -q "$container_name"; do
-        echo "Waiting for container $container_name to stop..."
-        sleep 2
-      done
-    done
-
-    docker compose down -v
-    echo "Retrying docker compose up..."
-    docker compose up -d || { echo "Failed to start containers again."; exit 1; }
-  else
-    echo "Aborting setup."; exit 1;
-  fi
-}
+docker compose up -d || { echo "Docker compose up failed."; exit 1; }
 
 # Step 7: Sleep for 30 seconds and display progress bar
 echo "Waiting for readiness..."

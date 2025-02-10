@@ -1,5 +1,5 @@
 //
-// (C) Copyright IBM 2024
+// (C) Copyright IBM 2024, 2025
 //
 // This code is licensed under the Apache License, Version 2.0. You may
 // obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -38,8 +38,12 @@ pub enum AuthMethod {
     None,
     /// IBM Cloud IAM Bearer Token based authentication
     IbmCloudIam {
-        /// IAM API key to generate IAM Bearer Token
+        /// API key to access IAM POST /identity/token API
         apikey: String,
+        /// Service CRN ("crn:version:cname:ctype:service-name:location:scope:service-instance:resource-type:resource")
+        service_crn: String,
+        /// IAM endpoint (e.g. <https://iam.cloud.ibm.com>)
+        iam_endpoint_url: String,
     },
     /// Deprecated. IBM Cloud App ID access token based authentication
     #[cfg(feature = "ibmcloud_appid_auth")]
@@ -157,6 +161,8 @@ impl ClientBuilder {
     ///     .with_auth(
     ///          AuthMethod::IbmCloudIam {
     ///              apikey: "your_iam_apikey".to_string(),
+    ///              service_crn: "your_service_crn".to_string(),
+    ///              iam_endpoint_url: "iam_endpoint_url".to_string(),
     ///          }
     ///     );
     /// ```
@@ -303,15 +309,14 @@ impl ClientBuilder {
     ///     .with_auth(
     ///          AuthMethod::IbmCloudIam {
     ///              apikey: "your_iam_apikey".to_string(),
+    ///              service_crn: "your_service_crn".to_string(),
+    ///              iam_endpoint_url: "iam_endpoint_url".to_string(),
     ///          }
     ///     )
     ///     .build()
     ///     .unwrap();
     /// ```
     pub fn build(&mut self) -> Result<Client> {
-        #[cfg(feature = "ibmcloud_appid_auth")]
-        use base64::{engine::general_purpose::STANDARD, prelude::*};
-
         let mut reqwest_client_builder = reqwest::Client::builder();
         reqwest_client_builder = reqwest_client_builder.connection_verbose(true);
         if let Some(v) = self.timeout {
@@ -344,6 +349,12 @@ impl ClientBuilder {
             auth_value.set_sensitive(true);
             headers.insert(header::AUTHORIZATION, auth_value);
         }
+
+        if let AuthMethod::IbmCloudIam { service_crn, .. } = self.auth_method.clone() {
+            let service_crn_value = header::HeaderValue::from_str(&service_crn)?;
+            headers.insert("Service-CRN", service_crn_value);
+        }
+
         reqwest_client_builder = reqwest_client_builder.default_headers(headers);
         let mut reqwest_builder = ReqwestClientBuilder::new(reqwest_client_builder.build()?);
 
@@ -352,20 +363,24 @@ impl ClientBuilder {
         }
 
         #[cfg(feature = "ibmcloud_appid_auth")]
-        if let AuthMethod::IbmCloudAppId { username, password } = self.auth_method.clone() {
-            let base64_str = STANDARD.encode(format!("{}:{}", username, password).as_bytes());
+        if let AuthMethod::IbmCloudAppId { .. } = self.auth_method.clone() {
+            let token_url = format!("{}/v1/token", self.base_url);
             let token_manager = Arc::new(Mutex::new(TokenManager::new(
-                self.base_url.clone(),
-                format!("Basic {}", base64_str),
+                token_url,
+                self.auth_method.clone(),
             )));
 
             let auth_middleware = AuthMiddleware::new(token_manager.clone());
             reqwest_builder = reqwest_builder.with(auth_middleware);
         }
-        if let AuthMethod::IbmCloudIam { apikey } = self.auth_method.clone() {
+        if let AuthMethod::IbmCloudIam {
+            iam_endpoint_url, ..
+        } = self.auth_method.clone()
+        {
+            let token_url = format!("{}/identity/token", iam_endpoint_url);
             let token_manager = Arc::new(Mutex::new(TokenManager::new(
-                self.base_url.clone(),
-                format!("apikey {}", apikey),
+                token_url,
+                self.auth_method.clone(),
             )));
 
             let auth_middleware = AuthMiddleware::new(token_manager.clone());

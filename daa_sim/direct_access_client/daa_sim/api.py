@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -40,6 +40,8 @@ from direct_access_client.daa_sim.errors import (
     JobNotCancellableError,
     UnableToDeleteJobInNonTerminalStateError,
     ExecutionLanesLimitReachedError,
+    IAMAPIKeyNotFoundError,
+    IAMPropertyMissingOrEmptyError,
 )
 from direct_access_client.daa_sim.v1.models import Error, ErrorResponse
 from direct_access_client.daa_sim.consts import SECRET_KEY_FILE
@@ -216,6 +218,24 @@ async def _handle_not_implemented_errors(_: Request, exc: NotImplementedError):
     )
 
 
+@app.exception_handler(IAMAPIKeyNotFoundError)
+async def _handle_iam_apikey_not_found_error(_: Request, exc: IAMAPIKeyNotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=exc.dict(),
+    )
+
+
+@app.exception_handler(IAMPropertyMissingOrEmptyError)
+async def _handle_iam_property_missing_or_empty_error(
+    _: Request, exc: IAMPropertyMissingOrEmptyError
+):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=exc.dict(),
+    )
+
+
 # FastAPI uses 422 as invalid request. Need to override to fit to DA API spec.
 @app.exception_handler(RequestValidationError)
 async def _handle_request_validation_error(_: Request, exc: RequestValidationError):
@@ -286,6 +306,7 @@ def _create_fastapi(fastapi_app: FastAPI):
     fastapi_app.daa_max_execution_lanes = config.get(
         "max_execution_lanes", DEFAULT_MAX_EXECUTION_LANES
     )
+    fastapi_app.service_crn = config.get("service_crn")
     aer_options = config.get("aer_options", {})
     fastapi_app.daa_service = DAAService(
         include_opt_fields=fastapi_app.daa_includes_options,

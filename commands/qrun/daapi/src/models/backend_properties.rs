@@ -1,5 +1,5 @@
 //
-// (C) Copyright IBM 2024
+// (C) Copyright IBM 2024, 2025
 //
 // This code is licensed under the Apache License, Version 2.0. You may
 // obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -50,6 +50,8 @@ pub struct Gate {
 ///     let client = ClientBuilder::new("http://localhost:8080")
 ///         .with_auth(AuthMethod::IbmCloudIam {
 ///             apikey: "your_iam_apikey".to_string(),
+///             service_crn: "your_service_crn".to_string(),
+///             iam_endpoint_url: "iam_endpoint_url".to_string(),
 ///         })
 ///         .build()
 ///         .unwrap();

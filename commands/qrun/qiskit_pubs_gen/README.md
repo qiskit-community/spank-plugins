@@ -19,7 +19,11 @@ Generates EstimatorV2 input.
 Parameters:
 ```shell-session
 base_url = "http://localhost:8290"
-iam_apikey = "demoapikey1"
+
+IBMCLOUD_IAM_ENDPOINT="https://iam.cloud.ibm.com"
+IBMCLOUD_API_KEY="YOUR_API_KEY"
+SERVICE_CRN="YOUR_PROVISIONED_INSTANCE - crn:v1:...."
+
 backend_name = "fake_brisbane"
 ```
 
@@ -38,7 +42,11 @@ Generates SamplerV2 input.
 Parameters:
 ```shell-session
 base_url = "http://localhost:8290"
-iam_apikey = "demoapikey1"
+
+IBMCLOUD_IAM_ENDPOINT="https://iam.cloud.ibm.com"
+IBMCLOUD_API_KEY="YOUR_API_KEY"
+SERVICE_CRN="YOUR_PROVISIONED_INSTANCE - crn:v1:...."
+
 backend_name = "fake_cairo"
 ```
 

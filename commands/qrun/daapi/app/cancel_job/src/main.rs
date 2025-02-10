@@ -1,5 +1,5 @@
 //
-// (C) Copyright IBM 2024
+// (C) Copyright IBM 2024, 2025
 //
 // This code is licensed under the Apache License, Version 2.0. You may
 // obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -45,6 +45,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = ClientBuilder::new("http://0.0.0.0:8290")
         .with_auth(AuthMethod::IbmCloudIam {
             apikey: "demoapikey1".to_string(),
+            service_crn: "crn:v1:local:daa_sim".to_string(),
+            iam_endpoint_url: "http://0.0.0.0:8290".to_string(),
         })
         //.with_auth(AuthMethod::IbmCloudAppId {
         //    username: "demo".to_string(),

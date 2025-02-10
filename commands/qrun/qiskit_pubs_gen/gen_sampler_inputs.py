@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -14,7 +14,6 @@
 
 # pylint: disable=invalid-name
 import sys
-import datetime as dt
 import json
 import requests
 import numpy as np
@@ -29,31 +28,51 @@ from qiskit_ibm_runtime.models import BackendProperties, BackendConfiguration
 # Direct Access API endpoint
 base_url = "http://localhost:8290"
 
-# IBM Cloud IAM API Key for access token generation"
-iam_apikey = "demoapikey1"
-
 # run with daa_sim(Qiskit Aer) ? if this is True, num_qubits of
 # the circuit will be reduced to 7 qubits.
 # set False if you run with real device.
 use_daa_sim = True
 
-headers = {
-    "Authorization": f"apikey {iam_apikey}",
+# Use IAM based authentication
+IBMCLOUD_IAM_ENDPOINT="https://iam.cloud.ibm.com"
+IBMCLOUD_API_KEY="YOUR_API_KEY"
+SERVICE_CRN="YOUR_PROVISIONED_INSTANCE - crn:v1:...."
+iam_headers = {
+    "content-type": "application/x-www-form-urlencoded",
+    "accept": "application/json",
 }
-get_token_url = f"{base_url}/v1/token"
 token_response = requests.post(
-    get_token_url, data={}, headers=headers, timeout=10
+    f"{IBMCLOUD_IAM_ENDPOINT}/identity/token",
+    data=f"grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={IBMCLOUD_API_KEY}",
+    headers=iam_headers,
+    timeout=10,
 )
 resp_json = token_response.json()
-
-# create HTTP header for subsequent API calls
 access_token = resp_json["access_token"]
 token_type = resp_json["token_type"]
-now = dt.datetime.now(dt.timezone.utc)
 headers = {
     "Authorization": f"{token_type} {access_token}",
-    "IBM-API-Version": now.strftime("%Y-%m-%d"),
+    "Service-CRN": SERVICE_CRN,
 }
+# End - IAM based authentication
+
+# (Deprecated) Use AppId based authentication
+# APPID_CLIENT_ID="YOUR_APPID_CLIENT_ID"
+# APPID_SECRET="YOUR_APPID_SECRET"
+# token_response = requests.post(
+#    f"{base_url}/v1/token",
+#    data={},
+#    auth=(APPID_CLIENT_ID, APPID_SECRET)
+#    timeout=10,
+# )
+# resp_json = token_response.json()
+# access_token = resp_json["access_token"]
+# token_type = resp_json["token_type"]
+# headers = {
+#    "Authorization": f"{token_type} {access_token}",
+# }
+# End - AppId based authentication
+
 print(json.dumps(headers, indent=2))
 
 backends_url = f"{base_url}/v1/backends"

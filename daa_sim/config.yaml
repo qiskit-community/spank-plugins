@@ -1,9 +1,31 @@
 ---
+# host: 0.0.0.0
+# port: 8290
+# backends:
+#  - module: qiskit_ibm_runtime.fake_provider.backends
+#    clazz: FakeTorino
+#  - module: qiskit_ibm_runtime.fake_provider.backends
+#    clazz: FakeKawasaki
+# api_workers: 1
+# max_execution_lanes: 5
+service_crn: crn:v1:local:daa_sim
+
+# aer_options:
+#   estimatorV2:
+#    backend_options:
+#      max_parallel_threads: 5
+#      max_parallel_experiments: 1
+#      max_parallel_shots: 1
+#
+#  samplerV2:
+#    backend_options:
+#      method: "matrix_product_state"
+
 auth:
   # enable or disable authentication
   enabled: true
 
-  # IAM api keys for /v1/token endpoint
+  # API key to generate IAM access token
   iam_apikeys:
     - demoapikey1
     - demoapikey2

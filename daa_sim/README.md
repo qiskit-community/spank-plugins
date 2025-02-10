@@ -112,6 +112,7 @@ You can customize your installation with various parameters by editing the [conf
 | $.backends | list[dict[str, str]] | Backend list to override default backends. Refer [Customizing backend list](./docs/customizing_backend_list.md)  for more details. |
 | $.api_workers | int | Number of API endpoint worker processes. Increase according to the frequency of API calls and their expected latency. Default is 1. |
 | $.max_execution_lanes | int | Maximum number of the execution lanes in Direct Access API. Default is 5. |
+| $.service_crn | str | Service-CRN(Provisioned Direct Access service instance). The user can verify that the client has specified the correct value. If there is a mismatch, a warning message will appear in the log. |
 | $.auth.enabled | bool | true if authentication is enabled, false otherwise. Default is true. |
 | $.auth.shared_token | dict[str, str] | Deprecated. A list of client id and its token pairs. Required when using shared token-based authentication. |
 | $.auth.token_endpoint_credentials | dict[str, str] | Deprecated. userid and password used by basic authentication for /v1/token endpoint. Required when using access token-based authentication. |

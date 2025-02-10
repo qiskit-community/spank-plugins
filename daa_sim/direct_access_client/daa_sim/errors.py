@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -220,4 +220,59 @@ class ExecutionLanesLimitReachedError(DAAServiceError):
             solution="Delete completed jobs and/or wait for other clients to delete jobs.",
             location="",
             value="",
+        )
+
+
+class IAMError(Exception):
+    """An exception raised by IAM"""
+
+    def __init__(
+        self,
+        *,
+        message: str,
+        code: str,
+        details: str = None,
+    ) -> None:
+        super().__init__(message)
+        self._json = {
+            "errorMessage": message,
+            "errorDetails": details,
+            "errorCode": code,
+        }
+
+    def __str__(self):
+        return json.dumps(self._json)
+
+    def dict(self) -> dict:
+        """Returns JSON representation of this error
+
+        Returns:
+            dict: JSON representation of this error
+        """
+        resp = self._json.copy()
+        return resp
+
+
+class IAMAPIKeyNotFoundError(IAMError):
+    """An exception raised if provided API key could not be found."""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(
+            message="Provided API key could not be found.",
+            code="BXNIM0415E",
+        )
+
+
+class IAMPropertyMissingOrEmptyError(IAMError):
+    """An exception raised if property 'grant_type' either missing or empty."""
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(
+            message="Property missing or empty.",
+            code="BXNIM0109E",
+            details="Property 'grant_type' either missing or empty.",
         )

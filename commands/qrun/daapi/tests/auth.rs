@@ -1,5 +1,5 @@
 //
-// (C) Copyright IBM 2024
+// (C) Copyright IBM 2024, 2025
 //
 // This code is licensed under the Apache License, Version 2.0. You may
 // obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -338,6 +338,7 @@ async fn test_auth_iam_bearer_token() {
     common::setup();
 
     const IAM_APIKEY: &str = "demoapikey";
+    const SERVICE_CRN: &str = "crn:v1:local:test";
 
     let mut server = mockito::Server::new_async().await;
 
@@ -366,10 +367,16 @@ async fn test_auth_iam_bearer_token() {
     });
 
     server
-        .mock("POST", "/v1/token")
+        .mock("POST", "/identity/token")
         .with_status(200)
-        .with_header("content-type", "application/json")
-        .match_header("authorization", format!("apikey {}", IAM_APIKEY).as_str())
+        .with_header("content-type", "application/x-www-form-urlencoded")
+        .match_body(
+            format!(
+                "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={}",
+                IAM_APIKEY
+            )
+            .as_str(),
+        )
         .with_body(access_token_response.to_string())
         .create_async()
         .await;
@@ -379,6 +386,7 @@ async fn test_auth_iam_bearer_token() {
         .with_status(200)
         .with_header("content-type", "application/json")
         .match_header("authorization", format!("Bearer {}", token).as_str())
+        .match_header("service-crn", SERVICE_CRN)
         .with_body(expected.to_string())
         .create_async()
         .await;
@@ -387,6 +395,8 @@ async fn test_auth_iam_bearer_token() {
     let client = ClientBuilder::new(&base_url)
         .with_auth(AuthMethod::IbmCloudIam {
             apikey: IAM_APIKEY.to_string(),
+            service_crn: SERVICE_CRN.to_string(),
+            iam_endpoint_url: base_url,
         })
         .build()
         .unwrap();
@@ -401,6 +411,7 @@ async fn test_auth_invalid_iam_apikey() {
     common::setup();
 
     const IAM_APIKEY: &str = "demoapikey";
+    const SERVICE_CRN: &str = "crn:v1:local:test";
 
     let mut server = mockito::Server::new_async().await;
 
@@ -418,10 +429,16 @@ async fn test_auth_invalid_iam_apikey() {
     });
 
     server
-        .mock("POST", "/v1/token")
+        .mock("POST", "/identity/token")
         .with_status(400)
-        .with_header("content-type", "application/json")
-        .match_header("authorization", format!("apikey {}", IAM_APIKEY).as_str())
+        .with_header("content-type", "application/x-www-form-urlencoded")
+        .match_body(
+            format!(
+                "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={}",
+                IAM_APIKEY
+            )
+            .as_str(),
+        )
         .with_body(expected.to_string())
         .create_async()
         .await;
@@ -430,6 +447,8 @@ async fn test_auth_invalid_iam_apikey() {
     let client = ClientBuilder::new(&base_url)
         .with_auth(AuthMethod::IbmCloudIam {
             apikey: IAM_APIKEY.to_string(),
+            service_crn: SERVICE_CRN.to_string(),
+            iam_endpoint_url: base_url,
         })
         .build()
         .unwrap();
@@ -448,6 +467,7 @@ async fn test_auth_invalid_iam_bearer_token() {
     common::setup();
 
     const IAM_APIKEY: &str = "demoapikey";
+    const SERVICE_CRN: &str = "crn:v1:local:test";
 
     let mut server = mockito::Server::new_async().await;
 
@@ -472,10 +492,16 @@ async fn test_auth_invalid_iam_bearer_token() {
     });
 
     server
-        .mock("POST", "/v1/token")
+        .mock("POST", "/identity/token")
         .with_status(200)
-        .with_header("content-type", "application/json")
-        .match_header("authorization", format!("apikey {}", IAM_APIKEY).as_str())
+        .with_header("content-type", "application/x-www-form-urlencoded")
+        .match_body(
+            format!(
+                "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={}",
+                IAM_APIKEY
+            )
+            .as_str(),
+        )
         .with_body(access_token_response.to_string())
         .create_async()
         .await;
@@ -485,6 +511,7 @@ async fn test_auth_invalid_iam_bearer_token() {
         .with_status(401)
         .with_header("content-type", "application/json")
         .match_header("authorization", format!("Bearer {}", token).as_str())
+        .match_header("service-crn", SERVICE_CRN)
         .with_body(expected.to_string())
         .create_async()
         .await;
@@ -493,6 +520,8 @@ async fn test_auth_invalid_iam_bearer_token() {
     let client = ClientBuilder::new(&base_url)
         .with_auth(AuthMethod::IbmCloudIam {
             apikey: IAM_APIKEY.to_string(),
+            service_crn: SERVICE_CRN.to_string(),
+            iam_endpoint_url: base_url,
         })
         .build()
         .unwrap();

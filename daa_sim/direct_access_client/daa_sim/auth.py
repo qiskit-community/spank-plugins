@@ -68,6 +68,16 @@ def verify_token(
         # skip token verification if disabled
         return True
 
+    service_crn = req.headers.get("Service-CRN")
+    if service_crn is None or len(service_crn) == 0:
+        _logger.warning("Service-CRN header either missing or empty.")
+    elif req.app.service_crn is not None and service_crn != req.app.service_crn:
+        _logger.warning(
+            "Service-CRN is not matched. expected(%s), actual(%s)",
+            req.app.service_crn,
+            service_crn,
+        )
+
     token = req.headers.get("Authorization")
     if token is None:
         raise InvalidCredentialsError()

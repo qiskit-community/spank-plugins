@@ -17,4 +17,4 @@ version = "0.2.0"
 edition = "2021"
 
 [workspace.dependencies]
-direct-access-api = { path = "../../da_rust", features = ["ibmcloud_appid_auth"] }
+direct-access-api = { path = "../../daapi", features = ["ibmcloud_appid_auth"] }

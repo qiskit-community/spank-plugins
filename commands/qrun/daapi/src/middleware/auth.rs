@@ -1,5 +1,5 @@
 //
-// (C) Copyright IBM 2024
+// (C) Copyright IBM 2024, 2025
 //
 // This code is licensed under the Apache License, Version 2.0. You may
 // obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -19,49 +19,99 @@ use reqwest_middleware::{Middleware, Next};
 #[allow(unused_imports)]
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, UNIX_EPOCH};
 use tokio::sync::Mutex;
 
-use crate::models::{auth::GetAccessTokenResponse, errors::ErrorResponse};
+use crate::models::{
+    auth::GetAccessTokenResponse, errors::ErrorResponse, errors::IAMErrorResponse,
+};
+use crate::AuthMethod;
 
 pub(crate) struct TokenManager {
     access_token: Option<String>,
     token_expiry: Option<Instant>,
     client: Client,
-    base_url: String,
-    authorization: String,
+    token_url: String,
+    auth_method: AuthMethod,
 }
 impl TokenManager {
-    pub(crate) fn new(base_url: impl Into<String>, authorization: String) -> Self {
+    pub(crate) fn new(token_url: impl Into<String>, auth_method: AuthMethod) -> Self {
         Self {
             access_token: None,
             token_expiry: None,
             client: Client::new(),
-            base_url: base_url.into(),
-            authorization,
+            token_url: token_url.into(),
+            auth_method,
         }
     }
     async fn get_access_token(&mut self) -> Result<()> {
-        let token_url = format!("{}/v1/token", self.base_url);
-        let response = self
-            .client
-            .post(&token_url)
-            .header(reqwest::header::AUTHORIZATION, self.authorization.clone())
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .send()
-            .await?;
-        if response.status().is_success() {
-            let token_response: GetAccessTokenResponse = response.json().await?;
-            self.access_token = Some(token_response.access_token);
-            self.token_expiry =
-                Some(Instant::now() + Duration::from_secs(token_response.expires_in));
-        } else {
-            let error_response = response.json::<ErrorResponse>().await?;
-            bail!(format!(
-                "{} ({}) {:?}",
-                error_response.title, error_response.status_code, error_response.errors
-            ));
+        #[cfg(feature = "ibmcloud_appid_auth")]
+        if let AuthMethod::IbmCloudAppId { username, password } = self.auth_method.clone() {
+            let mut reqwest_builder = self
+                .client
+                .post(&self.token_url)
+                .header(reqwest::header::ACCEPT, "application/json");
+
+            use base64::{engine::general_purpose::STANDARD, prelude::*};
+
+            let base64_str = STANDARD.encode(format!("{}:{}", username, password).as_bytes());
+            reqwest_builder = reqwest_builder
+                .header(
+                    reqwest::header::AUTHORIZATION,
+                    format!("Basic {}", base64_str),
+                )
+                .header(reqwest::header::CONTENT_TYPE, "application/json");
+
+            let response = reqwest_builder.send().await?;
+            if response.status().is_success() {
+                let token_response: GetAccessTokenResponse = response.json().await?;
+                self.access_token = Some(token_response.access_token);
+                self.token_expiry =
+                    Some(Instant::now() + Duration::from_secs(token_response.expires_in));
+            } else {
+                let error_response = response.json::<ErrorResponse>().await?;
+                bail!(format!(
+                    "{} ({}) {:?}",
+                    error_response.title, error_response.status_code, error_response.errors
+                ));
+            }
         }
+        if let AuthMethod::IbmCloudIam { apikey, .. } = self.auth_method.clone() {
+            let mut reqwest_builder = self
+                .client
+                .post(&self.token_url)
+                .header(reqwest::header::ACCEPT, "application/json");
+
+            let data: String = format!(
+                "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={}",
+                apikey
+            );
+            reqwest_builder = reqwest_builder
+                .header(
+                    reqwest::header::CONTENT_TYPE,
+                    "application/x-www-form-urlencoded",
+                )
+                .body(data);
+
+            let response = reqwest_builder.send().await?;
+            if response.status().is_success() {
+                let token_response: GetAccessTokenResponse = response.json().await?;
+                self.access_token = Some(token_response.access_token);
+                self.token_expiry =
+                    Some(Instant::now() + Duration::from_secs(token_response.expires_in));
+            } else {
+                let error_response = response.json::<IAMErrorResponse>().await?;
+                if let Some(details) = error_response.details {
+                    bail!(format!("{} ({})", details, error_response.code));
+                } else {
+                    bail!(format!(
+                        "{} ({})",
+                        error_response.message, error_response.code
+                    ));
+                }
+            }
+        }
+
         Ok(())
     }
     async fn ensure_token_validity(&mut self) -> Result<()> {

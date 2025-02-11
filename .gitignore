@@ -30,4 +30,13 @@
 *.exe
 *.out
 *.app
+# Rust
+Cargo.lock
+*.rlib
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+
 *.idea

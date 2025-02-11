@@ -1,0 +1,4 @@
+qiskit>=1.2.2
+qiskit_ibm_runtime
+qiskit_qasm3_import
+numpy

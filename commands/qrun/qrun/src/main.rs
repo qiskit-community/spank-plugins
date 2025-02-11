@@ -29,26 +29,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let job_file = args.get(1).unwrap();
 
-    let backend_name = env::var("IBMQRUN_BACKEND")
-        .expect("IBMQRUN_BACKEND");
-    let program_id = env::var("IBMQRUN_PRIMITIVE")
-        .expect("IBMQRUN_PRIMITIVE");
-    let appid_client_id = env::var("IBMQRUN_APPID_CLIENT_ID")
-        .expect("IBMQRUN_APPID_CLIENT_ID");
-    let appid_secret = env::var("IBMQRUN_APPID_SECRET")
-        .expect("IBMQRUN_APPID_SECRET");
-    let daapi_endpoint = env::var("IBMQRUN_DAAPI_ENDPOINT")
-        .expect("IBMQRUN_DAAPI_ENDPOINT");
-    let aws_access_key_id = env::var("IBMQRUN_AWS_ACCESS_KEY_ID")
-        .expect("IBMQRUN_AWS_ACCESS_KEY_ID");
-    let aws_secret_access_key = env::var("IBMQRUN_AWS_SECRET_ACCESS_KEY")
-        .expect("IBMQRUN_AWS_SECRET_ACCESS_KEY");
-    let s3_endpoint = env::var("IBMQRUN_S3_ENDPOINT")
-        .expect("IBMQRUN_S3_ENDPOINT");
-    let s3_bucket = env::var("IBMQRUN_S3_BUCKET")
-        .expect("IBMQRUN_S3_BUCKET");
-    let s3_region = env::var("IBMQRUN_S3_REGION")
-        .expect("IBMQRUN_S3_REGION");
+    let backend_name = env::var("IBMQRUN_BACKEND").expect("IBMQRUN_BACKEND");
+    let program_id = env::var("IBMQRUN_PRIMITIVE").expect("IBMQRUN_PRIMITIVE");
+    let daapi_endpoint = env::var("IBMQRUN_DAAPI_ENDPOINT").expect("IBMQRUN_DAAPI_ENDPOINT");
+    let aws_access_key_id =
+        env::var("IBMQRUN_AWS_ACCESS_KEY_ID").expect("IBMQRUN_AWS_ACCESS_KEY_ID");
+    let aws_secret_access_key =
+        env::var("IBMQRUN_AWS_SECRET_ACCESS_KEY").expect("IBMQRUN_AWS_SECRET_ACCESS_KEY");
+    let s3_endpoint = env::var("IBMQRUN_S3_ENDPOINT").expect("IBMQRUN_S3_ENDPOINT");
+    let s3_bucket = env::var("IBMQRUN_S3_BUCKET").expect("IBMQRUN_S3_BUCKET");
+    let s3_region = env::var("IBMQRUN_S3_REGION").expect("IBMQRUN_S3_REGION");
 
     env_logger::init();
 
@@ -58,16 +48,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .base(2)
         .build_with_max_retries(5);
 
-    let client = ClientBuilder::new(daapi_endpoint)
-        //.with_auth(AuthMethod::IbmCloudIam {
-        //    apikey: iam_apikey,
-        //    service_crn: daapi_service_crn,
-        //    iam_endpoint_url,
-        //})
-        .with_auth(AuthMethod::IbmCloudAppId {
-            username: appid_client_id,
-            password: appid_secret,
-        })
+    let mut binding = ClientBuilder::new(daapi_endpoint);
+    let mut base_builder = binding
         .with_timeout(Duration::from_secs(60))
         .with_retry_policy(retry_policy)
         .with_s3bucket(
@@ -76,9 +58,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             s3_endpoint,
             s3_bucket,
             s3_region,
-        )
-        .build()
-        .unwrap();
+        );
+
+    #[cfg(feature = "ibmcloud_appid_auth")]
+    {
+        // (Deprecated) AppId based authentication
+        let appid_client_id = env::var("IBMQRUN_APPID_CLIENT_ID").expect("IBMQRUN_APPID_CLIENT_ID");
+        let appid_secret = env::var("IBMQRUN_APPID_SECRET").expect("IBMQRUN_APPID_SECRET");
+
+        base_builder = base_builder.with_auth(AuthMethod::IbmCloudAppId {
+            username: appid_client_id,
+            password: appid_secret,
+        });
+    }
+    #[cfg(not(feature = "ibmcloud_appid_auth"))]
+    {
+        // IAM based authentication
+        let iam_apikey = env::var("IBMQRUN_IAM_APIKEY").expect("IBMQRUN_IAM_APIKEY");
+        let service_crn = env::var("IBMQRUN_SERVICE_CRN").expect("IBMQRUN_SERVICE_CRN");
+        let iam_endpoint_url = env::var("IBMQRUN_IAM_ENDPOINT").expect("IBMQRUN_IAM_ENDPOINT");
+
+        base_builder = base_builder.with_auth(AuthMethod::IbmCloudIam {
+            apikey: iam_apikey,
+            service_crn,
+            iam_endpoint_url,
+        });
+    }
+
+    let client = base_builder.build().unwrap();
 
     let f = File::open(job_file).expect("file not found");
     let mut buf_reader = BufReader::new(f);

@@ -9,17 +9,22 @@ permissions:
   # pull-requests: read
 jobs:
   linting:
-    name: Lint with clang-tidy
+    name: Run Linters
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.1.4
 
-      - name: Install clang-tidy
+      - name: Install linting tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-tidy
+          sudo apt-get install -y clang-tidy shellcheck shfmt
+          pip install --upgrade pip
+          pip install ruff mypy
+          rustup update stable
+          rustup component add clippy
 
+      # C Linting with Clang-Tidy
       - name: Set up C environment
         run: |
           mkdir -p build
@@ -31,5 +36,31 @@ jobs:
           cd build
           clang-tidy ../**/*.c -checks='*' --warnings-as-errors='*'
 
-      - name: Report status
-        run: echo "C code linting completed."
+      - name: Report C linting status
+        run: |
+          echo "**************************"
+          echo " C code linting completed."
+          echo "**************************"
+
+      # Rust Linting with Clippy
+      - name: Run Rust Clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Report Rust linting status
+        run: |
+          echo "*******************************"
+          echo " Rust code linting completed."
+          echo "******************************"
+
+      # Python Linting with Ruff and Mypy
+      - name: Run Ruff (Python linter)
+        run: ruff check .
+
+      - name: Run Mypy (Python type checking)
+        run: mypy .
+
+      - name: Report Python linting status
+        run: |
+          echo "*******************************"
+          echo " RPython linting completed."
+          echo "******************************"

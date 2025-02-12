@@ -24,6 +24,11 @@ jobs:
           rustup update stable
           rustup component add clippy
 
+      - name: Install SLURM dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
+
       # C Linting with Clang-Tidy
       - name: Set up C environment
         run: |

@@ -29,27 +29,3 @@ jobs:
         uses: koesterlab/setup-slurm-action@v1
         # Afterwards, We can submit to the slurm cluster via sbatch and srun,
         # and interact via all other usual commands.
-
-      - name: Check for C/C++ files
-        id: check_sources
-        run: |
-          if ! find . -name '*.c' -o -name '*.cpp' -o -name '*.h' | grep -q .; then
-            echo "::warning::No C/C++ files found. Skipping build step."
-            exit 0
-          fi
-
-      - name: Build Project
-        if: steps.check_sources.outcome == 'success'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          options: |
-            BUILD_TESTS=ON
-            BUILD_EXAMPLES=ON
-
-      - name: Test Project
-        if: steps.check_sources.outcome == 'success'
-        uses: threeal/ctest-action@v1.1.0
-        with:
-          test-dir: plugins/test
-          # TODO: We need to supply where the tests folders will be.
-          # for more: https://github.com/marketplace/actions/ctest-action

@@ -1,0 +1,6 @@
+feature: ['feature/*', 'feat/*']
+fix: fix/*
+chore: chore/*
+infra: ['ci/*', 'infra/*']
+documentation: ['docs/*', 'doc/*']
+release: release/*

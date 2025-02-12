@@ -62,5 +62,5 @@ jobs:
       - name: Report Python linting status
         run: |
           echo "*******************************"
-          echo " RPython linting completed."
+          echo " Python linting completed."
           echo "******************************"

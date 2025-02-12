@@ -43,6 +43,8 @@ jobs:
         run: |
           cd build_skeleton
           clang-tidy ../plugins/skeleton/*.c -checks='*' --warnings-as-errors='*'
+          cd ../build_skeleton
+          clang-tidy ../plugins/skeleton/*.c -checks='*' --warnings-as-errors='*'
 
       - name: Report C linting status
         run: |

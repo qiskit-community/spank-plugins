@@ -28,6 +28,7 @@ jobs:
       - name: Set up C environment
         run: |
           mkdir -p build_skeleton build_spank_ibm_qrun
+          ls
           cd build_skeleton
           cmake ../../plugins/skeleton
           cd ../build_spank_ibm_qrun

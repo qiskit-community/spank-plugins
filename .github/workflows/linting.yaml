@@ -30,9 +30,9 @@ jobs:
           mkdir -p build_skeleton build_spank_ibm_qrun
           ls
           cd build_skeleton
-          cmake ../../plugins/skeleton
+          cmake ../plugins/skeleton
           cd ../build_spank_ibm_qrun
-          cmake ../../plugins/spank_ibm_qrun
+          cmake ../plugins/spank_ibm_qrun
 
       - name: Run clang-tidy (C linter)
         run: |

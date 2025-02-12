@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(spank_skeleton C)
+project(spank_ibm_qrun C)
 
 #
 # For finding packages:
@@ -34,6 +34,20 @@ endif ()
 
 mark_as_advanced(SLURM_LIBRARIES SLURM_INCLUDE_DIRS SLURM_MODULES_DIR)
 
-add_library(spank_skeleton MODULE spank_skeleton.c)
+# Search for spank_ibm_qrun.c in possible locations
+find_path(SPANK_IBM_QRUN_SRC NAMES spank_ibm_qrun.c
+        PATHS
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../plugins/spank_ibm_qrun
+        DOC "Path to spank_ibm_qrun.c source file"
+)
+
+if (SPANK_IBM_QRUN_SRC)
+  set(SPANK_IBM_QRUN_FILE "${SPANK_IBM_QRUN_SRC}/spank_ibm_qrun.c")
+  add_library(spank_ibm_qrun MODULE ${SPANK_IBM_QRUN_FILE})
+else ()
+  message(FATAL_ERROR "Could not find spank_ibm_qrun.c in current directory or ../plugins/spank_ibm_qrun")
+endif ()
+
 include_directories(BEFORE ${SLURM_INCLUDE_DIRS})
-set_target_properties(spank_skeleton PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_skeleton.so")
+set_target_properties(spank_ibm_qrun PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_ibm_qrun.so")

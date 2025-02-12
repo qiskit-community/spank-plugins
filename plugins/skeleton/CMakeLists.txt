@@ -34,6 +34,20 @@ endif ()
 
 mark_as_advanced(SLURM_LIBRARIES SLURM_INCLUDE_DIRS SLURM_MODULES_DIR)
 
-add_library(spank_skeleton MODULE spank_skeleton.c)
+# Search for spank_skeleton.c in possible locations
+find_path(SPANK_SKELETON_SRC NAMES spank_skeleton.c
+        PATHS
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../plugins/skeleton
+        DOC "Path to spank_skeleton.c source file"
+)
+
+if (SPANK_SKELETON_SRC)
+  set(SPANK_SKELETON_FILE "${SPANK_SKELETON_SRC}/spank_skeleton.c")
+  add_library(spank_skeleton MODULE ${SPANK_SKELETON_FILE})
+else ()
+  message(FATAL_ERROR "Could not find spank_skeleton.c in current directory or ../plugins/skeleton")
+endif ()
+
 include_directories(BEFORE ${SLURM_INCLUDE_DIRS})
 set_target_properties(spank_skeleton PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_skeleton.so")

@@ -27,9 +27,11 @@ jobs:
       # C Linting with Clang-Tidy
       - name: Set up C environment
         run: |
-          mkdir -p build
-          cd build
-          cmake ..
+          mkdir -p build_skeleton build_spank_ibm_qrun
+          cd build_skeleton
+          cmake ../../plugins/skeleton
+          cd ../build_spank_ibm_qrun
+          cmake ../../plugins/spank_ibm_qrun
 
       - name: Run clang-tidy (C linter)
         run: |

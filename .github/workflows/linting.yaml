@@ -63,7 +63,16 @@ jobs:
           echo "**************************"
 
       # Rust Linting with Clippy
-      - name: Run Rust Clippy
+      - name: Run Rust Clippy (daapi)
+        working-directory: commands/qrun/daapi
+        run: cargo clippy -- -D warnings
+
+      - name: Run Rust Clippy (qiskit_pubs_gen)
+        working-directory: commands/qrun/qiskit_pubs_gen
+        run: cargo clippy -- -D warnings
+
+      - name: Run Rust Clippy (qrun)
+        working-directory: commands/qrun/qrun
         run: cargo clippy -- -D warnings
 
       - name: Report Rust linting status

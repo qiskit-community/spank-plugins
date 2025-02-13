@@ -1,10 +1,13 @@
 name: Code Linting
+
 on:
   pull_request:
     branches:
       - main
+
 permissions:
   contents: read
+
 jobs:
   c-linting:
     name: C Linting
@@ -49,6 +52,7 @@ jobs:
           echo "**************************"
           echo " C code linting completed."
           echo "**************************"
+
   rust-linting:
     name: Rust Linting
     runs-on: ubuntu-latest
@@ -59,19 +63,15 @@ jobs:
       - name: Install Rust
         run: |
           rustup update stable
-          rustup component add clippy
+          rustup component add clippy rustfmt
 
-      - name: Run Rust Clippy (daapi)
-        working-directory: commands/qrun/daapi
-        run: cargo clippy -- -D warnings
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check
 
-      - name: Run Rust Clippy (qiskit_pubs_gen)
-        working-directory: commands/qrun/qiskit_pubs_gen
-        run: cargo clippy -- -D warnings
-
-      - name: Run Rust Clippy (qrun)
-        working-directory: commands/qrun/qrun
-        run: cargo clippy -- -D warnings
+      - name: Run Clippy
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
 
       - name: Report Rust linting status
         run: |

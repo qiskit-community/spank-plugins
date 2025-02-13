@@ -65,10 +65,32 @@ jobs:
           rustup update stable
           rustup component add clippy rustfmt
 
-      - name: Run rustfmt
+      - name: Run rustfmt (daapi)
+        working-directory: commands/qrun/daapi
         run: cargo fmt --all -- --check
 
-      - name: Run Clippy
+      - name: Run Clippy (daapi)
+        working-directory: commands/qrun/daapi
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run rustfmt (qiskit_pubs_gen)
+        working-directory: commands/qrun/qiskit_pubs_gen
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy (qiskit_pubs_gen)
+        working-directory: commands/qrun/qiskit_pubs_gen
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run rustfmt (qrun)
+        working-directory: commands/qrun/qrun
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy (qrun)
+        working-directory: commands/qrun/qrun
         env:
           RUSTFLAGS: "-Dwarnings"
         run: cargo clippy --all-targets --all-features

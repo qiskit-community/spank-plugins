@@ -135,7 +135,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let signals_task = tokio::spawn(handle_signals(signals, primitive_job.clone()));
 
     let mut succeeded: bool = true;
-    match primitive_job.wait_for_final_state(Some(1800.0)).await {
+    match primitive_job.wait_for_final_state(None).await {
         Ok(retval) => match retval.status {
             JobStatus::Completed => {}
             JobStatus::Failed => {
@@ -157,6 +157,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Error occurred while waiting for final state: {:?}",
                 e.to_string()
             );
+            let _ = primitive_job.cancel(false).await;
             succeeded = false;
         }
     }

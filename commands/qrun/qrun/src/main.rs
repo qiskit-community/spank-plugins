@@ -158,7 +158,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 e.to_string()
             );
             succeeded = false;
-            //primitive_job.cancel(false).await?;
         }
     }
 

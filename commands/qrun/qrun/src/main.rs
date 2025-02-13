@@ -18,7 +18,32 @@ use retry_policies::Jitter;
 use std::env;
 use std::time::Duration;
 
-use direct_access_api::{AuthMethod, ClientBuilder};
+use futures::stream::StreamExt;
+use signal_hook::consts::signal::*;
+use signal_hook_tokio::Signals;
+
+use direct_access_api::{models::JobStatus, AuthMethod, ClientBuilder, PrimitiveJob};
+
+// Handle signals, and cancel QPU job if SIGTERM is received.
+async fn handle_signals(mut signals: Signals, job: PrimitiveJob) {
+    while let Some(signal) = signals.next().await {
+        // To cancel a job, invoke scancel without --signal option. This will send
+        // first a SIGCONT to all steps to eventually wake them up followed by a
+        // SIGTERM, then wait the KillWait duration defined in the slurm.conf file
+        // and finally if they have not terminated send a SIGKILL.
+        match signal {
+            SIGTERM => {
+                // cancel QPU job
+                let _ = job.cancel(false).await;
+            }
+            SIGCONT => {
+                // Nothing to be done by qrun.
+            }
+            // only registered sinals come
+            _ => unreachable!(),
+        }
+    }
+}
 
 #[tokio::main]
 #[allow(unreachable_code)]
@@ -87,6 +112,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = base_builder.build().unwrap();
 
+    // scancel related signals
+    let signals = Signals::new([SIGTERM, SIGCONT])?;
+    let handle = signals.handle();
+
     let f = File::open(job_file).expect("file not found");
     let mut buf_reader = BufReader::new(f);
     let mut contents = String::new();
@@ -102,32 +131,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             &job,
         )
         .await?;
+
+    let signals_task = tokio::spawn(handle_signals(signals, primitive_job.clone()));
+
+    let mut succeeded: bool = true;
     match primitive_job.wait_for_final_state(Some(1800.0)).await {
-        Ok(_retval) => {
-            //println!("{}", serde_json::to_string_pretty(&retval).unwrap());
-        }
+        Ok(retval) => match retval.status {
+            JobStatus::Completed => {}
+            JobStatus::Failed => {
+                succeeded = false;
+                if let Some(reason) = retval.reason_message {
+                    println!("Job {} was failed. Reason {}", primitive_job.job_id, reason);
+                } else {
+                    println!("Job {} was failed.", primitive_job.job_id);
+                }
+            }
+            JobStatus::Cancelled => {
+                succeeded = false;
+                println!("Job {} was cancelled.", primitive_job.job_id);
+            }
+            _ => unreachable!(),
+        },
         Err(e) => {
             println!(
                 "Error occurred while waiting for final state: {:?}",
                 e.to_string()
             );
-            primitive_job.cancel(false).await?;
+            succeeded = false;
+            //primitive_job.cancel(false).await?;
         }
     }
 
-    match primitive_job.get_result::<serde_json::Value>().await {
-        Ok(retval) => {
-            println!("{}", serde_json::to_string_pretty(&retval).unwrap());
-        }
-        Err(e) => {
-            println!(
-                "Error occurred while fetching job result from S3 bucket: {:?}",
-                e.to_string()
-            );
+    if succeeded {
+        match primitive_job.get_result::<serde_json::Value>().await {
+            Ok(retval) => {
+                let serialized = serde_json::to_string_pretty(&retval).unwrap();
+                // output result to stdout, so that slurm copied to slurm-n.out file.
+                println!("{}", serialized);
+            }
+            Err(e) => {
+                println!(
+                    "Error occurred while fetching job result from S3 bucket: {:?}",
+                    e.to_string()
+                );
+            }
         }
     }
 
     client.delete_job(&primitive_job.job_id).await?;
+
+    handle.close();
+    signals_task.await?;
 
     Ok(())
 }

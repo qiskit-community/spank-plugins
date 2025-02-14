@@ -246,6 +246,11 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
         slurm_debug("%s: S_TASK_EXIT_STATUS [%d]", plugin_name, status);
     }
 
+    if (spank_remote(spank_ctxt)) {
+        spank_unsetenv(spank_ctxt, "IBMQRUN_BACKEND");
+        spank_unsetenv(spank_ctxt, "IBMQRUN_PRIMITIVE");
+    }
+
     slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
     return rc;
 }

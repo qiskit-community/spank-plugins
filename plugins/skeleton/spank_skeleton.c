@@ -68,7 +68,6 @@ static int dump_spank_items(spank_t spank_ctxt)
     uint32_t step_id = -1;
     int job_argc = 0;
     char **job_argv = NULL;
-    int i;
 
     if (spank_get_item(spank_ctxt, S_JOB_UID, &job_id) == ESPANK_SUCCESS) {
         slurm_debug("%s: S_JOB_UID [%d]", plugin_name, job_id);
@@ -80,7 +79,7 @@ static int dump_spank_items(spank_t spank_ctxt)
     if (spank_get_item(spank_ctxt, S_JOB_ARGV, &job_argc, &job_argv) ==
         ESPANK_SUCCESS) {
         slurm_debug("%s: S_JOB_ARGV argc=%d", plugin_name, job_argc);
-        for (i = 0; i < job_argc; i++) {
+        for (int i = 0; i < job_argc; i++) {
             slurm_debug("%s: job_argv[%d] = [%s]",
                     plugin_name, i, job_argv[i]);
         }
@@ -90,8 +89,7 @@ static int dump_spank_items(spank_t spank_ctxt)
 
 static int dump_argv(int argc, char **argv)
 {
-    int i;
-    for (i = 0; i < argc; i++) {
+    for (int i = 0; i < argc; i++) {
         slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
     }
     return ESPANK_SUCCESS;

@@ -26,8 +26,6 @@
  */
 SPANK_PLUGIN(spank_ibm_qrun, 1)
 
-static const int PLUGIN_ARGC = 8;
-
 /* Qiskit backend name */
 #define MAXLEN_BACKEND_NAME 256
 static char backend_name[MAXLEN_BACKEND_NAME + 1];
@@ -186,8 +184,8 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
      */
     slurm_debug("%s Is slurm_spank_task_init() supported ? %d", plugin_name,
         spank_symbol_supported("slurm_spank_task_init"));
-    slurm_debug("%s Is slurm_spank_job_exit() supported ? %d", plugin_name,
-        spank_symbol_supported("slurm_spank_job_exit"));
+    slurm_debug("%s Is slurm_spank_task_exit() supported ? %d", plugin_name,
+        spank_symbol_supported("slurm_spank_task_exit"));
 
     slurm_debug("%s <- %s rc=%d", plugin_name, __FUNCTION__, rc);
     return rc;
@@ -223,35 +221,6 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
                 plugin_name, primitive_type);
             spank_setenv(spank_ctxt, "IBMQRUN_PRIMITIVE", primitive_type, 1);
         }
-
-        if (argc != PLUGIN_ARGC) {
-            slurm_error("%s: Unmatched number of arguments. found = %d, expected = %d.",
-                    plugin_name, argc, PLUGIN_ARGC);
-            return SLURM_ERROR;
-        }
-        slurm_debug("%s: setenv IBMQRUN_APPID_CLIENT_ID=%s", plugin_name, argv[0]);
-        spank_setenv(spank_ctxt, "IBMQRUN_APPID_CLIENT_ID", argv[0], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_APPID_SECRET=%s", plugin_name, argv[1]);
-        spank_setenv(spank_ctxt, "IBMQRUN_APPID_SECRET", argv[1], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_DAAPI_ENDPOINT=%s", plugin_name, argv[2]);
-        spank_setenv(spank_ctxt, "IBMQRUN_DAAPI_ENDPOINT", argv[2], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_AWS_ACCESS_KEY_ID=%s", plugin_name, argv[3]);
-        spank_setenv(spank_ctxt, "IBMQRUN_AWS_ACCESS_KEY_ID", argv[3], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_AWS_SECRET_ACCESS_KEY=%s", plugin_name, argv[4]);
-        spank_setenv(spank_ctxt, "IBMQRUN_AWS_SECRET_ACCESS_KEY", argv[4], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_S3_ENDPOINT=%s", plugin_name, argv[5]);
-        spank_setenv(spank_ctxt, "IBMQRUN_S3_ENDPOINT", argv[5], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_S3_BUCKET=%s", plugin_name, argv[6]);
-        spank_setenv(spank_ctxt, "IBMQRUN_S3_BUCKET", argv[6], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_S3_REGION=%s", plugin_name, argv[7]);
-        spank_setenv(spank_ctxt, "IBMQRUN_S3_REGION", argv[7], 1);
     }
 
     slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);

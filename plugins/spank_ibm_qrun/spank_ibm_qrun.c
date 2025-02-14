@@ -18,8 +18,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
-#include <slurm/spank.h>
+#include "slurm/slurm.h"
+#include "slurm/spank.h"
 
 /*
  * All spank plugins must define this macro for the SLURM plugin loader.
@@ -81,11 +81,11 @@ static int primitive_type_cb(int val, const char *optarg, int remote)
 
 static int dump_spank_items(spank_t spank_ctxt)
 {
-    uid_t job_id = -1;
-    uint32_t step_id = -1;
+    uid_t job_id = 0;
+    uint32_t step_id = 0;
     int job_argc = 0;
     char **job_argv = NULL;
-    int i;
+    int i = 0;
 
     if (spank_get_item(spank_ctxt, S_JOB_UID, &job_id) == ESPANK_SUCCESS) {
         slurm_debug("%s: S_JOB_UID [%d]", plugin_name, job_id);
@@ -107,7 +107,7 @@ static int dump_spank_items(spank_t spank_ctxt)
 
 static int dump_argv(int argc, char **argv)
 {
-    int i;
+    int i = 0;
     for (i = 0; i < argc; i++) {
         slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
     }
@@ -202,7 +202,6 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
 {
     int rc = ESPANK_SUCCESS;
-    int i;
 
     slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
             spank_remote(spank_ctxt));
@@ -236,7 +235,7 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
 int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv) 
 {
     int rc = ESPANK_SUCCESS;
-    int status;
+    int status = 0;
 
     slurm_debug("%s: -> %s argc=%d", plugin_name, __FUNCTION__, argc);
     dump_argv(argc, argv);

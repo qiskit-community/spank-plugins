@@ -35,6 +35,14 @@ async fn handle_signals(mut signals: Signals, job: PrimitiveJob) {
             SIGTERM => {
                 // cancel QPU job
                 let _ = job.cancel(false).await;
+                // Submitted job has run longer than the allocated time limit user specified
+                // when submitting it, causing the system to automatically terminate the job.
+                // In this case, multiple SIGTERM signals are sent to this handler.
+                // Break this loop if QPU job is already in final state to avoid issuing
+                // multiple cancel requests to Quantun backend.
+                if job.is_in_final_state().await.unwrap_or(false) {
+                    break;
+                }
             }
             SIGCONT => {
                 // Nothing to be done by qrun.

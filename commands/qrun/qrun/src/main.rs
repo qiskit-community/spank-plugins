@@ -73,6 +73,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let s3_bucket = env::var("IBMQRUN_S3_BUCKET").expect("IBMQRUN_S3_BUCKET");
     let s3_region = env::var("IBMQRUN_S3_REGION").expect("IBMQRUN_S3_REGION");
 
+    // Slurm's time limit is wall clock time, and DA API's timeout_secs is total quantum time.
+    // By specifying the time limit of Slurm as the timeout_secs of the DA API, we can avoid
+    // timeout in DA API side.
+    let timeout = env::var("IBMQRUN_TIMEOUT_SECONDS").expect("IBMQRUN_TIMEOUT_SECONDS");
+    let timeout_secs = timeout.parse::<u64>().expect("IBMQRUN_TIMEOUT_SECONDS");
+
     env_logger::init();
 
     let retry_policy = ExponentialBackoff::builder()
@@ -134,7 +140,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .run_primitive(
             &backend_name,
             program_id.parse().unwrap(),
-            86400,
+            timeout_secs,
             "debug".parse().unwrap(),
             &job,
         )

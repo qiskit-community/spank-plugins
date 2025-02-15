@@ -18,15 +18,13 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
-#include <slurm/spank.h>
+#include "slurm/slurm.h"
+#include "slurm/spank.h"
 
 /*
  * All spank plugins must define this macro for the SLURM plugin loader.
  */
 SPANK_PLUGIN(spank_ibm_qrun, 1)
-
-static const int PLUGIN_ARGC = 8;
 
 /* Qiskit backend name */
 #define MAXLEN_BACKEND_NAME 256
@@ -83,11 +81,10 @@ static int primitive_type_cb(int val, const char *optarg, int remote)
 
 static int dump_spank_items(spank_t spank_ctxt)
 {
-    uid_t job_id = -1;
-    uint32_t step_id = -1;
+    uid_t job_id = 0;
+    uint32_t step_id = 0;
     int job_argc = 0;
     char **job_argv = NULL;
-    int i;
 
     if (spank_get_item(spank_ctxt, S_JOB_UID, &job_id) == ESPANK_SUCCESS) {
         slurm_debug("%s: S_JOB_UID [%d]", plugin_name, job_id);
@@ -99,7 +96,7 @@ static int dump_spank_items(spank_t spank_ctxt)
     if (spank_get_item(spank_ctxt, S_JOB_ARGV, &job_argc, &job_argv) ==
         ESPANK_SUCCESS) {
         slurm_debug("%s: S_JOB_ARGV argc=%d", plugin_name, job_argc);
-        for (i = 0; i < job_argc; i++) {
+        for (int i = 0; i < job_argc; i++) {
             slurm_debug("%s: job_argv[%d] = [%s]",
                     plugin_name, i, job_argv[i]);
         }
@@ -109,8 +106,7 @@ static int dump_spank_items(spank_t spank_ctxt)
 
 static int dump_argv(int argc, char **argv)
 {
-    int i;
-    for (i = 0; i < argc; i++) {
+    for (int i = 0; i < argc; i++) {
         slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
     }
     return ESPANK_SUCCESS;
@@ -186,8 +182,8 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
      */
     slurm_debug("%s Is slurm_spank_task_init() supported ? %d", plugin_name,
         spank_symbol_supported("slurm_spank_task_init"));
-    slurm_debug("%s Is slurm_spank_job_exit() supported ? %d", plugin_name,
-        spank_symbol_supported("slurm_spank_job_exit"));
+    slurm_debug("%s Is slurm_spank_task_exit() supported ? %d", plugin_name,
+        spank_symbol_supported("slurm_spank_task_exit"));
 
     slurm_debug("%s <- %s rc=%d", plugin_name, __FUNCTION__, rc);
     return rc;
@@ -204,7 +200,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
 {
     int rc = ESPANK_SUCCESS;
-    int i;
+    job_info_msg_t *job_info_msg = NULL;
 
     slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
             spank_remote(spank_ctxt));
@@ -224,34 +220,19 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
             spank_setenv(spank_ctxt, "IBMQRUN_PRIMITIVE", primitive_type, 1);
         }
 
-        if (argc != PLUGIN_ARGC) {
-            slurm_error("%s: Unmatched number of arguments. found = %d, expected = %d.",
-                    plugin_name, argc, PLUGIN_ARGC);
-            return SLURM_ERROR;
-        }
-        slurm_debug("%s: setenv IBMQRUN_APPID_CLIENT_ID=%s", plugin_name, argv[0]);
-        spank_setenv(spank_ctxt, "IBMQRUN_APPID_CLIENT_ID", argv[0], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_APPID_SECRET=%s", plugin_name, argv[1]);
-        spank_setenv(spank_ctxt, "IBMQRUN_APPID_SECRET", argv[1], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_DAAPI_ENDPOINT=%s", plugin_name, argv[2]);
-        spank_setenv(spank_ctxt, "IBMQRUN_DAAPI_ENDPOINT", argv[2], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_AWS_ACCESS_KEY_ID=%s", plugin_name, argv[3]);
-        spank_setenv(spank_ctxt, "IBMQRUN_AWS_ACCESS_KEY_ID", argv[3], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_AWS_SECRET_ACCESS_KEY=%s", plugin_name, argv[4]);
-        spank_setenv(spank_ctxt, "IBMQRUN_AWS_SECRET_ACCESS_KEY", argv[4], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_S3_ENDPOINT=%s", plugin_name, argv[5]);
-        spank_setenv(spank_ctxt, "IBMQRUN_S3_ENDPOINT", argv[5], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_S3_BUCKET=%s", plugin_name, argv[6]);
-        spank_setenv(spank_ctxt, "IBMQRUN_S3_BUCKET", argv[6], 1);
-
-        slurm_debug("%s: setenv IBMQRUN_S3_REGION=%s", plugin_name, argv[7]);
-        spank_setenv(spank_ctxt, "IBMQRUN_S3_REGION", argv[7], 1);
+ 	if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) == ESPANK_SUCCESS) { 
+ 	    if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) == SLURM_SUCCESS) {
+ 		/* slurm's time limit is represented in minutes */
+                uint32_t time_limit_mins = job_info_msg->job_array[0].time_limit;
+                /*
+                 * minutes to seconds, uint32_t to char*
+                 */
+                char limit_as_str[11]; /* max uint32_t value is (2147483647) = 10 chars */
+                memset(limit_as_str, '\0', sizeof(limit_as_str));
+                snprintf(limit_as_str, sizeof(limit_as_str), "%u", time_limit_mins * 60);
+                spank_setenv(spank_ctxt, "IBMQRUN_TIMEOUT_SECONDS", limit_as_str, 1);
+            }
+  	}
     }
 
     slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
@@ -267,7 +248,7 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
 int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv) 
 {
     int rc = ESPANK_SUCCESS;
-    int status;
+    int status = 0;
 
     slurm_debug("%s: -> %s argc=%d", plugin_name, __FUNCTION__, argc);
     dump_argv(argc, argv);
@@ -275,6 +256,11 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
     if (spank_get_item(spank_ctxt, S_TASK_EXIT_STATUS, &status) ==
         ESPANK_SUCCESS) {
         slurm_debug("%s: S_TASK_EXIT_STATUS [%d]", plugin_name, status);
+    }
+
+    if (spank_remote(spank_ctxt)) {
+        spank_unsetenv(spank_ctxt, "IBMQRUN_BACKEND");
+        spank_unsetenv(spank_ctxt, "IBMQRUN_PRIMITIVE");
     }
 
     slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);

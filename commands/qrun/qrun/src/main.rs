@@ -73,6 +73,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let s3_bucket = env::var("IBMQRUN_S3_BUCKET").expect("IBMQRUN_S3_BUCKET");
     let s3_region = env::var("IBMQRUN_S3_REGION").expect("IBMQRUN_S3_REGION");
 
+    // Slurm's time limit is wall clock time, and DA API's timeout_secs is total quantum time.
+    // By specifying the time limit of Slurm as the timeout_secs of the DA API, we can avoid
+    // timeout in DA API side.
+    let timeout = env::var("IBMQRUN_TIMEOUT_SECONDS").expect("IBMQRUN_TIMEOUT_SECONDS");
+    let timeout_secs = timeout.parse::<u64>().expect("IBMQRUN_TIMEOUT_SECONDS");
+
     env_logger::init();
 
     let retry_policy = ExponentialBackoff::builder()
@@ -81,8 +87,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .base(2)
         .build_with_max_retries(5);
 
-    let mut binding = ClientBuilder::new(daapi_endpoint);
-    let mut base_builder = binding
+    let mut auth_method = AuthMethod::None;
+    if let (Some(apikey), Some(service_crn), Some(iam_endpoint_url)) = (
+        env::var("IBMQRUN_IAM_APIKEY").ok(),
+        env::var("IBMQRUN_SERVICE_CRN").ok(),
+        env::var("IBMQRUN_IAM_ENDPOINT").ok(),
+    ) {
+        auth_method = AuthMethod::IbmCloudIam {
+            apikey,
+            service_crn,
+            iam_endpoint_url,
+        };
+    }
+
+    #[cfg(feature = "ibmcloud_appid_auth")]
+    if let AuthMethod::None = auth_method {
+        if let (Some(username), Some(password)) = (
+            env::var("IBMQRUN_APPID_CLIENT_ID").ok(),
+            env::var("IBMQRUN_APPID_SECRET").ok(),
+        ) {
+            auth_method = AuthMethod::IbmCloudAppId { username, password };
+        }
+    }
+
+    let client = ClientBuilder::new(daapi_endpoint)
         .with_timeout(Duration::from_secs(60))
         .with_retry_policy(retry_policy)
         .with_s3bucket(
@@ -91,34 +119,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             s3_endpoint,
             s3_bucket,
             s3_region,
-        );
-
-    #[cfg(feature = "ibmcloud_appid_auth")]
-    {
-        // (Deprecated) AppId based authentication
-        let appid_client_id = env::var("IBMQRUN_APPID_CLIENT_ID").expect("IBMQRUN_APPID_CLIENT_ID");
-        let appid_secret = env::var("IBMQRUN_APPID_SECRET").expect("IBMQRUN_APPID_SECRET");
-
-        base_builder = base_builder.with_auth(AuthMethod::IbmCloudAppId {
-            username: appid_client_id,
-            password: appid_secret,
-        });
-    }
-    #[cfg(not(feature = "ibmcloud_appid_auth"))]
-    {
-        // IAM based authentication
-        let iam_apikey = env::var("IBMQRUN_IAM_APIKEY").expect("IBMQRUN_IAM_APIKEY");
-        let service_crn = env::var("IBMQRUN_SERVICE_CRN").expect("IBMQRUN_SERVICE_CRN");
-        let iam_endpoint_url = env::var("IBMQRUN_IAM_ENDPOINT").expect("IBMQRUN_IAM_ENDPOINT");
-
-        base_builder = base_builder.with_auth(AuthMethod::IbmCloudIam {
-            apikey: iam_apikey,
-            service_crn,
-            iam_endpoint_url,
-        });
-    }
-
-    let client = base_builder.build().unwrap();
+        )
+        .with_auth(auth_method)
+        .build()
+        .unwrap();
 
     // scancel related signals
     let signals = Signals::new([SIGTERM, SIGCONT])?;
@@ -134,7 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .run_primitive(
             &backend_name,
             program_id.parse().unwrap(),
-            86400,
+            timeout_secs,
             "debug".parse().unwrap(),
             &job,
         )

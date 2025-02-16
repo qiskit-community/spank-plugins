@@ -200,6 +200,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
 {
     int rc = ESPANK_SUCCESS;
+    job_info_msg_t *job_info_msg = NULL;
 
     slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
             spank_remote(spank_ctxt));
@@ -218,6 +219,20 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
                 plugin_name, primitive_type);
             spank_setenv(spank_ctxt, "IBMQRUN_PRIMITIVE", primitive_type, 1);
         }
+
+ 	      if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) == ESPANK_SUCCESS) { 
+ 	          if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) == SLURM_SUCCESS) {
+ 		            /* slurm's time limit is represented in minutes */
+                uint32_t time_limit_mins = job_info_msg->job_array[0].time_limit;
+                /*
+                 * minutes to seconds, uint32_t to char*
+                 */
+                char limit_as_str[11]; /* max uint32_t value is (2147483647) = 10 chars */
+                memset(limit_as_str, '\0', sizeof(limit_as_str));
+                snprintf(limit_as_str, sizeof(limit_as_str), "%u", time_limit_mins * 60);
+                spank_setenv(spank_ctxt, "IBMQRUN_TIMEOUT_SECONDS", limit_as_str, 1);
+            }
+  	    }
     }
 
     slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);

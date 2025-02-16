@@ -87,8 +87,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .base(2)
         .build_with_max_retries(5);
 
-    let mut binding = ClientBuilder::new(daapi_endpoint);
-    let mut base_builder = binding
+    let mut auth_method = AuthMethod::None;
+    if let Ok(apikey) = env::var("IBMQRUN_IAM_APIKEY") {
+        if let Ok(service_crn) = env::var("IBMQRUN_SERVICE_CRN") {
+            if let Ok(iam_endpoint_url) = env::var("IBMQRUN_IAM_ENDPOINT") {
+                auth_method = AuthMethod::IbmCloudIam {
+                    apikey,
+                    service_crn,
+                    iam_endpoint_url,
+                };
+            }
+        }
+    }
+
+    #[cfg(feature = "ibmcloud_appid_auth")]
+    if let AuthMethod::None = auth_method {
+        if let Ok(username) = env::var("IBMQRUN_APPID_CLIENT_ID") {
+            if let Ok(password) = env::var("IBMQRUN_APPID_SECRET") {
+                auth_method = AuthMethod::IbmCloudAppId {
+                    username,
+                    password,
+                };
+            }
+        }
+    }
+
+    let client = ClientBuilder::new(daapi_endpoint)
         .with_timeout(Duration::from_secs(60))
         .with_retry_policy(retry_policy)
         .with_s3bucket(
@@ -97,34 +121,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             s3_endpoint,
             s3_bucket,
             s3_region,
-        );
-
-    #[cfg(feature = "ibmcloud_appid_auth")]
-    {
-        // (Deprecated) AppId based authentication
-        let appid_client_id = env::var("IBMQRUN_APPID_CLIENT_ID").expect("IBMQRUN_APPID_CLIENT_ID");
-        let appid_secret = env::var("IBMQRUN_APPID_SECRET").expect("IBMQRUN_APPID_SECRET");
-
-        base_builder = base_builder.with_auth(AuthMethod::IbmCloudAppId {
-            username: appid_client_id,
-            password: appid_secret,
-        });
-    }
-    #[cfg(not(feature = "ibmcloud_appid_auth"))]
-    {
-        // IAM based authentication
-        let iam_apikey = env::var("IBMQRUN_IAM_APIKEY").expect("IBMQRUN_IAM_APIKEY");
-        let service_crn = env::var("IBMQRUN_SERVICE_CRN").expect("IBMQRUN_SERVICE_CRN");
-        let iam_endpoint_url = env::var("IBMQRUN_IAM_ENDPOINT").expect("IBMQRUN_IAM_ENDPOINT");
-
-        base_builder = base_builder.with_auth(AuthMethod::IbmCloudIam {
-            apikey: iam_apikey,
-            service_crn,
-            iam_endpoint_url,
-        });
-    }
-
-    let client = base_builder.build().unwrap();
+        )
+        .with_auth(auth_method)
+        .build()
+        .unwrap();
 
     // scancel related signals
     let signals = Signals::new([SIGTERM, SIGCONT])?;

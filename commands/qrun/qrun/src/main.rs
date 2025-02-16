@@ -88,27 +88,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build_with_max_retries(5);
 
     let mut auth_method = AuthMethod::None;
-    if let Ok(apikey) = env::var("IBMQRUN_IAM_APIKEY") {
-        if let Ok(service_crn) = env::var("IBMQRUN_SERVICE_CRN") {
-            if let Ok(iam_endpoint_url) = env::var("IBMQRUN_IAM_ENDPOINT") {
-                auth_method = AuthMethod::IbmCloudIam {
-                    apikey,
-                    service_crn,
-                    iam_endpoint_url,
-                };
-            }
-        }
+    if let (Some(apikey), Some(service_crn), Some(iam_endpoint_url)) = (
+        env::var("IBMQRUN_IAM_APIKEY").ok(),
+        env::var("IBMQRUN_SERVICE_CRN").ok(),
+        env::var("IBMQRUN_IAM_ENDPOINT").ok(),
+    ) {
+        auth_method = AuthMethod::IbmCloudIam {
+            apikey,
+            service_crn,
+            iam_endpoint_url,
+        };
     }
 
     #[cfg(feature = "ibmcloud_appid_auth")]
     if let AuthMethod::None = auth_method {
-        if let Ok(username) = env::var("IBMQRUN_APPID_CLIENT_ID") {
-            if let Ok(password) = env::var("IBMQRUN_APPID_SECRET") {
-                auth_method = AuthMethod::IbmCloudAppId {
-                    username,
-                    password,
-                };
-            }
+        if let (Some(username), Some(password)) = (
+            env::var("IBMQRUN_APPID_CLIENT_ID").ok(),
+            env::var("IBMQRUN_APPID_SECRET").ok(),
+        ) {
+            auth_method = AuthMethod::IbmCloudAppId { username, password };
         }
     }
 

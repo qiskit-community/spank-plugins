@@ -200,6 +200,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
 {
     int rc = ESPANK_SUCCESS;
+    uint32_t job_id = 0;
     job_info_msg_t *job_info_msg = NULL;
 
     slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,

@@ -89,7 +89,7 @@ async fn handle_signals(mut signals: Signals, job: PrimitiveJob) {
     }
 }
 
-// Creates the specified file and write the given data to it.
+// Create the specified file and write the given data to it.
 fn write_to_file(filename: &String, data: &[u8]) {
     if let Ok(mut f) = File::create(filename) {
         match f.write_all(data) {

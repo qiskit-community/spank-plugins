@@ -10,6 +10,7 @@
 // that they have been altered from the originals.
 
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::BufReader;
 
@@ -22,7 +23,42 @@ use futures::stream::StreamExt;
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
 
-use direct_access_api::{models::JobStatus, AuthMethod, ClientBuilder, PrimitiveJob};
+use clap::builder::TypedValueParser as _;
+use clap::Parser;
+
+use direct_access_api::{
+    models::JobStatus, models::LogLevel, AuthMethod, ClientBuilder, PrimitiveJob,
+};
+
+#[derive(Parser, Debug)]
+#[command(version = "0.1.0")]
+#[command(about = "QRUN - Command to run Qiskit Primitive jobs")]
+struct Args {
+    /// Qiskit Primitive Unified Bloc(PUB)s file.
+    input: String,
+
+    /// Result output file.
+    #[arg(short, long)]
+    results: Option<String>,
+
+    /// Log output file.
+    #[arg(short, long)]
+    logs: Option<String>,
+
+    /// Log level.
+    #[arg(
+        long,
+        default_value_t = LogLevel::Warning,
+        value_parser = clap::builder::PossibleValuesParser::new(
+            ["debug", "info", "warning", "error", "critical"])
+            .map(|s| s.parse::<LogLevel>().unwrap()),
+    )]
+    log_level: LogLevel,
+
+    /// HTTP request timeout in seconds.
+    #[arg(long, default_value_t = 60)]
+    http_timeout: u64,
+}
 
 // Handle signals, and cancel QPU job if SIGTERM is received.
 async fn handle_signals(mut signals: Signals, job: PrimitiveJob) {
@@ -53,15 +89,51 @@ async fn handle_signals(mut signals: Signals, job: PrimitiveJob) {
     }
 }
 
+// Creates the specified file and write the given data to it.
+fn write_to_file(filename: &String, data: &[u8]) {
+    if let Ok(mut f) = File::create(filename) {
+        match f.write_all(data) {
+            Ok(()) => {
+                let _ = f.flush();
+                println!("Wrote results to {}", filename);
+            }
+            Err(e) => {
+                eprintln!("{:?}", e);
+            }
+        }
+    }
+}
+
+// Check to see if the specified file can be created, written and truncated.
+// Exit this program immediately if failed.
+fn check_file_argument(path: &str) {
+    if OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path)
+        .is_err() {
+        eprintln!("File cannot be created at: {}", path);
+        std::process::exit(1)
+    }
+}
+
 #[tokio::main]
 #[allow(unreachable_code)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        panic!("Mismatched number of arguments. qrun <path to Qiskit PUBs JSON file>");
-    }
-    let job_file = args.get(1).unwrap();
+    let args = Args::parse();
 
+    // Before executing a quantum job, check to see if the specified
+    // file can be created, and inform to user if it cannot be written. This is
+    // to prevent file writing errors after a long job execution.
+    if let Some(ref results_file) = args.results {
+        check_file_argument(&results_file);
+    }
+    if let Some(ref logs_file) = args.logs {
+        check_file_argument(&logs_file);
+    }
+
+    // Check to see if the environment variables required to run this program are set.
     let backend_name = env::var("IBMQRUN_BACKEND").expect("IBMQRUN_BACKEND");
     let program_id = env::var("IBMQRUN_PRIMITIVE").expect("IBMQRUN_PRIMITIVE");
     let daapi_endpoint = env::var("IBMQRUN_DAAPI_ENDPOINT").expect("IBMQRUN_DAAPI_ENDPOINT");
@@ -111,7 +183,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let client = ClientBuilder::new(daapi_endpoint)
-        .with_timeout(Duration::from_secs(60))
+        .with_timeout(Duration::from_secs(args.http_timeout))
         .with_retry_policy(retry_policy)
         .with_s3bucket(
             aws_access_key_id,
@@ -128,7 +200,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let signals = Signals::new([SIGTERM, SIGCONT])?;
     let handle = signals.handle();
 
-    let f = File::open(job_file).expect("file not found");
+    let f = File::open(args.input).expect("file not found");
     let mut buf_reader = BufReader::new(f);
     let mut contents = String::new();
     buf_reader.read_to_string(&mut contents)?;
@@ -139,7 +211,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             &backend_name,
             program_id.parse().unwrap(),
             timeout_secs,
-            "debug".parse().unwrap(),
+            args.log_level,
             &job,
         )
         .await?;
@@ -165,7 +237,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => unreachable!(),
         },
         Err(e) => {
-            println!(
+            eprintln!(
                 "Error occurred while waiting for final state: {:?}",
                 e.to_string()
             );
@@ -179,11 +251,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(retval) => {
                 let serialized = serde_json::to_string_pretty(&retval).unwrap();
                 // output result to stdout, so that slurm copied to slurm-n.out file.
-                println!("{}", serialized);
+                if let Some(results_file) = args.results {
+                    write_to_file(&results_file, serialized.as_bytes());
+                } else {
+                    println!("{}", serialized);
+                }
             }
             Err(e) => {
-                println!(
+                eprintln!(
                     "Error occurred while fetching job result from S3 bucket: {:?}",
+                    e.to_string()
+                );
+            }
+        }
+    }
+
+    if let Some(logs_file) = args.logs {
+        match primitive_job.get_logs().await {
+            Ok(retval) => {
+                write_to_file(&logs_file, retval.as_bytes());
+            }
+            Err(e) => {
+                eprintln!(
+                    "Error occurred while fetching logs from S3 bucket: {:?}",
                     e.to_string()
                 );
             }

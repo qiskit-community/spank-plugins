@@ -13,7 +13,7 @@ use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use http::Extensions;
 #[allow(unused_imports)]
-use log::{debug, error, info};
+use log::{debug, error};
 use reqwest::{header::HeaderValue, Client, Request, Response};
 use reqwest_middleware::{Middleware, Next};
 #[allow(unused_imports)]
@@ -47,22 +47,19 @@ impl TokenManager {
     async fn get_access_token(&mut self) -> Result<()> {
         #[cfg(feature = "ibmcloud_appid_auth")]
         if let AuthMethod::IbmCloudAppId { username, password } = self.auth_method.clone() {
-            let mut reqwest_builder = self
+            use base64::{engine::general_purpose::STANDARD, prelude::*};
+            let base64_str = STANDARD.encode(format!("{}:{}", username, password).as_bytes());
+            let response = self
                 .client
                 .post(&self.token_url)
-                .header(reqwest::header::ACCEPT, "application/json");
-
-            use base64::{engine::general_purpose::STANDARD, prelude::*};
-
-            let base64_str = STANDARD.encode(format!("{}:{}", username, password).as_bytes());
-            reqwest_builder = reqwest_builder
+                .header(reqwest::header::ACCEPT, "application/json")
                 .header(
                     reqwest::header::AUTHORIZATION,
                     format!("Basic {}", base64_str),
                 )
-                .header(reqwest::header::CONTENT_TYPE, "application/json");
-
-            let response = reqwest_builder.send().await?;
+                .header(reqwest::header::CONTENT_TYPE, "application/json")
+                .send()
+                .await?;
             if response.status().is_success() {
                 let token_response: GetAccessTokenResponse = response.json().await?;
                 self.access_token = Some(token_response.access_token);
@@ -77,28 +74,28 @@ impl TokenManager {
             }
         }
         if let AuthMethod::IbmCloudIam { apikey, .. } = self.auth_method.clone() {
-            let mut reqwest_builder = self
-                .client
-                .post(&self.token_url)
-                .header(reqwest::header::ACCEPT, "application/json");
-
             let data: String = format!(
                 "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={}",
                 apikey
             );
-            reqwest_builder = reqwest_builder
+            let response = self
+                .client
+                .post(&self.token_url)
+                .header(reqwest::header::ACCEPT, "application/json")
                 .header(
                     reqwest::header::CONTENT_TYPE,
                     "application/x-www-form-urlencoded",
                 )
-                .body(data);
-
-            let response = reqwest_builder.send().await?;
+                .body(data)
+                .send()
+                .await?;
             if response.status().is_success() {
                 let token_response: GetAccessTokenResponse = response.json().await?;
                 self.access_token = Some(token_response.access_token);
-                self.token_expiry =
-                    Some(Instant::now() + Duration::from_secs(token_response.expires_in));
+                self.token_expiry = Some(
+                    Instant::now()
+                        + Duration::from_secs((token_response.expires_in as f64 * 0.9) as u64),
+                );
             } else {
                 let error_response = response.json::<IAMErrorResponse>().await?;
                 if let Some(details) = error_response.details {
@@ -149,7 +146,7 @@ impl Middleware for AuthMiddleware {
         let token = token_manager.get_token().await?;
         // add authentication header to the request
         let mut cloned_req = request.try_clone().unwrap();
-        info!("current token {}", token);
+        debug!("current token {}", token);
         cloned_req.headers_mut().insert(
             reqwest::header::AUTHORIZATION,
             format!("Bearer {}", token).parse().unwrap(),
@@ -165,11 +162,10 @@ impl Middleware for AuthMiddleware {
         if response.is_err()
             || response.as_ref().unwrap().status() == reqwest::StatusCode::UNAUTHORIZED
         {
-            info!("renew access token");
+            debug!("renew access token");
             token_manager.get_access_token().await?;
             let token = token_manager.get_token().await?;
-            info!("new token {}", token);
-            //let mut new_request = cloned_req.try_clone().unwrap();
+            debug!("new token {}", token);
             let mut new_request = request.try_clone().unwrap();
             new_request.headers_mut().insert(
                 reqwest::header::AUTHORIZATION,

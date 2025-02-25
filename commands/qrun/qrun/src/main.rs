@@ -112,7 +112,8 @@ fn check_file_argument(path: &str) {
         .create(true)
         .truncate(true)
         .open(path)
-        .is_err() {
+        .is_err()
+    {
         eprintln!("File cannot be created at: {}", path);
         std::process::exit(1)
     }
@@ -154,8 +155,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let job_id: Option<String>;
     if let Ok(envvar) = env::var("IBMQRUN_JOB_ID") {
         job_id = Some(envvar);
-    }
-    else {
+    } else {
         job_id = None;
     }
 

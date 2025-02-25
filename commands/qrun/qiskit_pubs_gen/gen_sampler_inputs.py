@@ -12,7 +12,7 @@
 
 """generating input files for samplerV2"""
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, duplicate-code
 import sys
 import json
 import requests

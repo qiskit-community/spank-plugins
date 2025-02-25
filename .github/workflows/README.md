@@ -1,6 +1,10 @@
 # Workflows for CI/CD
-
-[![SPANK Plugins](https://img.shields.io/badge/SPANK-Plugins-blue)](https://slurm.schedmd.com/spank.html) [![HPC Slurm](https://img.shields.io/badge/HPC-Slurm-green)](https://slurm.schedmd.com/) [![made-with-C](https://img.shields.io/badge/Made%20with-C-1f425f.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
+[![SPANK Plugins](https://img.shields.io/badge/SPANK-Plugins-blue)](https://slurm.schedmd.com/spank.html) [![HPC Slurm](https://img.shields.io/badge/HPC-Slurm-green)](https://slurm.schedmd.com/) 
+### Made to work with:
+[![C](https://img.shields.io/badge/Made%20with-C-1f425f.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
+[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Shell](https://img.shields.io/badge/Shell-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 
 # 🛠 CI/CD Workflows
 
@@ -21,7 +25,7 @@ is created** or **code is pushed to the main branch**. Additionally, some workfl
     - Install linting tools
     - Run `clang-tidy` for C code
     - Run `clippy` for Rust code
-    - Run `ruff` and `mypy` for Python code
+    - Run `pylint` and `black` for Python code
     - Run `shellcheck` and `shfmt` for shell scripts
 
 ### **2️⃣ Build & Test Workflow**

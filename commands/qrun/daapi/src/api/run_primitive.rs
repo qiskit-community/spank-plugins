@@ -63,7 +63,7 @@ impl Client {
     ///         .unwrap();
     ///
     ///     let _primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     Ok(())
     /// }
@@ -92,13 +92,19 @@ impl Client {
         timeout_secs: u64,
         log_level: LogLevel,
         payload: &serde_json::Value,
+        job_id: Option<String>,
     ) -> Result<PrimitiveJob> {
         let s3_config = self.s3_config.clone().context(
             "S3 bucket is not configured. Use ClientBuilder.with_s3_bucket() to use this function.",
         )?;
 
         let s3_client = aws_sdk_s3::Client::from_conf(s3_config);
-        let id = Uuid::new_v4().to_string();
+        let id;
+        if let Some(value) = job_id {
+            id = value;
+        } else {
+            id = Uuid::new_v4().to_string();
+        }
         let s3_bucket = self.s3_bucket.clone().unwrap();
 
         let converted_vec = serde_json::to_vec::<serde_json::Value>(payload)?;
@@ -202,7 +208,7 @@ impl PrimitiveJob {
     ///         .unwrap();
     ///
     ///     let primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     let _result = primitive_job.get_result::<serde_json::Value>().await?;
     ///     Ok(())
@@ -283,7 +289,7 @@ impl PrimitiveJob {
     ///         .unwrap();
     ///
     ///     let primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     let _logs = primitive_job.get_logs().await?;
     ///     Ok(())

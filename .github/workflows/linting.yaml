@@ -8,6 +8,8 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHON_VERSION: 3.13.2
 jobs:
   c-linting:
     name: C Linting
@@ -108,16 +110,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.1.4
 
-      - name: Install Python Dependencies
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install ruff mypy
+          python -m pip install --upgrade pip
+          pip install pylint black
 
-      - name: Run Ruff (Python linter)
-        run: ruff check .
+      - name: Lint commands/qrun/qiskit_pubs_gen with pylint
+        run: |
+          pylint commands/qrun/qiskit_pubs_gen
 
-      - name: Run Mypy (Python type checking)
-        run: mypy .
+      - name: Lint daa_sim with pylint
+        run: |
+          pylint daa_sim
+
+      - name: Lint qiskit_pubs_gen with black
+        run: |
+          black --check commands/qrun/qiskit_pubs_gen
+
+      - name: Lint daa_sim with black
+        run: |
+          black --check daa_sim
 
       - name: Report Python linting status
         run: |

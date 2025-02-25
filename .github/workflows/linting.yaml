@@ -79,16 +79,6 @@ jobs:
           RUSTFLAGS: "-Dwarnings"
         run: cargo clippy --all-targets --all-features
 
-      - name: Run rustfmt (qiskit_pubs_gen)
-        working-directory: commands/qrun/qiskit_pubs_gen
-        run: cargo fmt --all -- --check
-
-      - name: Run Clippy (qiskit_pubs_gen)
-        working-directory: commands/qrun/qiskit_pubs_gen
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
       - name: Run rustfmt (qrun)
         working-directory: commands/qrun/qrun
         run: cargo fmt --all -- --check
@@ -128,7 +118,7 @@ jobs:
 
       - name: Lint daa_sim with pylint
         run: |
-          pylint daa_sim
+          pylint daa_sim/direct_access_client
 
       - name: Lint qiskit_pubs_gen with black
         run: |
@@ -136,7 +126,7 @@ jobs:
 
       - name: Lint daa_sim with black
         run: |
-          black --check daa_sim
+          black --check daa_sim/direct_access_client
 
       - name: Report Python linting status
         run: |

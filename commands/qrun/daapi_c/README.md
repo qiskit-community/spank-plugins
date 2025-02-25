@@ -31,7 +31,6 @@ The Rust implementation is the core of the Client, and the C API provides langua
 * [Programming Guide](#programming-guide)
 * [Utilities](#utilities)
 * [Contributing](#contributing)
-* [License](#license)
 
 
 ## Getting Started
@@ -125,7 +124,7 @@ Once `builder` is created, you can customize the configuration like below.
 
 ```cpp
 int rc = daapi_bldr_enable_iam_auth(
-      builder, "demoapikey1", "crn:v1:local:daa_sim", "http://localhost:8290");
+      builder, "your_api_key", "your_instance", "http://localhost:8290");
 if (rc < 0)
     printf("Failed to enable IAM auth. rc=%d\n", rc);
 
@@ -137,8 +136,8 @@ rc = daapi_bldr_set_exponential_backoff_retry(builder, 5, 2, 1, 10);
 if (rc < 0)
     printf("Failed to enable retries. rc=%d\n", rc);
 
-rc = daapi_bldr_set_s3_bucket(builder, "minioadmin", "minioadmin",
-                              http://localhost:9000", "test", "us-east");
+rc = daapi_bldr_set_s3_bucket(builder, "admin_user", "admin_password",
+                              http://localhost:9000", "your_s3_bucket", "us-east");
 if (rc < 0)
     printf("Failed to set S3 params. rc=%d\n", rc);
 ```
@@ -173,32 +172,29 @@ if (backends) {
 
 ### Releasing resources
 
-[ClientBuilder](https://cautious-carnival-v7o8rqn.pages.github.io/cxx/direct-access/structdirect__access__api_1_1ClientBuilder.html), [Client](https://cautious-carnival-v7o8rqn.pages.github.io/cxx/direct-access/structdirect__access__api_1_1Client.html) and [PrimitiveJob](https://cautious-carnival-v7o8rqn.pages.github.io/cxx/direct-access/structdirect__access__api_1_1PrimitiveJob.html) provide a `destroy()` function to release underlying resources. These instances should be destroyed if they are no longer used by your code.
+Memory allocated by the underlying Rust implementation needs to be freed when it is no longer used by the code; the Direct Access API Client fo C provides several functions with names beginning with daapi_free_ to free these memory resources.
 
 For example, 
 ```cpp
-builder->destroy();
+daapi_free_client(client_ptr);
+daapi_free_builder(builder_ptr);
 ```
-```cpp
-da_client->destroy();
-```
-
 
 ### Logging
 
 Users can find the detailed runtime logs for C++/Rust client by specifying `RUST_LOG` environment variable with log level.
 
 ```bash
-RUST_LOG=trace ./bin/list_jobs
+RUST_LOG=trace ./app/build/daapi_test
 ```
 
 ## Utilities
 
-Several libraries are available as open source to use Amazon S3 compatible storages from C++ programs. However, many of those libraries are so large and complex that they are time consuming to learn and can be a pain point for users when using the Direct Access API. Direct Access Client for C++ contains a [S3 Client](https://cautious-carnival-v7o8rqn.pages.github.io/cxx/direct-access/structdirect__access__api_1_1utils_1_1storages_1_1S3Client.html) that provides the minimum functionality necessary for Direct Access API use cases.
+Several libraries are available as open source to use Amazon S3 compatible storages from C/C++ programs. However, many of those libraries are so large and complex that they are time consuming to learn and can be a pain point for users when using the Direct Access API. Direct Access Client for C contains a S3 Client that provides the minimum functionality necessary for Direct Access API use cases.
 
-Also, an [UUIDv4 generation function](https://cautious-carnival-v7o8rqn.pages.github.io/cxx/direct-access/namespacedirect__access__api_1_1utils_1_1uuid.html) is included.
+Also, an UUIDv4 generation function is included.
 
-Example is available in [utility.cpp](../../crates/da_cxx/app/src/utility.cpp).
+Example is available in [s3.c](./app/src/s3.c) and [uuid.c](./app/src/uuid.c).
 
 
 ## Contributing
@@ -240,8 +236,3 @@ cd crates/target/cxxbridge
 doxygen ../../da_cxx/Doxyfile
 ```
 API document will be created under `crates/target/cxxbridge/api-docs` directory.
-
-
-## License
-
-[Apache License 2.0](https://github.com/Qiskit/direct-access-client/blob/main/LICENSE.txt)

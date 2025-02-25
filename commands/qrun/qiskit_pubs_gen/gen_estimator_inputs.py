@@ -34,9 +34,9 @@ base_url = "http://localhost:8290"
 use_daa_sim = True
 
 # Use IAM based authentication
-IBMCLOUD_IAM_ENDPOINT="https://iam.cloud.ibm.com"
-IBMCLOUD_API_KEY="YOUR_API_KEY"
-SERVICE_CRN="YOUR_PROVISIONED_INSTANCE - crn:v1:...."
+IBMCLOUD_IAM_ENDPOINT = "https://iam.cloud.ibm.com"
+IBMCLOUD_API_KEY = "YOUR_API_KEY"
+SERVICE_CRN = "YOUR_PROVISIONED_INSTANCE - crn:v1:...."
 iam_headers = {
     "content-type": "application/x-www-form-urlencoded",
     "accept": "application/json",

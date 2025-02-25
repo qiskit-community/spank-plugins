@@ -153,9 +153,9 @@ if (!client) {
 }
 ```
 
-### Invoking C++ API
+### Invoking C API
 
-You are ready to invoke C++ API by using created Client instance.
+You are ready to invoke C API by using created Client instance.
 
 ```cpp
 struct BackendList *backends = daapi_cli_list_backends(client);
@@ -182,7 +182,7 @@ daapi_free_builder(builder_ptr);
 
 ### Logging
 
-Users can find the detailed runtime logs for C++/Rust client by specifying `RUST_LOG` environment variable with log level.
+Users can find the detailed runtime logs for C/Rust client by specifying `RUST_LOG` environment variable with log level.
 
 ```bash
 RUST_LOG=trace ./app/build/daapi_test
@@ -199,7 +199,7 @@ Example is available in [s3.c](./app/src/s3.c) and [uuid.c](./app/src/uuid.c).
 
 ## Contributing
 
-Regardless if you are part of the core team or an external contributor, welcome and thank you for contributing to Direct Access API Client for C++!
+Regardless if you are part of the core team or an external contributor, welcome and thank you for contributing to Direct Access API Client for C!
 
 ### Solving linting/format issues
 

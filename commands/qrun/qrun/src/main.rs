@@ -213,6 +213,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             timeout_secs,
             args.log_level,
             &job,
+            None,
         )
         .await?;
 

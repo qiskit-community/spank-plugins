@@ -16,7 +16,14 @@ if (NOT SLURM_FOUND)
 else (NOT SLURM_FOUND)
   set (SLURM_LIBRARIES ${SLURM_LIBRARY})
   set (SLURM_INCLUDE_DIRS ${SLURM_INCLUDE_DIR})
-  find_path(SLURM_MODULES_DIR NAMES lib64/slurm DOC "Directory containing SLURM extensions.")
+  find_path(SLURM_MODULES_DIR NAMES slurm
+          PATHS
+          /usr/lib/slurm
+          /usr/lib64/slurm
+          /usr/lib/x86_64-linux-gnu/slurm
+          /usr/local/lib/slurm
+          DOC "Directory containing SLURM extensions."
+  )
   if (NOT SLURM_MODULES_DIR)
     message(FATAL_ERROR "SLURM extensions directory could not be found")
   endif (NOT SLURM_MODULES_DIR)

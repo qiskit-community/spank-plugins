@@ -207,7 +207,6 @@ Contributor must execute the commands below and fix any issues before submitting
 
 #### Rust code
 ```shell-session
-$ cd crates
 $ cargo fmt --all -- --check
 $ cargo clippy --all-targets -- -D warnings
 ```
@@ -224,7 +223,6 @@ Contributor must execute the command below and fix any issues before submitting 
 ```shell-session
 $ . ~/.cargo/env
 
-$ cd crates
 $ cargo test
 ```
 
@@ -232,7 +230,6 @@ $ cargo test
 
 Contributor can generate API document from source.
 ```shell-session
-cd crates/target/cxxbridge
-doxygen ../../da_cxx/Doxyfile
+doxygen Doxyfile
 ```
-API document will be created under `crates/target/cxxbridge/api-docs` directory.
+API document will be created under `./html` directory.

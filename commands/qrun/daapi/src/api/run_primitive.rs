@@ -63,7 +63,7 @@ impl Client {
     ///         .unwrap();
     ///
     ///     let _primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     Ok(())
     /// }
@@ -209,7 +209,7 @@ impl PrimitiveJob {
     ///         .unwrap();
     ///
     ///     let primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     let _result = primitive_job.get_result::<serde_json::Value>().await?;
     ///     Ok(())
@@ -290,7 +290,7 @@ impl PrimitiveJob {
     ///         .unwrap();
     ///
     ///     let primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     let _logs = primitive_job.get_logs().await?;
     ///     Ok(())

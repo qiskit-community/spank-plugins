@@ -13,8 +13,8 @@ use anyhow::Result;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_ulong};
-use std::time::Duration;
 use std::sync::Once;
+use std::time::Duration;
 
 use retry_policies::{policies::ExponentialBackoff, Jitter};
 use serde::de::DeserializeOwned;
@@ -246,7 +246,6 @@ impl From<LogLevel> for direct_access_api::models::LogLevel {
         }
     }
 }
-
 
 /// @brief Must call once before using the C API library to initialize static resources(logger etc.) in underlying layers. If called more than once, the second and subsequent calls are ignored.
 /// @version 0.1.0
@@ -506,7 +505,7 @@ pub extern "C" fn daapi_bldr_set_exponential_backoff_retry(
     DAAPI_SUCCESS
 }
 
-/// @brief Set S3 bucket connection parameters. 
+/// @brief Set S3 bucket connection parameters.
 ///
 /// S3 bucket connection parameters are required to invoke daapi_cli_run_primitive().
 ///
@@ -671,8 +670,14 @@ pub unsafe extern "C" fn daapi_free_client(ptr: *mut Client) -> c_int {
 /// * `client` must have been returned by a previous call to daapi_cli_new().
 ///
 #[tokio::main]
-async unsafe fn _get_backend_properties(client: *mut Client, backend: &str) -> Result<serde_json::Value> {
-    (*client).internal.get_backend_properties::<serde_json::Value>(backend).await
+async unsafe fn _get_backend_properties(
+    client: *mut Client,
+    backend: &str,
+) -> Result<serde_json::Value> {
+    (*client)
+        .internal
+        .get_backend_properties::<serde_json::Value>(backend)
+        .await
 }
 /// @brief Returns the properties of the specified backend
 ///
@@ -699,7 +704,10 @@ async unsafe fn _get_backend_properties(client: *mut Client, backend: &str) -> R
 /// @return JSON string representation of BackendProperties if succeeded, otherwise NULL. Must call daapi_free_string() to free if no longer used.
 /// @version 0.1.0
 #[no_mangle]
-pub unsafe extern "C" fn daapi_cli_get_backend_properties(client: *mut Client, backend: *const c_char) -> *const c_char {
+pub unsafe extern "C" fn daapi_cli_get_backend_properties(
+    client: *mut Client,
+    backend: *const c_char,
+) -> *const c_char {
     if client.is_null() {
         return std::ptr::null();
     }
@@ -725,8 +733,14 @@ pub unsafe extern "C" fn daapi_cli_get_backend_properties(client: *mut Client, b
 /// * `client` must have been returned by a previous call to daapi_cli_new().
 ///
 #[tokio::main]
-async unsafe fn _get_backend_configuration(client: *mut Client, backend: &str) -> Result<serde_json::Value> {
-    (*client).internal.get_backend_configuration::<serde_json::Value>(backend).await
+async unsafe fn _get_backend_configuration(
+    client: *mut Client,
+    backend: &str,
+) -> Result<serde_json::Value> {
+    (*client)
+        .internal
+        .get_backend_configuration::<serde_json::Value>(backend)
+        .await
 }
 /// @brief Returns the configuration of the specified backend
 ///
@@ -753,7 +767,10 @@ async unsafe fn _get_backend_configuration(client: *mut Client, backend: &str) -
 /// @return JSON string representation of BackendConfiguration if succeeded, otherwise NULL. Must call daapi_free_string() to free if no longer used.
 /// @version 0.1.0
 #[no_mangle]
-pub unsafe extern "C" fn daapi_cli_get_backend_configuration(client: *mut Client, backend: *const c_char) -> *const c_char {
+pub unsafe extern "C" fn daapi_cli_get_backend_configuration(
+    client: *mut Client,
+    backend: *const c_char,
+) -> *const c_char {
     if client.is_null() {
         return std::ptr::null();
     }
@@ -773,7 +790,6 @@ pub unsafe extern "C" fn daapi_cli_get_backend_configuration(client: *mut Client
     }
     std::ptr::null()
 }
-
 
 /// # Safety
 ///        
@@ -1081,7 +1097,7 @@ pub unsafe extern "C" fn daapi_cli_get_metrics(
 ///
 /// # Safety
 ///
-/// * `ptr` must have been returned by a previous call to daapi_cli_get_metrics(). 
+/// * `ptr` must have been returned by a previous call to daapi_cli_get_metrics().
 ///
 /// @param (ptr) [in] A Metrics
 /// @return DAAPI_SUCCESS(0) if succeeded, otherwise < 0.
@@ -1110,7 +1126,7 @@ async unsafe fn _list_jobs(client: *mut Client) -> Result<direct_access_api::mod
         .await
 }
 /// @brief Returns jobs submitted by current client in ascending order of created time by default.
-/// 
+///
 /// # Safety
 ///
 /// * `client` must have been returned by a previous call to daapi_cli_new().
@@ -1246,7 +1262,14 @@ async unsafe fn _run_primitive(
     let payload_json: serde_json::Value = serde_json::from_str(payload)?;
     (*client)
         .internal
-        .run_primitive(backend, program_id, timeout_secs, log_level, &payload_json, job_id)
+        .run_primitive(
+            backend,
+            program_id,
+            timeout_secs,
+            log_level,
+            &payload_json,
+            job_id,
+        )
         .await
 }
 /// @brief Invokes a Qiskit Runtime primitive.
@@ -1299,14 +1322,12 @@ pub unsafe extern "C" fn daapi_cli_run_primitive(
         let id: Option<String>;
         if <_ as ffi_helpers::Nullable>::is_null(&job_id) {
             id = None;
-        }
-        else if let Ok(id_str) = CStr::from_ptr(job_id).to_str() {
+        } else if let Ok(id_str) = CStr::from_ptr(job_id).to_str() {
             id = Some(id_str.to_string());
-        }
-        else {
+        } else {
             return std::ptr::null_mut::<PrimitiveJob>();
         }
-        
+
         if let Ok(internal) = _run_primitive(
             client,
             backend_str,
@@ -1326,7 +1347,7 @@ pub unsafe extern "C" fn daapi_cli_run_primitive(
 /// @brief Frees the memory space pointed to by `ptr`, which must have been returned by a previous call to daapi_cli_run_primitive(). Otherwise, or if ptr has already been freed, segmentation fault occurs.  If `ptr` is NULL, returns < 0.
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// @param (job) [in] A PrimitiveJob
 /// @return DAAPI_SUCCESS(0) if succeeded, otherwise < 0.
@@ -1344,7 +1365,7 @@ pub unsafe extern "C" fn daapi_free_primitive(ptr: *mut PrimitiveJob) -> c_int {
 
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 #[tokio::main]
 async unsafe fn _wait_for_final_state(
@@ -1359,7 +1380,7 @@ async unsafe fn _wait_for_final_state(
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// * The memory pointed to by `outp` must have enough room to store JobStatus value.
 ///
@@ -1394,7 +1415,7 @@ pub unsafe extern "C" fn daapi_prim_wait_for_final_state(
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// @param (job) [in] A PrimitiveJob
 /// @return A job identifier if succeeded, otherwise NULL.
@@ -1410,19 +1431,19 @@ pub unsafe extern "C" fn daapi_prim_get_job_id(job: *mut PrimitiveJob) -> *const
 
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 #[tokio::main]
 async unsafe fn _prim_is_running(job: *mut PrimitiveJob) -> Result<bool> {
     (*job).internal.is_running().await
 }
-/// @brief Returns whether the job is actively running. 
+/// @brief Returns whether the job is actively running.
 ///
 /// If `outp` is not NULL, the boolean value (running or not) will be stored to this memory.
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// * The memory pointed to by `outp` must have enough room to store bool value.
 ///
@@ -1456,7 +1477,7 @@ pub unsafe extern "C" fn daapi_prim_is_running(job: *mut PrimitiveJob, outp: *mu
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// * The memory pointed to by `outp` must have enough room to store bool value.
 ///
@@ -1489,7 +1510,7 @@ pub unsafe extern "C" fn daapi_prim_is_in_final_state(
 
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 #[tokio::main]
 async unsafe fn _prim_cancel(job: *mut PrimitiveJob, delete_job: bool) -> Result<()> {
@@ -1499,7 +1520,7 @@ async unsafe fn _prim_cancel(job: *mut PrimitiveJob, delete_job: bool) -> Result
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// @param (job) [in] A PrimitiveJob
 /// @param (delete_job) [in] True if the job is deleted after cancellation, false otherwise.
@@ -1520,7 +1541,7 @@ pub unsafe extern "C" fn daapi_prim_cancel(job: *mut PrimitiveJob, delete_job: b
 
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 #[tokio::main]
 async unsafe fn _prim_delete(job: *mut PrimitiveJob) -> Result<()> {
@@ -1530,7 +1551,7 @@ async unsafe fn _prim_delete(job: *mut PrimitiveJob) -> Result<()> {
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// @param (job) [in] A PrimitiveJob
 /// @return DAAPI_SUCCESS(0) if succeeded, otherwise < 0.
@@ -1550,7 +1571,7 @@ pub unsafe extern "C" fn daapi_prim_delete(job: *mut PrimitiveJob) -> c_int {
 
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 #[tokio::main]
 async unsafe fn _prim_get_result<T: DeserializeOwned>(job: *mut PrimitiveJob) -> Result<T> {
@@ -1560,7 +1581,7 @@ async unsafe fn _prim_get_result<T: DeserializeOwned>(job: *mut PrimitiveJob) ->
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// @param (job) [in] A PrimitiveJob
 /// @return Log contents
@@ -1586,7 +1607,7 @@ pub unsafe extern "C" fn daapi_prim_get_result_as_string(job: *mut PrimitiveJob)
 
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 #[tokio::main]
 async unsafe fn _prim_get_logs(job: *mut PrimitiveJob) -> Result<String> {
@@ -1596,7 +1617,7 @@ async unsafe fn _prim_get_logs(job: *mut PrimitiveJob) -> Result<String> {
 ///
 /// # Safety
 ///
-/// * `job` must have been returned by a previous call to daapi_cli_run_primitive(). 
+/// * `job` must have been returned by a previous call to daapi_cli_run_primitive().
 ///
 /// @param (job) [in] A PrimitiveJob
 /// @return Log contents

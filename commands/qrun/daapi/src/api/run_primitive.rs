@@ -102,8 +102,7 @@ impl Client {
         let id;
         if let Some(value) = job_id {
             id = value;
-        }
-        else {
+        } else {
             id = Uuid::new_v4().to_string();
         }
         let s3_bucket = self.s3_bucket.clone().unwrap();

@@ -9,6 +9,7 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
+#![allow(unused_imports)]
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -61,6 +62,7 @@ struct Args {
 }
 
 // Handle signals, and cancel QPU job if SIGTERM is received.
+#[cfg(feature = "job_cleanup")]
 async fn handle_signals(mut signals: Signals, job: PrimitiveJob) {
     while let Some(signal) = signals.next().await {
         // To cancel a job, invoke scancel without --signal option. This will send
@@ -205,7 +207,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     // scancel related signals
+    #[cfg(feature = "job_cleanup")]
     let signals = Signals::new([SIGTERM, SIGCONT])?;
+    #[cfg(feature = "job_cleanup")]
     let handle = signals.handle();
 
     let f = File::open(args.input).expect("file not found");
@@ -225,6 +229,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
 
+    #[cfg(feature = "job_cleanup")]
     let signals_task = tokio::spawn(handle_signals(signals, primitive_job.clone()));
 
     let mut succeeded: bool = true;
@@ -250,6 +255,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Error occurred while waiting for final state: {:?}",
                 e.to_string()
             );
+            #[cfg(feature = "job_cleanup")]
             let _ = primitive_job.cancel(false).await;
             succeeded = false;
         }
@@ -289,10 +295,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    client.delete_job(&primitive_job.job_id).await?;
+    #[cfg(feature = "job_cleanup")]
+    {
+        client.delete_job(&primitive_job.job_id).await?;
 
-    handle.close();
-    signals_task.await?;
+        handle.close();
+        signals_task.await?;
+    }
 
     Ok(())
 }

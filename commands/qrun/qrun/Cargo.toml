@@ -6,6 +6,7 @@ edition = "2021"
 [features]
 default = ["ibmcloud_appid_auth"]
 ibmcloud_appid_auth = []
+job_cleanup = []
 
 [dependencies]
 direct-access-api = { workspace = true }

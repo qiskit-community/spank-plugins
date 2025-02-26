@@ -21,6 +21,8 @@
 #include "slurm/slurm.h"
 #include "slurm/spank.h"
 
+#include "direct_access_capi.h"
+
 /*
  * All spank plugins must define this macro for the SLURM plugin loader.
  */
@@ -33,6 +35,17 @@ static char backend_name[MAXLEN_BACKEND_NAME + 1];
 /* Qiskit primitive type */
 #define MAXLEN_PROGRAM_ID 256
 static char primitive_type[MAXLEN_PROGRAM_ID + 1];
+
+/* QRUN job identifier */
+#define MAXLEN_JOB_ID 1024
+static char qrun_job_id[MAXLEN_JOB_ID+1];
+
+/* Maximum length of URL (comes from De facto standard) */
+#define MAXLEN_URL_DEFAULT  2083
+/* Maximum length of Service CRN (See IBM Cloud API handbook) */
+#define MAXLEN_SERVICE_CRN_DEFAULT  512
+/* Maximum length of API Key (See IBM Cloud documentation) */
+#define MAXLEN_IAM_APIKEY   128
 
 /*
  * @function strncpy_s
@@ -153,6 +166,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
 
     memset(backend_name, '\0', sizeof(backend_name));
     memset(primitive_type, '\0', sizeof(primitive_type));
+    memset(qrun_job_id, '\0', sizeof(qrun_job_id));
     /*
      * Get any options registered for this context:
      */
@@ -164,6 +178,20 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
     /* slurmstepd */
     case S_CTX_REMOTE:
         opts_to_register = spank_example_options;
+
+#ifndef ALLOC_RESOURCE_BY_QRUN
+        /*
+         * Generate QRUN job identifier
+         */
+        const char* uuid = daapi_uuid_v4_new();
+        if (!uuid) {
+            slurm_error("%s(%d): failed to generate UUIDv4", plugin_name, (int)getpid());
+            return SLURM_ERROR;
+        }
+        strncpy(qrun_job_id, uuid, sizeof(qrun_job_id));
+        daapi_free_string((char*)uuid);
+        slurm_debug("%s(%d): job_id = %s", plugin_name, (int)getpid(), qrun_job_id);
+#endif /* !ALLOC_RESOURCE_BY_QRUN */
         break;
 
     default:
@@ -203,21 +231,21 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
     uint32_t job_id = 0;
     job_info_msg_t *job_info_msg = NULL;
 
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s(%d): -> %s argc=%d remote=%d", plugin_name, (int)getpid(), __FUNCTION__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
     dump_spank_items(spank_ctxt);
 
     if (spank_remote(spank_ctxt)) {
         if (strlen(backend_name) > 0) {
-            slurm_debug("%s: setenv IBMQRUN_BACKEND=%s",
-                plugin_name, backend_name);
+            slurm_debug("%s(%d): setenv IBMQRUN_BACKEND=%s",
+                plugin_name, (int)getpid(), backend_name);
             spank_setenv(spank_ctxt, "IBMQRUN_BACKEND", backend_name, 1);
         }
 
         if (strlen(primitive_type) > 0) {
-            slurm_debug("%s: setenv IBMQRUN_PRIMITIVE=%s",
-                plugin_name, primitive_type);
+            slurm_debug("%s(%d): setenv IBMQRUN_PRIMITIVE=%s",
+                plugin_name, (int)getpid(), primitive_type);
             spank_setenv(spank_ctxt, "IBMQRUN_PRIMITIVE", primitive_type, 1);
         }
 
@@ -233,12 +261,90 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
                 snprintf(limit_as_str, sizeof(limit_as_str), "%u", time_limit_mins * 60);
                 spank_setenv(spank_ctxt, "IBMQRUN_TIMEOUT_SECONDS", limit_as_str, 1);
             }
-  	}
+        }
+
+        slurm_debug("%s(%d): setenv IBMQRUN_JOB_ID=%s",
+                    plugin_name, (int)getpid(), qrun_job_id);
+        spank_setenv(spank_ctxt, "IBMQRUN_JOB_ID", qrun_job_id, 1);
     }
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
+    slurm_debug("%s(%d): <- %s rc=%d", plugin_name, (int)getpid(), __FUNCTION__, rc);
     return rc;
 }
+
+#ifndef FREE_RESOURCE_BY_QRUN
+static int delete_qrun_job(spank_t spank_ctxt, char* job_id) {
+    int rc = ESPANK_SUCCESS;
+    char daapi_endpoint[MAXLEN_URL_DEFAULT + 1];
+    char iam_endpoint[MAXLEN_URL_DEFAULT + 1];
+    char service_crn[MAXLEN_SERVICE_CRN_DEFAULT + 1];
+    char iam_apikey[MAXLEN_IAM_APIKEY + 1];
+
+    memset(daapi_endpoint, '\0', sizeof(daapi_endpoint));
+    memset(iam_endpoint, '\0', sizeof(iam_endpoint));
+    memset(service_crn, '\0', sizeof(service_crn));
+    memset(iam_apikey, '\0', sizeof(iam_apikey));
+
+    if (spank_getenv(spank_ctxt,
+                     "IBMQRUN_DAAPI_ENDPOINT",
+                     daapi_endpoint,
+                     MAXLEN_URL_DEFAULT) != ESPANK_SUCCESS) {
+        return rc;
+    }
+    if (spank_getenv(spank_ctxt,
+                     "IBMQRUN_IAM_ENDPOINT",
+                     iam_endpoint,
+                     MAXLEN_URL_DEFAULT) != ESPANK_SUCCESS) {
+        return rc;
+    }
+    if (spank_getenv(spank_ctxt,
+                     "IBMQRUN_SERVICE_CRN",
+                     service_crn,
+                     MAXLEN_SERVICE_CRN_DEFAULT) != ESPANK_SUCCESS) {
+        return rc;
+    }
+    if (spank_getenv(spank_ctxt,
+                     "IBMQRUN_IAM_APIKEY",
+                     iam_apikey,
+                     MAXLEN_IAM_APIKEY) != ESPANK_SUCCESS) {
+        return rc;
+    }
+    struct ClientBuilder *builder = daapi_bldr_new(daapi_endpoint);
+    if (!builder) {
+        slurm_error("%s(%d): failed to create a Direct Access Client builder",
+                    plugin_name, (int)getpid());
+        return SLURM_ERROR;
+    }
+    daapi_bldr_enable_iam_auth(builder, iam_apikey, service_crn, iam_endpoint);
+    daapi_bldr_set_timeout(builder, 60.0);
+    daapi_bldr_set_exponential_backoff_retry(builder, 5, 2, 1, 10);
+    struct Client *client = daapi_cli_new(builder);
+    if (!client) {
+        slurm_error("%s(%d): failed to create a Direct Access Client", plugin_name, (int)getpid());
+        daapi_free_builder(builder);
+        return SLURM_ERROR;
+    }
+
+    JobStatus job_status;
+    if (daapi_cli_get_job_status(client, job_id, &job_status) == DAAPI_SUCCESS) {
+        if (job_status == RUNNING) {
+            /*
+             * If qrun job is still running, cancel this job and then delete it.
+             */
+            slurm_info("%s(%d): cancel & delete qrun job(%s)", plugin_name, (int)getpid(), job_id);
+            daapi_cli_cancel_job(client, job_id, true);
+        } 
+        else {
+            slurm_info("%s(%d): delete qrun job(%s)", plugin_name, (int)getpid(), job_id);
+            daapi_cli_delete_job(client, job_id);
+        }
+    }
+    daapi_free_client(client);
+    daapi_free_builder(builder);
+
+    return rc;
+}
+#endif /* !FREE_RESOURCE_BY_QRUN */
 
 /*
  * @function slurm_spank_task_exit
@@ -251,19 +357,25 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
     int rc = ESPANK_SUCCESS;
     int status = 0;
 
-    slurm_debug("%s: -> %s argc=%d", plugin_name, __FUNCTION__, argc);
+    slurm_debug("%s(%d): -> %s argc=%d", plugin_name, (int)getpid(), __FUNCTION__, argc);
     dump_argv(argc, argv);
 
     if (spank_get_item(spank_ctxt, S_TASK_EXIT_STATUS, &status) ==
         ESPANK_SUCCESS) {
-        slurm_debug("%s: S_TASK_EXIT_STATUS [%d]", plugin_name, status);
+        slurm_debug("%s(%d): S_TASK_EXIT_STATUS [%d]", plugin_name, (int)getpid(), status);
     }
 
     if (spank_remote(spank_ctxt)) {
         spank_unsetenv(spank_ctxt, "IBMQRUN_BACKEND");
         spank_unsetenv(spank_ctxt, "IBMQRUN_PRIMITIVE");
+#ifndef FREE_RESOURCE_BY_QRUN
+        if (delete_qrun_job(spank_ctxt, qrun_job_id) != ESPANK_SUCCESS) {
+            slurm_error("%s: failed to delete qrun job(%s).", plugin_name, qrun_job_id);
+            rc = SLURM_ERROR;
+        }
+#endif /* !FREE_RESOURCE_BY_QRUN */ 
     }
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
+    slurm_debug("%s(%d): <- %s rc=%d", plugin_name, (int)getpid(), __FUNCTION__, rc);
     return rc;
 }

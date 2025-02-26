@@ -32,7 +32,7 @@ use crate::middleware::auth::{AuthMiddleware, TokenManager};
 use crate::models::errors::ErrorResponse;
 
 /// Authorization method and credentials.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AuthMethod {
     /// No authentication
     None,

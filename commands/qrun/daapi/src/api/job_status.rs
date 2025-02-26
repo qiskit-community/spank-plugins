@@ -88,7 +88,7 @@ impl PrimitiveJob {
     ///         .unwrap();
     ///
     ///     let primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     let _status = primitive_job
     ///         .get_status()
@@ -144,7 +144,7 @@ impl PrimitiveJob {
     ///         .unwrap();
     ///
     ///     let primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     let _status = primitive_job.is_in_final_state().await?;
     ///     Ok(())
@@ -204,7 +204,7 @@ impl PrimitiveJob {
     ///         .unwrap();
     ///
     ///     let primitive_job = client
-    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload)
+    ///         .run_primitive("ibm_brisbane", ProgramId::Sampler, 3600, LogLevel::Info, &payload, None)
     ///         .await?;
     ///     let _status = primitive_job.is_running().await?;
     ///     Ok(())

@@ -128,10 +128,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // file can be created, and inform to user if it cannot be written. This is
     // to prevent file writing errors after a long job execution.
     if let Some(ref results_file) = args.results {
-        check_file_argument(&results_file);
+        check_file_argument(results_file);
     }
     if let Some(ref logs_file) = args.logs {
-        check_file_argument(&logs_file);
+        check_file_argument(logs_file);
     }
 
     // Check to see if the environment variables required to run this program are set.
@@ -151,6 +151,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // timeout in DA API side.
     let timeout = env::var("IBMQRUN_TIMEOUT_SECONDS").expect("IBMQRUN_TIMEOUT_SECONDS");
     let timeout_secs = timeout.parse::<u64>().expect("IBMQRUN_TIMEOUT_SECONDS");
+
+    let job_id: Option<String>;
+    if let Ok(envvar) = env::var("IBMQRUN_JOB_ID") {
+        job_id = Some(envvar);
+    } else {
+        job_id = None;
+    }
 
     env_logger::init();
 
@@ -214,6 +221,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             timeout_secs,
             args.log_level,
             &job,
+            job_id,
         )
         .await?;
 

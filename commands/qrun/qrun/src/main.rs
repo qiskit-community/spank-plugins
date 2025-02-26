@@ -112,8 +112,7 @@ fn check_file_argument(path: &str) {
         .create(true)
         .truncate(true)
         .open(path)
-        .is_err()
-    {
+        .is_err() {
         eprintln!("File cannot be created at: {}", path);
         std::process::exit(1)
     }

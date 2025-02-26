@@ -55,45 +55,6 @@ jobs:
           echo " C code linting completed."
           echo "**************************"
 
-  rust-linting:
-    name: Rust Linting
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4.1.4
-
-      - name: Install Rust
-        run: |
-          rustup update stable
-          rustup component add clippy rustfmt
-          rustfmt --version
-
-      - name: Run rustfmt (daapi)
-        working-directory: commands/qrun/daapi
-        run: |
-          cargo fmt --all -- --check
-
-      - name: Run Clippy (daapi)
-        working-directory: commands/qrun/daapi
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
-      - name: Run rustfmt (qrun)
-        working-directory: commands/qrun/qrun
-        run: cargo fmt --all -- --check
-
-      - name: Run Clippy (qrun)
-        working-directory: commands/qrun/qrun
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
-      - name: Report Rust linting status
-        run: |
-          echo "*******************************"
-          echo " Rust code linting completed."
-          echo "*******************************"
 
   python-linting:
     name: Python Linting

@@ -92,39 +92,6 @@ static int primitive_type_cb(int val, const char *optarg, int remote)
     return ESPANK_SUCCESS;
 }
 
-static int dump_spank_items(spank_t spank_ctxt)
-{
-    uid_t job_id = 0;
-    uint32_t step_id = 0;
-    int job_argc = 0;
-    char **job_argv = NULL;
-
-    if (spank_get_item(spank_ctxt, S_JOB_UID, &job_id) == ESPANK_SUCCESS) {
-        slurm_debug("%s: S_JOB_UID [%d]", plugin_name, job_id);
-    }
-    if (spank_get_item(spank_ctxt, S_JOB_ID, &step_id) == ESPANK_SUCCESS) {
-        slurm_debug("%s: S_JOB_ID [%d]", plugin_name, step_id);
-    }
-
-    if (spank_get_item(spank_ctxt, S_JOB_ARGV, &job_argc, &job_argv) ==
-        ESPANK_SUCCESS) {
-        slurm_debug("%s: S_JOB_ARGV argc=%d", plugin_name, job_argc);
-        for (int i = 0; i < job_argc; i++) {
-            slurm_debug("%s: job_argv[%d] = [%s]",
-                    plugin_name, i, job_argv[i]);
-        }
-    }
-    return ESPANK_SUCCESS;
-}
-
-static int dump_argv(int argc, char **argv)
-{
-    for (int i = 0; i < argc; i++) {
-        slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
-    }
-    return ESPANK_SUCCESS;
-}
-
 /*
  * Options available to this spank plugin:
  */
@@ -160,9 +127,9 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
 {
     int rc = ESPANK_SUCCESS;
     struct spank_option *opts_to_register = NULL;
+    int pid = (int)getpid();
 
-    slurm_debug("%s: -> %s argc=%d", plugin_name, __FUNCTION__, argc);
-    dump_argv(argc, argv);
+    slurm_debug("%s(%d): -> %s argc=%d", plugin_name, pid, __FUNCTION__, argc);
 
     memset(backend_name, '\0', sizeof(backend_name));
     memset(primitive_type, '\0', sizeof(primitive_type));
@@ -188,9 +155,9 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
             slurm_error("%s(%d): failed to generate UUIDv4", plugin_name, (int)getpid());
             return SLURM_ERROR;
         }
-        strncpy(qrun_job_id, uuid, sizeof(qrun_job_id));
+        strncpy_s(qrun_job_id, uuid, sizeof(qrun_job_id));
         daapi_free_string((char*)uuid);
-        slurm_debug("%s(%d): job_id = %s", plugin_name, (int)getpid(), qrun_job_id);
+        slurm_debug("%s(%d): job_id = %s", plugin_name, pid, qrun_job_id);
 #endif /* !ALLOC_RESOURCE_BY_QRUN */
         break;
 
@@ -202,18 +169,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
             rc = spank_option_register(spank_ctxt, opts_to_register++);
     }
 
-    /*
-     * SPANK plugins can query the current list of supported slurm_spank symbols
-     * to determine if the current version supports a given plugin hook.
-     * This may be useful because the list of plugin symbols may grow in the
-     * future.
-     */
-    slurm_debug("%s Is slurm_spank_task_init() supported ? %d", plugin_name,
-        spank_symbol_supported("slurm_spank_task_init"));
-    slurm_debug("%s Is slurm_spank_task_exit() supported ? %d", plugin_name,
-        spank_symbol_supported("slurm_spank_task_exit"));
-
-    slurm_debug("%s <- %s rc=%d", plugin_name, __FUNCTION__, rc);
+    slurm_debug("%s(%d): <- %s rc=%d", plugin_name, pid, __FUNCTION__, rc);
     return rc;
 }
 
@@ -230,11 +186,10 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
     int rc = ESPANK_SUCCESS;
     uint32_t job_id = 0;
     job_info_msg_t *job_info_msg = NULL;
+    int pid = (int)getpid();
 
-    slurm_debug("%s(%d): -> %s argc=%d remote=%d", plugin_name, (int)getpid(), __FUNCTION__, argc,
+    slurm_debug("%s(%d): -> %s argc=%d remote=%d", plugin_name, pid, __FUNCTION__, argc,
             spank_remote(spank_ctxt));
-    dump_argv(argc, argv);
-    dump_spank_items(spank_ctxt);
 
     if (spank_remote(spank_ctxt)) {
         if (strlen(backend_name) > 0) {
@@ -263,18 +218,21 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
             }
         }
 
+#ifndef ALLOC_RESOURCE_BY_QRUN
         slurm_debug("%s(%d): setenv IBMQRUN_JOB_ID=%s",
-                    plugin_name, (int)getpid(), qrun_job_id);
+                    plugin_name, pid, qrun_job_id);
         spank_setenv(spank_ctxt, "IBMQRUN_JOB_ID", qrun_job_id, 1);
+#endif /* !ALLOC_RESOURCE_BY_QRUN */
     }
 
-    slurm_debug("%s(%d): <- %s rc=%d", plugin_name, (int)getpid(), __FUNCTION__, rc);
+    slurm_debug("%s(%d): <- %s rc=%d", plugin_name, pid, __FUNCTION__, rc);
     return rc;
 }
 
 #ifndef FREE_RESOURCE_BY_QRUN
 static int delete_qrun_job(spank_t spank_ctxt, char* job_id) {
     int rc = ESPANK_SUCCESS;
+    int pid = (int)getpid();
     char daapi_endpoint[MAXLEN_URL_DEFAULT + 1];
     char iam_endpoint[MAXLEN_URL_DEFAULT + 1];
     char service_crn[MAXLEN_SERVICE_CRN_DEFAULT + 1];
@@ -312,7 +270,7 @@ static int delete_qrun_job(spank_t spank_ctxt, char* job_id) {
     struct ClientBuilder *builder = daapi_bldr_new(daapi_endpoint);
     if (!builder) {
         slurm_error("%s(%d): failed to create a Direct Access Client builder",
-                    plugin_name, (int)getpid());
+                    plugin_name, pid);
         return SLURM_ERROR;
     }
     daapi_bldr_enable_iam_auth(builder, iam_apikey, service_crn, iam_endpoint);
@@ -320,7 +278,7 @@ static int delete_qrun_job(spank_t spank_ctxt, char* job_id) {
     daapi_bldr_set_exponential_backoff_retry(builder, 5, 2, 1, 10);
     struct Client *client = daapi_cli_new(builder);
     if (!client) {
-        slurm_error("%s(%d): failed to create a Direct Access Client", plugin_name, (int)getpid());
+        slurm_error("%s(%d): failed to create a Direct Access Client", plugin_name, pid);
         daapi_free_builder(builder);
         return SLURM_ERROR;
     }
@@ -331,11 +289,11 @@ static int delete_qrun_job(spank_t spank_ctxt, char* job_id) {
             /*
              * If qrun job is still running, cancel this job and then delete it.
              */
-            slurm_info("%s(%d): cancel & delete qrun job(%s)", plugin_name, (int)getpid(), job_id);
+            slurm_info("%s(%d): cancel & delete qrun job(%s)", plugin_name, pid, job_id);
             daapi_cli_cancel_job(client, job_id, true);
         } 
         else {
-            slurm_info("%s(%d): delete qrun job(%s)", plugin_name, (int)getpid(), job_id);
+            slurm_info("%s(%d): delete qrun job(%s)", plugin_name, pid, job_id);
             daapi_cli_delete_job(client, job_id);
         }
     }
@@ -356,9 +314,9 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
 {
     int rc = ESPANK_SUCCESS;
     int status = 0;
+    int pid = (int)getpid();
 
-    slurm_debug("%s(%d): -> %s argc=%d", plugin_name, (int)getpid(), __FUNCTION__, argc);
-    dump_argv(argc, argv);
+    slurm_debug("%s(%d): -> %s argc=%d", plugin_name, pid, __FUNCTION__, argc);
 
     if (spank_get_item(spank_ctxt, S_TASK_EXIT_STATUS, &status) ==
         ESPANK_SUCCESS) {
@@ -376,6 +334,6 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
 #endif /* !FREE_RESOURCE_BY_QRUN */ 
     }
 
-    slurm_debug("%s(%d): <- %s rc=%d", plugin_name, (int)getpid(), __FUNCTION__, rc);
+    slurm_debug("%s(%d): <- %s rc=%d", plugin_name, pid, __FUNCTION__, rc);
     return rc;
 }

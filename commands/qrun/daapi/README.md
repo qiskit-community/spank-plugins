@@ -87,6 +87,8 @@ Once you specify all required configuration parameters, you can create a Client 
 let client = ClientBuilder::new("http://localhost:8290")
     .with_auth(AuthMethod::IbmCloudIam {
         apikey: "your_iam_apikey".to_string(),
+        service_crn: "your_service_crn".to_string(),
+        iam_endpoint_url: "your_iam_endpoint_url".to_string(),
     })
     .with_timeout(Duration::from_secs(60))
     .with_retry_policy(retry_policy)

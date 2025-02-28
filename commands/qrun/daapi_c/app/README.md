@@ -114,7 +114,7 @@ Example:
 
 ### S3 operations
 
-Source: [s3_test.c](./src/s3_test.c)
+Source: [s3.c](./src/s3.c)
 
 Usage:
 ```bash 

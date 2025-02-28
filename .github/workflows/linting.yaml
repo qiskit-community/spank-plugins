@@ -159,7 +159,7 @@ jobs:
           pip install boto3
           pip install qiskit qiskit-ibm-runtime qiskit_aer
           pip install requests 
-          pip install yaml
+          pip install PyYAML
           pip install fastapi
           pip install starlette
           pip install uvicorn

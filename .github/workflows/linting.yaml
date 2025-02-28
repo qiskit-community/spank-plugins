@@ -29,6 +29,7 @@ jobs:
 
       - name: Set up C environment
         run: |
+          mkdir -p build_skeleton build_spank_ibm_qrun
           cd build_skeleton
           cmake ../plugins/skeleton -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           cd ../build_spank_ibm_qrun

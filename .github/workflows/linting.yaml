@@ -58,97 +58,97 @@ jobs:
           echo " C code linting completed."
           echo "**************************"
 
-rust-linting:
-  name: Rust Linting
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4.1.4
+  rust-linting:
+    name: Rust Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.4
 
-    - name: Install Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang-tidy
-        sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+          sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
 
-    - name: Set up C environment
-      run: |
-        mkdir -p daapi_c
-        cd daapi_c
-        cmake ../commands/qrun/daapi_c -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-        cd ../../
+      - name: Set up C environment
+        run: |
+          mkdir -p daapi_c
+          cd daapi_c
+          cmake ../commands/qrun/daapi_c -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cd ../../
 
-    - name: Install Rust
-      run: |
-        rustup update stable
-        rustup component add clippy rustfmt
-        rustfmt --version
+      - name: Install Rust
+        run: |
+          rustup update stable
+          rustup component add clippy rustfmt
+          rustfmt --version
 
-    - name: Run rustfmt (daapi)
-      working-directory: commands/qrun/daapi
-      run: |
-        cargo fmt --all -- --check
+      - name: Run rustfmt (daapi)
+        working-directory: commands/qrun/daapi
+        run: |
+          cargo fmt --all -- --check
 
-    - name: Run Clippy (daapi)
-      working-directory: commands/qrun/daapi
-      env:
-        RUSTFLAGS: "-Dwarnings"
-      run: cargo clippy --all-targets --all-features
+      - name: Run Clippy (daapi)
+        working-directory: commands/qrun/daapi
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
 
-    - name: Run rustfmt (qrun)
-      working-directory: commands/qrun/qrun
-      run: cargo fmt --all -- --check
+      - name: Run rustfmt (qrun)
+        working-directory: commands/qrun/qrun
+        run: cargo fmt --all -- --check
 
-    - name: Run Clippy (qrun)
-      working-directory: commands/qrun/qrun
-      env:
-        RUSTFLAGS: "-Dwarnings"
-      run: cargo clippy --all-targets --all-features
+      - name: Run Clippy (qrun)
+        working-directory: commands/qrun/qrun
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
 
-    - name: Report Rust linting status
-      run: |
-        echo "*******************************"
-        echo " Rust code linting completed."
-        echo "*******************************"
+      - name: Report Rust linting status
+        run: |
+          echo "*******************************"
+          echo " Rust code linting completed."
+          echo "*******************************"
 
-python-linting:
-  name: Python Linting
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4.1.4
+  python-linting:
+    name: Python Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.4
 
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint black
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint black
 
-    - name: Lint commands/qrun/qiskit_pubs_gen with pylint
-      run: |
-        pylint commands/qrun/qiskit_pubs_gen
+      - name: Lint commands/qrun/qiskit_pubs_gen with pylint
+        run: |
+          pylint commands/qrun/qiskit_pubs_gen
 
-    - name: Lint daa_sim with pylint
-      run: |
-        pylint daa_sim/direct_access_client
+      - name: Lint daa_sim with pylint
+        run: |
+          pylint daa_sim/direct_access_client
 
-    - name: Lint qiskit_pubs_gen with black
-      run: |
-        black --check commands/qrun/qiskit_pubs_gen
+      - name: Lint qiskit_pubs_gen with black
+        run: |
+          black --check commands/qrun/qiskit_pubs_gen
 
-    - name: Lint daa_sim with black
-      run: |
-        black --check daa_sim/direct_access_client
+      - name: Lint daa_sim with black
+        run: |
+          black --check daa_sim/direct_access_client
 
-    - name: Report Python linting status
-      run: |
-        echo "*******************************"
-        echo " Python linting completed."
-        echo "*******************************"
+      - name: Report Python linting status
+        run: |
+          echo "*******************************"
+          echo " Python linting completed."
+          echo "*******************************"
 
   shell-linting:
     name: Shell Linting

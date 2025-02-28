@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   int rc = 0;
 
   if (argc != 2) {
-    printf("Missing argument. delete_job <job_id>\n");
+    printf("Missing argument. cancel_job <job_id>\n");
     return -1;
   }
 
@@ -38,7 +38,6 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  printf("builder = %p\n", builder);
   rc = daapi_bldr_enable_iam_auth(builder, IAM_APIKEY, SERVICE_CRN,
                                   IAM_ENDPOINT);
   if (rc < 0) {
@@ -64,8 +63,9 @@ int main(int argc, char *argv[]) {
     goto free_builder;
   }
 
-  rc = daapi_cli_delete_job(client, argv[1]);
-  printf("delete_job rc=%d\n", rc);
+  rc = daapi_cli_cancel_job(client, argv[1], false);
+  if (rc < 0)
+    printf("Failed to cancel job(%s)\n", argv[1]);
 
   rc = daapi_free_client(client);
   if (rc < 0)

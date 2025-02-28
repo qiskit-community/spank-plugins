@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "cjson/cJSON.h"
 #include "direct_access_capi.h"
 
 extern const char *IAM_APIKEY;
@@ -27,10 +26,7 @@ int main(int argc, char *argv[]) {
 
   int rc = 0;
 
-  if (argc != 2) {
-    printf("Missing argument. delete_job <job_id>\n");
-    return -1;
-  }
+  daapi_init();
 
   struct ClientBuilder *builder = daapi_bldr_new(DAAPI_ENDPOINT);
   if (!builder) {
@@ -38,7 +34,6 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  printf("builder = %p\n", builder);
   rc = daapi_bldr_enable_iam_auth(builder, IAM_APIKEY, SERVICE_CRN,
                                   IAM_ENDPOINT);
   if (rc < 0) {
@@ -64,8 +59,30 @@ int main(int argc, char *argv[]) {
     goto free_builder;
   }
 
-  rc = daapi_cli_delete_job(client, argv[1]);
-  printf("delete_job rc=%d\n", rc);
+  struct BackendList *backends = daapi_cli_list_backends(client);
+  if (backends) {
+    for (size_t i = 0; i < backends->length; i++) {
+      struct Backend* backend = &backends->backends[i];
+      printf("%s %d\n", backend->name, backend->status);
+
+      const char *props =
+        daapi_cli_get_backend_properties(client, backend->name);
+      if (props) {
+        printf("%s\n", props);
+        daapi_free_string((char *)props);
+      }
+
+      const char *config =
+        daapi_cli_get_backend_configuration(client, backend->name);
+      if (config) {
+        printf("%s\n", config);
+        daapi_free_string((char *)config);
+      }
+    }
+    rc = daapi_free_backend_list(backends);
+    if (rc < 0)
+      printf("Failed to free BackendList(%p). rc=%d\n", backends, rc);
+  }
 
   rc = daapi_free_client(client);
   if (rc < 0)

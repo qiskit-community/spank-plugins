@@ -27,18 +27,12 @@ int main(int argc, char *argv[]) {
 
   int rc = 0;
 
-  if (argc != 2) {
-    printf("Missing argument. delete_job <job_id>\n");
-    return -1;
-  }
-
   struct ClientBuilder *builder = daapi_bldr_new(DAAPI_ENDPOINT);
   if (!builder) {
     printf("Failed to create a builder.\n");
     return -1;
   }
 
-  printf("builder = %p\n", builder);
   rc = daapi_bldr_enable_iam_auth(builder, IAM_APIKEY, SERVICE_CRN,
                                   IAM_ENDPOINT);
   if (rc < 0) {
@@ -60,12 +54,27 @@ int main(int argc, char *argv[]) {
 
   struct Client *client = daapi_cli_new(builder);
   if (!client) {
-    printf("Failed to create Client.\n");
+    printf("Failed to create Client\n");
     goto free_builder;
   }
 
-  rc = daapi_cli_delete_job(client, argv[1]);
-  printf("delete_job rc=%d\n", rc);
+  struct JobList *jobs = daapi_cli_list_jobs(client);
+  if (jobs) {
+    printf("# of existing jobs = %d\n", jobs->length);
+    for (size_t i = 0; i < jobs->length; i++) {
+      struct Job* job = &jobs->jobs[i];
+      printf("id(%s), status(%d), program_id(%d) quantum_ns(%lld) created_time(%s) end_time(%s)\n",
+             job->id,
+             job->status,
+             job->program_id,
+             job->metrics.quantum_nanoseconds,
+             job->metrics.created_time,
+             job->metrics.end_time);
+    }
+    rc = daapi_free_job_list(jobs);
+    if (rc < 0)
+      printf("Failed to free JobList(%p). rc=%d\n", jobs, rc); 
+  }
 
   rc = daapi_free_client(client);
   if (rc < 0)

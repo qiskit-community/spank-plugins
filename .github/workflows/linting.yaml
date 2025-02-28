@@ -79,9 +79,10 @@ jobs:
           conan install conanfile.txt --build=missing
           pushd build
           cJSON_DIR=./Release/generators cmake .. -DCMAKE_BUILD_TYPE=Release
-          make
           popd
-          pip uninstall -y conan
+          cd build
+          make clean
+          make
 
       - name: Install Rust
         run: |

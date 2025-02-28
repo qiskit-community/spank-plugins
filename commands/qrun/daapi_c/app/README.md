@@ -109,7 +109,7 @@ Usage:
 ```
 Example:
 ```bash
-./build/run-primitive fake_cairo estimator ../../qiskit_pubs_gen/estimator_input.json
+./build/run_primitive fake_cairo estimator ../../qiskit_pubs_gen/estimator_input.json
 ```
 
 ### S3 operations
@@ -118,7 +118,7 @@ Source: [s3.c](./src/s3.c)
 
 Usage:
 ```bash 
-./build/s3
+./build/s3_test
 ```
 
 ### UUIDv4 generation
@@ -127,5 +127,5 @@ Source: [uuid.c](./src/uuid.c)
 
 Usage:
 ```bash 
-./build/uuid
+./build/uuid_test
 ```

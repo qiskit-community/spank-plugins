@@ -98,6 +98,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Run rustfmt (daapi_c)
+        working-directory: commands/qrun/daapi_c
+        run: |
+          cargo fmt --all -- --check
+
       - name: Build examples
         working-directory: commands/qrun/daapi_c/app
         run: |

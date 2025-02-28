@@ -66,25 +66,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.1.4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Build examples
-        working-directory: commands/qrun/daapi_c/app
-        run: |
-          python -m pip install --upgrade pip
-          pip install conan
-          conan profile detect
-          conan install conanfile.txt --build=missing
-          pushd build
-          cJSON_DIR=./Release/generators cmake .. -DCMAKE_BUILD_TYPE=Release
-          popd
-          cd build
-          make clean
-          make
-
       - name: Install Rust
         run: |
           rustup update stable
@@ -111,6 +92,25 @@ jobs:
         env:
           RUSTFLAGS: "-Dwarnings"
         run: cargo clippy --all-targets --all-features
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build examples
+        working-directory: commands/qrun/daapi_c/app
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          conan profile detect
+          conan install conanfile.txt --build=missing
+          pushd build
+          cJSON_DIR=./Release/generators cmake .. -DCMAKE_BUILD_TYPE=Release
+          popd
+          cd build
+          make clean
+          make
 
       - name: Report Rust linting status
         run: |

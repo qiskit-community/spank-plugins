@@ -23,6 +23,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-tidy
           sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
+          git clone https://github.com/DaveGamble/cJSON.git
+          cd cJSON
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+          sudo make install
+
+      - name: Install pkg-config
+        run: sudo apt-get install -y pkg-config
 
       - name: Set up C environment
         run: |
@@ -76,6 +85,9 @@ jobs:
           cmake ..
           make -j$(nproc)
           sudo make install
+
+      - name: Install pkg-config
+        run: sudo apt-get install -y pkg-config
 
       - name: Set up C environment
         run: |

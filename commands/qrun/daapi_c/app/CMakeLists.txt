@@ -12,22 +12,24 @@ endif()
 
 set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
+# Ensure CMake can find cJSON
+set(CMAKE_PREFIX_PATH "/usr/local")
 find_package(cJSON REQUIRED)
 
 function(add_example TARGET_NAME CPP_FILE)
   # source files for the client app
   set(SRC_FILE
-    ${CMAKE_CURRENT_SOURCE_DIR}/${CPP_FILE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/config.c
+          ${CMAKE_CURRENT_SOURCE_DIR}/${CPP_FILE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/config.c
   )
 
   add_executable(${TARGET_NAME} ${SRC_FILE})
 
   # add libraries
   target_link_libraries(${TARGET_NAME}
-    PUBLIC
-      "-L${PROJECT_ROOT}/target/${LIB_PATH} -Wl,-rpath ${PROJECT_ROOT}/target/${LIB_PATH}" direct_access_capi
-      "-lm -lstdc++"
+          PUBLIC
+          "-L${PROJECT_ROOT}/target/${LIB_PATH} -Wl,-rpath ${PROJECT_ROOT}/target/${LIB_PATH}" direct_access_capi
+          "-lm -lstdc++"
   )
 
   target_link_libraries(${TARGET_NAME} PRIVATE cjson::cjson)
@@ -45,9 +47,9 @@ function(add_example TARGET_NAME CPP_FILE)
 
   # path to headerfile
   target_include_directories(${TARGET_NAME}
-    PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/..
-      /Users/ohtanim/git/cJSON/release/usr/local/include
+          PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/..
+          /usr/local/include  # Standard include path after installation
   )
 
   install (TARGETS ${TARGET_NAME} DESTINATION .)

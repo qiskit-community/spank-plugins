@@ -83,28 +83,6 @@ jobs:
           popd
           pip uninstall -y conan
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-tidy
-          sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
-          git clone https://github.com/DaveGamble/cJSON.git
-          cd cJSON
-          mkdir build && cd build
-          cmake ..
-          make -j$(nproc)
-          sudo make install
-
-      - name: Install pkg-config
-        run: sudo apt-get install -y pkg-config
-
-      - name: Set up C environment
-        run: |
-          mkdir -p daapi_c
-          cd daapi_c
-          cmake ../commands/qrun/daapi_c/app -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          cd ../../
-
       - name: Install Rust
         run: |
           rustup update stable

@@ -102,7 +102,7 @@ jobs:
         working-directory: commands/qrun/daapi_c
         run: |
           cargo fmt --all -- --check
-          pushd ../../
+          pushd 
           cargo build --release
           popd
 

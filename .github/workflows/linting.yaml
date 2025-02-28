@@ -154,7 +154,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pylint black qiskit requests qiskit-ibm-runtime
+          pip install pylint 
+          pip install black 
+          pip install boto3
+          pip install qiskit qiskit-ibm-runtime qiskit_aer
+          pip install requests 
+          pip install yaml
+          pip install fastapi
+          pip install starlette
+          pip install uvicorn
 
       - name: Lint commands/qrun/qiskit_pubs_gen with pylint
         run: |

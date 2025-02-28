@@ -51,7 +51,7 @@ Example:
 ./build/list_backends
 ```
 
-### Cancel a job.
+### Cancel a job
 
 Source: [cancel_job.c](./src/cancel_job.c)
 
@@ -64,7 +64,7 @@ Example:
 ./build/cancel-job 608ee5da-7a12-4cdd-a43f-b56c5bc56176
 ```
 
-### Delete a job.
+### Delete a job
 
 Source: [delete_job.c](./src/delete_job.c)
 
@@ -77,7 +77,7 @@ Example:
 ./build/delete-job 608ee5da-7a12-4cdd-a43f-b56c5bc56176
 ```
 
-### List jobs.
+### List jobs
 
 Source: [list_jobs.c](./src/list_jobs.c)
 
@@ -86,7 +86,7 @@ Usage:
 ./build/list_jobs
 ```
 
-### Run a job. 
+### Run a job
 
 Source: [run_job.c](./src/run_job.c)
 
@@ -99,7 +99,7 @@ Example:
 ./build/run_job fake_brisbane sampler ../../qiskit_pubs_gen/sampler_input.json
 ```
 
-### Invoke a Qiskit Runtime primitive.
+### Invoke a Qiskit Runtime primitive
 
 Source: [run_primitive.c](./src/run_primitive.c)
 

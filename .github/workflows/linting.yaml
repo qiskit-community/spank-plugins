@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p build_skeleton build_spank_ibm_qrun daapi_c
           cd daapi_c
-          cmake ../commands/qrun/daapi_c -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cmake ../commands/qrun/daapi_c/app -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           cd ../build_skeleton
           cmake ../plugins/skeleton -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           cd ../build_spank_ibm_qrun
@@ -75,7 +75,7 @@ jobs:
         run: |
           mkdir -p daapi_c
           cd daapi_c
-          cmake ../commands/qrun/daapi_c -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cmake ../commands/qrun/daapi_c/app -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           cd ../../
 
       - name: Install Rust

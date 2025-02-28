@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.10)
-
 set(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_OSX_DEPLOYMENT_TARGET 15.2)
 
@@ -13,15 +12,7 @@ endif()
 
 set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
-# Ensure CMake can find cJSON
-set(CJSON_SEARCH_PATHS
-        $ENV{CJSON_DIR}
-        /usr/local/lib/cmake/cJSON
-        /usr/lib/cmake/cJSON
-        /usr/share/cmake/cJSON
-)
-
-find_package(cJSON REQUIRED CONFIG PATHS ${CJSON_SEARCH_PATHS} NO_DEFAULT_PATH)
+find_package(cJSON REQUIRED)
 
 function(add_example TARGET_NAME CPP_FILE)
   # source files for the client app
@@ -39,7 +30,7 @@ function(add_example TARGET_NAME CPP_FILE)
           "-lm -lstdc++"
   )
 
-  target_link_libraries(${TARGET_NAME} PRIVATE cJSON)
+  target_link_libraries(${TARGET_NAME} PRIVATE cjson::cjson)
 
   if (APPLE)
     target_link_libraries(${TARGET_NAME} PUBLIC "-framework Security")
@@ -52,10 +43,11 @@ function(add_example TARGET_NAME CPP_FILE)
     target_link_libraries(${TARGET_NAME} PUBLIC "-lpthread")
   endif()
 
+  # path to headerfile
   target_include_directories(${TARGET_NAME}
           PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/..
-          /usr/local/include
+          /Users/ohtanim/git/cJSON/release/usr/local/include
   )
 
   install (TARGETS ${TARGET_NAME} DESTINATION .)

@@ -10,6 +10,8 @@ This is [SPANK plugin](https://slurm.schedmd.com/spank.html) to setup [QRUN](../
 
 ## How to build
 
+This plugin build depends on [daapi_c](../../commands/qrun/daapi_c) build output. Before starting to build this plugin, make sure you built daapi_c.
+
 ```shell-session
 mkdir build
 cd build

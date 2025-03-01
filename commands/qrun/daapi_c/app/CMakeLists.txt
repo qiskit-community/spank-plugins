@@ -47,7 +47,6 @@ function(add_example TARGET_NAME CPP_FILE)
   target_include_directories(${TARGET_NAME}
           PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/..
-          /Users/ohtanim/git/cJSON/release/usr/local/include
   )
 
   install (TARGETS ${TARGET_NAME} DESTINATION .)

@@ -80,47 +80,28 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Run rustfmt (daapi)
-        working-directory: commands/qrun/daapi
-        run: |
-          cargo fmt --all -- --check
-
-      - name: Run Clippy (daapi)
-        working-directory: commands/qrun/daapi
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
-      - name: Run tests (daapi)
-        working-directory: commands/qrun/daapi
-        run: |
-          cargo test
-
-      - name: Run rustfmt (daapi_c)
-        working-directory: commands/qrun/daapi_c
-        run: |
-          cargo fmt --all -- --check
-
-      - name: Run Clippy (daapi_c)
-        working-directory: commands/qrun/daapi_c
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
-      - name: Run tests (daapi_c)
-        working-directory: commands/qrun/daapi_c
-        run: |
-          cargo test
-
-      - name: Build Rust (all)
+      - name: Run rustfmt
         working-directory: commands/qrun
         run: |
-          cargo build --release
+          cargo fmt --all -- --check
+
+      - name: Run Clippy
+        working-directory: commands/qrun
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run tests
+        working-directory: commands/qrun
+        run: |
+          cargo test
 
       - name: Build daapi_c/app
         working-directory: commands/qrun/daapi_c/app
         run: |
-          python -m pip install --upgrade pip
+          pushd ..
+          cargo build --release
+          popd
           pip install conan
           conan profile detect
           conan install conanfile.txt --build=missing
@@ -131,16 +112,6 @@ jobs:
           make clean
           make
 
-      - name: Run rustfmt (qrun)
-        working-directory: commands/qrun/qrun
-        run: cargo fmt --all -- --check
-
-      - name: Run Clippy (qrun)
-        working-directory: commands/qrun/qrun
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
       - name: Report Rust linting status
         run: |
           echo "*******************************"
@@ -150,27 +121,22 @@ jobs:
   python-linting:
     name: Python Linting
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.1.4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
+        working-directory: daa_sim
         run: |
-          python -m pip install --upgrade pip
-          pip install pylint 
-          pip install black 
-          pip install boto3
-          pip install qiskit qiskit-ibm-runtime qiskit_aer
-          pip install requests 
-          pip install PyYAML
-          pip install fastapi
-          pip install starlette
-          pip install uvicorn
+          pip install -r requirements-dev.txt
 
       - name: Lint commands/qrun/qiskit_pubs_gen with pylint
         run: |

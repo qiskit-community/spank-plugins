@@ -71,29 +71,8 @@ jobs:
           rustup update stable
           rustup component add clippy rustfmt
           rustfmt --version
-
-      - name: Run rustfmt (daapi)
-        working-directory: commands/qrun/daapi
-        run: |
-          cargo fmt --all -- --check
-
-      - name: Run Clippy (daapi)
-        working-directory: commands/qrun/daapi
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
-      - name: Run rustfmt (qrun)
-        working-directory: commands/qrun/qrun
-        run: cargo fmt --all -- --check
-
-      - name: Run Clippy (qrun)
-        working-directory: commands/qrun/qrun
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+          
+          - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -118,6 +97,27 @@ jobs:
           cd build
           make clean
           make
+
+      - name: Run rustfmt (daapi)
+        working-directory: commands/qrun/daapi
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Run Clippy (daapi)
+        working-directory: commands/qrun/daapi
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run rustfmt (qrun)
+        working-directory: commands/qrun/qrun
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy (qrun)
+        working-directory: commands/qrun/qrun
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
 
       - name: Report Rust linting status
         run: |

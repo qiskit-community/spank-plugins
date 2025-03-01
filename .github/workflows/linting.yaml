@@ -4,19 +4,25 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-env:
-  PYTHON_VERSION: 3.13.2
 jobs:
   c-linting:
     name: C Linting
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.1.4
+
+      - name: Build crates
+        working-directory: commands/qrun
+        run: cargo build --release
 
       - name: Install Dependencies
         run: |
@@ -24,8 +30,28 @@ jobs:
           sudo apt-get install -y clang-tidy
           sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
 
+      - name: Set Toolchain
+        # https://github.com/dtolnay/rust-toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+
       - name: Install pkg-config
         run: sudo apt-get install -y pkg-config
+
+      - name: Build Rust (all)
+        working-directory: commands/qrun
+        run: |
+          cargo build --release
 
       - name: Set up C environment
         run: |
@@ -66,22 +92,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.1.4
 
-      - name: Install Rust
-        run: |
-          rustup update stable
-          rustup component add clippy rustfmt
-          rustfmt --version
+      - name: Set Toolchain
+        # https://github.com/dtolnay/rust-toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
           
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build Rust (all)
+        working-directory: commands/qrun
+        run: |
+          cargo build --release
+
+      - name: Run rustfmt (daapi)
+        working-directory: commands/qrun/daapi
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Run Clippy (daapi)
+        working-directory: commands/qrun/daapi
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run tests (daapi)
+        working-directory: commands/qrun/daapi
+        run: |
+          cargo test --no-deps
 
       - name: Run rustfmt (daapi_c)
         working-directory: commands/qrun/daapi_c
         run: |
           cargo fmt --all -- --check
-          cargo build --release
+
+      - name: Run Clippy (daapi_c)
+        working-directory: commands/qrun/daapi_c
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run tests (daapi_c)
+        working-directory: commands/qrun/daapi_c
+        run: |
+          cargo test --no-deps
 
       - name: Build daapi_c/app
         working-directory: commands/qrun/daapi_c/app
@@ -96,17 +154,6 @@ jobs:
           cd build
           make clean
           make
-
-      - name: Run rustfmt (daapi)
-        working-directory: commands/qrun/daapi
-        run: |
-          cargo fmt --all -- --check
-
-      - name: Run Clippy (daapi)
-        working-directory: commands/qrun/daapi
-        env:
-          RUSTFLAGS: "-Dwarnings"
-        run: cargo clippy --all-targets --all-features
 
       - name: Run rustfmt (qrun)
         working-directory: commands/qrun/qrun

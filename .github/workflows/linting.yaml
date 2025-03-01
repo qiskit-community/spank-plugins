@@ -82,7 +82,6 @@ jobs:
         run: |
           cargo fmt --all -- --check
           cargo build --release
-          popd
 
       - name: Build daapi_c/app
         working-directory: commands/qrun/daapi_c/app

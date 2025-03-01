@@ -134,9 +134,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        working-directory: daa_sim
         run: |
-          pip install -r requirements-dev.txt
+          pip install -r daa_sim/requirements-dev.txt
 
       - name: Lint commands/qrun/qiskit_pubs_gen with pylint
         run: |

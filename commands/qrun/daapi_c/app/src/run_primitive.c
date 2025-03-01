@@ -13,6 +13,7 @@
 */
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "cjson/cJSON.h"
@@ -32,8 +33,18 @@ int main(int argc, char *argv[]) {
 
   int rc = 0;
 
-  if (argc != 2) {
-    printf("run_sampler <PUBs JSON file>\n");
+  if (argc != 4) {
+    printf("run_primitive <backend> <primitive type> <PUBs JSON file>\n");
+    return -1;
+  }
+
+  ProgramId type;
+  if (strcmp(argv[2], "sampler") == 0)
+    type = SAMPLER;
+  else if (strcmp(argv[2], "estimator") == 0)
+    type = ESTIMATOR;
+  else {
+    printf("Unknown primitive type: %s\n", argv[2]);
     return -1;
   }
 
@@ -43,7 +54,6 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  printf("builder = %p\n", builder);
   rc = daapi_bldr_enable_iam_auth(builder, IAM_APIKEY, SERVICE_CRN,
                                   IAM_ENDPOINT);
   if (rc < 0)
@@ -69,9 +79,8 @@ int main(int argc, char *argv[]) {
     return -1;
   }
   rc = daapi_free_builder(builder);
-  printf("client = %p\n", client);
 
-  FILE *fp = fopen(argv[1], "r");
+  FILE *fp = fopen(argv[3], "r");
   if (!fp) {
     printf("Failed to open PUBs file (%s)\n", argv[1]);
     return -1;
@@ -85,7 +94,7 @@ int main(int argc, char *argv[]) {
   fclose(fp);
 
   struct PrimitiveJob *job = daapi_cli_run_primitive(
-      client, "fake_brisbane", SAMPLER, 300, DEBUG, fcontent, NULL);
+      client, argv[1], type, 300, DEBUG, fcontent, NULL);
   if (job) {
     JobStatus final_state;
     bool is_running = false;

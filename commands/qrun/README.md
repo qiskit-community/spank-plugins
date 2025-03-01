@@ -16,6 +16,7 @@ The program will not terminate until the quantum circuit has completed or failed
 | directories | descriptions |
 | ---- | ---- |
 | daapi | Rust implementation of Direct Access API client. This is portable & reusable library, and currently used by `qrun` command in this project. Note that same code has been used by other users and projects, so do not put this Slurm project specific implementation into this library. |
+| daapi_c | Direct Access C API client, which provides C bindings of `daapi` Rust library. This will create a C header file(`daapi_c/direct_access_capi.h`) and a portable & reusable static link library(`./target/release/libdirect_access_capi.a`), currently used by `spank_ibm_qrun` plugin in this project. |
 | qrun | Rust implementation of QRUN command. This command accepts Qiskit Primitive Unified Bloc(PUBs) as program argument, and run on the specified IBM Quantum backends. |
 | qiskit_pubs_gen | Python implementation of the tools to generate Qiskit Primitive Unified Bloc(PUBs) as example. You can customize the quantum circuits and generate PUBs JSON file for QRUN execution. |
 
@@ -54,8 +55,11 @@ Example:
 | IBMQRUN_S3_ENDPOINT | S3 endpoint URL. |
 | IBMQRUN_S3_BUCKET | Name of S3 bucket used by Direct Access. |
 | IBMQRUN_S3_REGION | Name of S3 instance region. |
-| IBMQRUN_APPID_CLIENT_ID | IBM Cloud AppId client ID to get access token from Direct Access API (POST /v1/token). |
-| IBMQRUN_APPID_SECRET | IBM Cloud AppId secret to get access token from Direct Access API (POST /v1/token). |
+| IBMQRUN_IAM_APIKEY | IBM Cloud API Key to access IBM Cloud IAM API to get access token. |
+| IBMQRUN_SERVICE_CRN | [Cloud Resource Name](https://cloud.ibm.com/docs/account?topic=account-crn) of your provisioned Direct Access instance. |
+| IBMQRUN_IAM_ENDPOINT | IBM Cloud IAM endpoint URL (e.g. https://iam.cloud.ibm.com) |
+| IBMQRUN_APPID_CLIENT_ID | (Deprecated) IBM Cloud AppId client ID to get access token from Direct Access API (POST /v1/token). |
+| IBMQRUN_APPID_SECRET | (Deprecated) IBM Cloud AppId secret to get access token from Direct Access API (POST /v1/token). |
 
 
 ## Feature flags
@@ -65,6 +69,12 @@ The qrun & direct_access_api crate defines some [Cargo features](https://doc.rus
 ### features = ["ibmcloud_appid_auth"]
 
 Provides the support of IBM Cloud App ID authentication. This is deprecated authentication method. This is just backward compatibility.
+
+### features = ["job_cleanup"]
+
+Enables the code to cancel/delete an existing job running on Direct Access when QRUN process is finished. This feature is disabled as default since such clean up operation is currently managed by `spank_ibm_qrun` plugin.
+
+If this feature is enabled, recommends to rebuild `spank_ibm_qrun` plugin with `-DALLOC_RESOURCE_BY_QRUN` and `-DFREE_RESOURCE_BY_QRUN` flags.
 
 ## Contributing
 

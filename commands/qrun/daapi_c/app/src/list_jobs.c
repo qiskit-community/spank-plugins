@@ -60,10 +60,10 @@ int main(int argc, char *argv[]) {
 
   struct JobList *jobs = daapi_cli_list_jobs(client);
   if (jobs) {
-    printf("# of existing jobs = %d\n", jobs->length);
+    printf("# of existing jobs = %ld\n", jobs->length);
     for (size_t i = 0; i < jobs->length; i++) {
       struct Job* job = &jobs->jobs[i];
-      printf("id(%s), status(%d), program_id(%d) quantum_ns(%lld) created_time(%s) end_time(%s)\n",
+      printf("id(%s), status(%d), program_id(%d) quantum_ns(%ld) created_time(%s) end_time(%s)\n",
              job->id,
              job->status,
              job->program_id,

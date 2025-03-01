@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
   long size = ftello(fp);
   char *fcontent = malloc(size);
   fseeko(fp, 0, SEEK_SET);
-  fread(fcontent, 1, size, fp);
+  (void)fread(fcontent, 1, size, fp);
   fclose(fp);
 
   /*
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
     /* Retrieves usage metrics */
     struct Metrics* metrics = daapi_cli_get_metrics(client, job_id);
     if (metrics) {
-      printf("created_time: %s, end_time: %s, quantum_nanoseconds: %lld\n",
+      printf("created_time: %s, end_time: %s, quantum_nanoseconds: %ld\n",
              metrics->created_time, metrics->end_time,
              metrics->quantum_nanoseconds);
       daapi_free_metrics(metrics);

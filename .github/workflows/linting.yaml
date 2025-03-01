@@ -72,7 +72,7 @@ jobs:
           rustup component add clippy rustfmt
           rustfmt --version
           
-          - name: Set up Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}

@@ -87,9 +87,14 @@ int main(int argc, char *argv[]) {
 
   fseeko(fp, 0, SEEK_END);
   long size = ftello(fp);
-  char *fcontent = malloc(size);
+  char *bufp = malloc(size);
+  char *curr_ptr = bufp;
   fseeko(fp, 0, SEEK_SET);
-  (void)fread(fcontent, 1, size, fp);
+  while(size > 0) {
+    size_t sz = fread(curr_ptr, 1, size, fp);
+    size -= sz;
+    curr_ptr += sz;
+  }
   fclose(fp);
 
   /*
@@ -120,11 +125,12 @@ int main(int argc, char *argv[]) {
   snprintf(results_obj_name, sizeof(results_obj_name), "%s_results.json", job_id);
   snprintf(logs_obj_name, sizeof(logs_obj_name), "%s_logs.txt", job_id);
 
-  rc = daapi_s3cli_put_object_as_string(s3, S3_BUCKET, input_obj_name, fcontent);
+  rc = daapi_s3cli_put_object_as_string(s3, S3_BUCKET, input_obj_name, bufp);
   if (rc < 0) {
     printf("Failed to upload job input to S3.\n");
     return -1;
   }
+  free(bufp);
  
   char payload[2048];
   memset(payload, '\0', sizeof(payload));

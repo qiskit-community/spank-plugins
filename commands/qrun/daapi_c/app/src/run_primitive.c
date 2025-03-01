@@ -88,13 +88,19 @@ int main(int argc, char *argv[]) {
 
   fseeko(fp, 0, SEEK_END);
   long size = ftello(fp);
-  char *fcontent = malloc(size);
+  char *bufp = malloc(size);
+  char *curr_ptr = bufp;
   fseeko(fp, 0, SEEK_SET);
-  (void)fread(fcontent, 1, size, fp);
+  while(size > 0) {
+    size_t sz = fread(curr_ptr, 1, size, fp);
+    size -= sz;
+    curr_ptr += sz;
+  }
   fclose(fp);
 
   struct PrimitiveJob *job = daapi_cli_run_primitive(
-      client, argv[1], type, 300, DEBUG, fcontent, NULL);
+      client, argv[1], type, 300, DEBUG, bufp, NULL);
+  free(bufp);
   if (job) {
     JobStatus final_state;
     bool is_running = false;

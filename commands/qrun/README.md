@@ -35,12 +35,26 @@ If the above build step is successful, an executable file named `qrun` will be c
 ## How to run
 
 ```shell-session
-./target/release/qrun <PUBs JSON file>
+$ ./target/release/qrun -h
+QRUN - Command to run Qiskit Primitive jobs
+
+Usage: qrun [OPTIONS] <INPUT>
+
+Arguments:
+  <INPUT>  Qiskit Primitive Unified Bloc(PUB)s file
+
+Options:
+  -r, --results <RESULTS>            Result output file
+  -l, --logs <LOGS>                  Log output file
+      --log-level <LOG_LEVEL>        Log level [default: warning] [possible values: debug, info, warning, error, critical]
+      --http-timeout <HTTP_TIMEOUT>  HTTP request timeout in seconds [default: 60]
+  -h, --help                         Print help
+  -V, --version                      Print version
 ```
 
 Example:
 ```shell-session
-./target/release/qrun ../../demo/qrun/pubs/sampler_input.json
+$ ./target/release/qrun ../../demo/qrun/pubs/sampler_input.json
 ```
 
 ### Environment variables

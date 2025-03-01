@@ -94,7 +94,7 @@ jobs:
       - name: Run tests (daapi)
         working-directory: commands/qrun/daapi
         run: |
-          cargo test --no-deps
+          cargo test
 
       - name: Run rustfmt (daapi_c)
         working-directory: commands/qrun/daapi_c
@@ -110,7 +110,7 @@ jobs:
       - name: Run tests (daapi_c)
         working-directory: commands/qrun/daapi_c
         run: |
-          cargo test --no-deps
+          cargo test
 
       - name: Build Rust (all)
         working-directory: commands/qrun

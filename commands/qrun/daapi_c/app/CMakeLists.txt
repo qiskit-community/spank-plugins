@@ -27,7 +27,6 @@ function(add_example TARGET_NAME CPP_FILE)
   target_link_libraries(${TARGET_NAME}
           PUBLIC
           "-L${PROJECT_ROOT}/target/${LIB_PATH} -Wl,-rpath ${PROJECT_ROOT}/target/${LIB_PATH}" direct_access_capi
-          "-lm -lstdc++"
   )
 
   target_link_libraries(${TARGET_NAME} PRIVATE cjson::cjson)
@@ -41,6 +40,7 @@ function(add_example TARGET_NAME CPP_FILE)
     target_link_libraries(${TARGET_NAME} PUBLIC "-lcrypto")
     target_link_libraries(${TARGET_NAME} PUBLIC "-ldl")
     target_link_libraries(${TARGET_NAME} PUBLIC "-lpthread")
+    target_link_libraries(${TARGET_NAME} PUBLIC "-lm")
   endif()
 
   # path to headerfile

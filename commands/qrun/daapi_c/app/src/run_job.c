@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "cjson/cJSON.h"
 #include "direct_access_capi.h"
@@ -223,7 +224,7 @@ int main(int argc, char *argv[]) {
     /* Retrieves usage metrics */
     struct Metrics* metrics = daapi_cli_get_metrics(client, job_id);
     if (metrics) {
-      printf("created_time: %s, end_time: %s, quantum_nanoseconds: %ld\n",
+      printf("created_time: %s, end_time: %s, quantum_nanoseconds: %" PRId64 "\n",
              metrics->created_time, metrics->end_time,
              metrics->quantum_nanoseconds);
       daapi_free_metrics(metrics);

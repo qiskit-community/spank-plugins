@@ -1,4 +1,3 @@
-//
 // (C) Copyright IBM 2025
 //
 // This code is licensed under the Apache License, Version 2.0. You may
@@ -19,6 +18,7 @@ fn main() {
     config.documentation_style = cbindgen::DocumentationStyle::Doxy;
     config.cpp_compat = true;
     config.sort_by = cbindgen::SortKey::Name;
+    config.usize_is_size_t = true;
 
     match cbindgen::generate_with_config(".", config) {
         Ok(value) => {

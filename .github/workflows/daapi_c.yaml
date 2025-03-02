@@ -24,30 +24,8 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4.1.4
-
-      - name: Set Toolchain
-        # https://github.com/dtolnay/rust-toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-          
-      - name: Build daapi_c
-        working-directory: commands/qrun/daapi_c
-        run: |
-          cargo build --release
-
-  lint:
-    name: Lint
+  build_lint:
+    name: Build & Lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -68,6 +46,26 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+
+      - name: Configure clang-tidy
+        run: |
+          echo "Creating .clang-tidy configuration..."
+          cat <<EOF > .clang-tidy
+          ---
+          Checks: '-*,modernize-*,readability-*,performance-*'
+          WarningsAsErrors: ''
+          HeaderFilterRegex: '.*'
+          Suppress: ['llvmlibc-restrict-system-libc-headers', 'misc-include-cleaner', 'cppcoreguidelines-avoid-non-const-global-variables']
+          EOF
+
+      - name: Run clang-tidy
+        run: |
+          clang-tidy commands/qrun/daapi_c/*.c -p build_skeleton --config-file=.clang-tidy || true
+
       - name: Run rustfmt
         working-directory: commands/qrun/daapi_c
         run: |
@@ -78,6 +76,11 @@ jobs:
         env:
           RUSTFLAGS: "-Dwarnings"
         run: cargo clippy --all-targets --all-features
+
+      - name: Build daapi_c
+        working-directory: commands/qrun/daapi_c
+        run: |
+          cargo build --release
 
   test:
     name: Test

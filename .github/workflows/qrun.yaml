@@ -1,0 +1,86 @@
+name: Check QRUN Command
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - commands/qrun/qrun/**
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Rust Log level'
+        required: true
+        default: 'warn'
+        type: choice
+        options:
+        - error
+        - warn
+        - info
+        - debug
+        - trace
+
+permissions:
+  contents: read
+
+jobs:
+  build_lint_test:
+    name: Build & Lint & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.4
+
+      - name: Set Toolchain
+        # https://github.com/dtolnay/rust-toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run rustfmt
+        working-directory: commands/qrun/qrun
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Run Clippy
+        working-directory: commands/qrun/qrun
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Build QRUN
+        working-directory: commands/qrun/qrun
+        run: |
+          cargo build --release
+
+      - name: Setup daa_sim
+        working-directory: daa_sim
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start daa_sim
+        working-directory: daa_sim
+        run: ./run.sh config.yaml
+
+      - name: Check readiness of daa_sim
+        run: curl http://0.0.0.0:8290/version
+
+      - name: Run example
+        working-directory: commands/qrun/target/release
+        run: ./qrun --help
+        env:
+          RUST_LOG: ${{ inputs.logLevel }}
+
+      - name: Stop daa_sim
+        working-directory: daa_sim
+        run: ./stop.sh

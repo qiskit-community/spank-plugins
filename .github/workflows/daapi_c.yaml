@@ -1,4 +1,4 @@
-name: Check direct-access C API
+name: Check Direct Access API for C
 
 on:
   pull_request:
@@ -46,26 +46,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install clang-tidy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-tidy
-
-      - name: Configure clang-tidy
-        run: |
-          echo "Creating .clang-tidy configuration..."
-          cat <<EOF > .clang-tidy
-          ---
-          Checks: '-*,modernize-*,readability-*,performance-*'
-          WarningsAsErrors: ''
-          HeaderFilterRegex: '.*'
-          Suppress: ['llvmlibc-restrict-system-libc-headers', 'misc-include-cleaner', 'cppcoreguidelines-avoid-non-const-global-variables']
-          EOF
-
-      - name: Run clang-tidy
-        run: |
-          clang-tidy commands/qrun/daapi_c/*.c -p build_skeleton --config-file=.clang-tidy || true
-
       - name: Run rustfmt
         working-directory: commands/qrun/daapi_c
         run: |
@@ -77,10 +57,45 @@ jobs:
           RUSTFLAGS: "-Dwarnings"
         run: cargo clippy --all-targets --all-features
 
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+
       - name: Build daapi_c
         working-directory: commands/qrun/daapi_c
         run: |
           cargo build --release
+
+      - name: Build examples
+        working-directory: commands/qrun/daapi_c/app
+        run: |
+          pip install conan
+          conan profile detect
+          conan install conanfile.txt --build=missing
+          pushd build
+          cJSON_DIR=./Release/generators cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
+          popd
+
+      - name: Configure clang-tidy
+        run: |
+          echo "Creating .clang-tidy configuration..."
+          cat <<EOF > .clang-tidy
+          ---
+          Checks: '-*,modernize-*,readability-*,performance-*'
+          WarningsAsErrors: ''
+          HeaderFilterRegex: ''
+          HeaderFileExtensions:
+            - h
+          ImplementationFileExtensions:
+            - c
+          SystemHeaders: false
+          EOF
+
+      - name: Run clang-tidy
+        run: |
+          clang-tidy commands/qrun/daapi_c/app/src/*.c -p commands/qrun/daapi_c/app/build --config-file=.clang-tidy
 
   test:
     name: Test
@@ -109,21 +124,21 @@ jobs:
         run: |
           cargo test
 
+      - name: Build daapi_c
+        working-directory: commands/qrun/daapi_c
+        run: |
+          cargo build --release
+
       - name: Build examples
         working-directory: commands/qrun/daapi_c/app
         run: |
-          pushd ..
-          cargo build --release
-          popd
           pip install conan
           conan profile detect
           conan install conanfile.txt --build=missing
           pushd build
           cJSON_DIR=./Release/generators cmake .. -DCMAKE_BUILD_TYPE=Release
-          popd
-          cd build
-          make clean
           make
+          popd
 
       - name: Setup daa_sim
         working-directory: daa_sim

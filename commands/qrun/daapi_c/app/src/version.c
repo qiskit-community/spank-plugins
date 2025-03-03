@@ -32,8 +32,9 @@ int main(int argc, char *argv[]) {
   }
 
   rc = daapi_bldr_set_exponential_backoff_retry(builder, 5, 2, 1, 10);
-  if (rc < 0)
+  if (rc < 0) {
     printf("Failed to enable retries. rc=%d\n", rc);
+  }
 
   struct Client *client = daapi_cli_new(builder);
   if (!client) {
@@ -46,13 +47,15 @@ int main(int argc, char *argv[]) {
   if (ver) {
     printf("%s\n", ver);
     rc = daapi_free_string((char *)ver);
-    if (rc < 0)
+    if (rc < 0) {
       printf("Failed to free a string(%d)\n", __LINE__);
+    }
   }
 
   rc = daapi_free_client(client);
-  if (rc < 0)
+  if (rc < 0) {
     printf("Failed to free Client(%p). rc=%d\n", client, rc);
+  }
 
   return 0;
 }

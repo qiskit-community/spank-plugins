@@ -1,0 +1,65 @@
+---
+name: Check QRUN Command
+on:
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+  pull_request:
+    branches:
+      - main
+    paths:
+      - commands/qrun/qrun/**
+
+permissions:
+  contents: read
+
+jobs:
+  build_lint_test:
+    name: Build & Lint & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.4
+
+      - name: Set Toolchain
+        # https://github.com/dtolnay/rust-toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run rustfmt
+        working-directory: commands/qrun/qrun
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Run Clippy
+        working-directory: commands/qrun/qrun
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
+
+      - name: Build QRUN
+        working-directory: commands/qrun/qrun
+        run: |
+          cargo build --release
+
+      - name: Install dependencies
+        run: |
+          pip install -U -r commands/qrun/qiskit_pubs_gen/requirements.txt
+          pip install pylint
+          pip install black
+
+      - name: Lint qiskit_pubs_gen with pylint
+        run: |
+          pylint commands/qrun/qiskit_pubs_gen
+
+      - name: Lint qiskit_pubs_gen with black
+        run: |
+          black --check commands/qrun/qiskit_pubs_gen

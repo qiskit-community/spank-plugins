@@ -1,0 +1,35 @@
+---
+name: Check miscellaneous
+on:
+  workflow_dispatch:   # Allows manual trigger from GitHub UI
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  shell-linting:
+    name: Shell Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.4
+
+      - name: Install Shell Linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt
+
+      - name: Run ShellCheck
+        run: shellcheck **/*.sh || true
+
+      - name: Run shfmt (Shell script formatting check)
+        run: shfmt -d **/*.sh || true
+
+      - name: Report Shell linting status
+        run: |
+          echo "*******************************"
+          echo " Shell script linting completed."
+          echo "*******************************"

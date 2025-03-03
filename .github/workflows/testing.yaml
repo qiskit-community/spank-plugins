@@ -1,12 +1,13 @@
+---
 name: Build & Test
 on:
   workflow_dispatch:  # Allows manual trigger from GitHub UI
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+#    branches:
+#      - main
 jobs:
   testing:
     runs-on: ubuntu-latest

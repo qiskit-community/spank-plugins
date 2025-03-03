@@ -144,8 +144,9 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
         break;
     }
     if (opts_to_register) {
-        while (opts_to_register->name && (rc == ESPANK_SUCCESS))
+        while (opts_to_register->name && (rc == ESPANK_SUCCESS)) {
             rc = spank_option_register(spank_ctxt, opts_to_register++);
+        }
     }
 
     /*

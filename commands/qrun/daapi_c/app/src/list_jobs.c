@@ -60,10 +60,10 @@ int main(int argc, char *argv[]) {
 
   struct JobList *jobs = daapi_cli_list_jobs(client);
   if (jobs) {
-    printf("# of existing jobs = %d\n", jobs->length);
+    printf("# of existing jobs = %ld\n", jobs->length);
     for (size_t i = 0; i < jobs->length; i++) {
       struct Job* job = &jobs->jobs[i];
-      printf("id(%s), status(%d), program_id(%d) quantum_ns(%lld) created_time(%s) end_time(%s)\n",
+      printf("id(%s), status(%d), program_id(%d) quantum_ns(%ld) created_time(%s) end_time(%s)\n",
              job->id,
              job->status,
              job->program_id,
@@ -72,13 +72,15 @@ int main(int argc, char *argv[]) {
              job->metrics.end_time);
     }
     rc = daapi_free_job_list(jobs);
-    if (rc < 0)
+    if (rc < 0) {
       printf("Failed to free JobList(%p). rc=%d\n", jobs, rc); 
+    }
   }
 
   rc = daapi_free_client(client);
-  if (rc < 0)
+  if (rc < 0) {
     printf("Failed to free Client(%p). rc=%d\n", client, rc);
+  }
 
 free_builder:
   daapi_free_builder(builder);

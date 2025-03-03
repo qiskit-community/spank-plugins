@@ -80,13 +80,15 @@ int main(int argc, char *argv[]) {
       }
     }
     rc = daapi_free_backend_list(backends);
-    if (rc < 0)
+    if (rc < 0) {
       printf("Failed to free BackendList(%p). rc=%d\n", backends, rc);
+    }
   }
 
   rc = daapi_free_client(client);
-  if (rc < 0)
+  if (rc < 0) {
     printf("Failed to free Client(%p). rc=%d\n", client, rc);
+  }
 
 free_builder:
   daapi_free_builder(builder);

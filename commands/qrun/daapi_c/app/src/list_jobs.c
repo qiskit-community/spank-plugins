@@ -72,13 +72,15 @@ int main(int argc, char *argv[]) {
              job->metrics.end_time);
     }
     rc = daapi_free_job_list(jobs);
-    if (rc < 0)
+    if (rc < 0) {
       printf("Failed to free JobList(%p). rc=%d\n", jobs, rc); 
+    }
   }
 
   rc = daapi_free_client(client);
-  if (rc < 0)
+  if (rc < 0) {
     printf("Failed to free Client(%p). rc=%d\n", client, rc);
+  }
 
 free_builder:
   daapi_free_builder(builder);

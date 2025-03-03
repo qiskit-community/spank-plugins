@@ -1,24 +1,12 @@
+---
 name: Check QRUN Command
-
 on:
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
   pull_request:
     branches:
       - main
     paths:
       - commands/qrun/qrun/**
-  workflow_dispatch:
-    inputs:
-      logLevel:
-        description: 'Rust Log level'
-        required: true
-        default: 'warn'
-        type: choice
-        options:
-        - error
-        - warn
-        - info
-        - debug
-        - trace
 
 permissions:
   contents: read
@@ -29,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.11", "3.12"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.1.4
@@ -62,25 +50,16 @@ jobs:
         run: |
           cargo build --release
 
-      - name: Setup daa_sim
-        working-directory: daa_sim
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -U -r commands/qrun/qiskit_pubs_gen/requirements.txt
+          pip install pylint
+          pip install black
 
-      - name: Start daa_sim
-        working-directory: daa_sim
-        run: ./run.sh config.yaml
+      - name: Lint qiskit_pubs_gen with pylint
+        run: |
+          pylint commands/qrun/qiskit_pubs_gen
 
-      - name: Check readiness of daa_sim
-        run: curl http://0.0.0.0:8290/version
-
-      - name: Run example
-        working-directory: commands/qrun/target/release
-        run: ./qrun --help
-        env:
-          RUST_LOG: ${{ inputs.logLevel }}
-
-      - name: Stop daa_sim
-        working-directory: daa_sim
-        run: ./stop.sh
+      - name: Lint qiskit_pubs_gen with black
+        run: |
+          black --check commands/qrun/qiskit_pubs_gen

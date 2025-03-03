@@ -152,7 +152,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
          */
         const char* uuid = daapi_uuid_v4_new();
         if (!uuid) {
-            slurm_error("%s(%d): failed to generate UUIDv4", plugin_name, (int)getpid());
+            slurm_error("%s(%d): failed to generate UUIDv4", plugin_name, pid);
             return SLURM_ERROR;
         }
         strncpy_s(qrun_job_id, uuid, sizeof(qrun_job_id));
@@ -165,8 +165,9 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
         break;
     }
     if (opts_to_register) {
-        while (opts_to_register->name && (rc == ESPANK_SUCCESS))
+        while (opts_to_register->name && (rc == ESPANK_SUCCESS)) {
             rc = spank_option_register(spank_ctxt, opts_to_register++);
+        }
     }
 
     slurm_debug("%s(%d): <- %s rc=%d", plugin_name, pid, __FUNCTION__, rc);

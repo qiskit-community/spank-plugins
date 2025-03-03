@@ -1,0 +1,70 @@
+---
+name: Check Direct Access API Simulator
+on:
+  workflow_dispatch:   # Allows manual trigger from GitHub UI
+  pull_request:
+    branches:
+      - main
+    paths:
+      - daa_sim/**
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  verify-da-python:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Display Python version
+      run: python -c "import sys; print(sys.version)"
+
+    - name: Test installation of daa_sim
+      working-directory: daa_sim
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+
+    - name: Install pytest/pylint/black
+      run: |
+        pip install pytest pylint black
+
+    - name: Lint with pylint
+      run: |
+        pylint daa_sim/direct_access_client
+
+    - name: Lint with black
+      run: |
+        black --check daa_sim/direct_access_client
+
+    - name: Test with pytest
+      working-directory: daa_sim
+      run: |
+        pytest
+
+    - name: Start daa_sim
+      working-directory: daa_sim
+      run: |
+        ./run.sh config.yaml
+
+    - name: Invoke API
+      run: |
+        curl -v http://0.0.0.0:8290/version
+
+    - name: Stop daa_sim
+      working-directory: daa_sim
+      run: |
+        ./stop.sh
+

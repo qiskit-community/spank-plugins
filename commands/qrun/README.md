@@ -45,7 +45,6 @@ Arguments:
 
 Options:
   -r, --results <RESULTS>            Result output file
-  -l, --logs <LOGS>                  Log output file
       --log-level <LOG_LEVEL>        Log level [default: warning] [possible values: debug, info, warning, error, critical]
       --http-timeout <HTTP_TIMEOUT>  HTTP request timeout in seconds [default: 60]
   -h, --help                         Print help

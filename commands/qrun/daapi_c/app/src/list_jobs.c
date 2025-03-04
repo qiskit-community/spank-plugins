@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "cjson/cJSON.h"
 #include "direct_access_capi.h"
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
     printf("# of existing jobs = %ld\n", jobs->length);
     for (size_t i = 0; i < jobs->length; i++) {
       struct Job* job = &jobs->jobs[i];
-      printf("id(%s), status(%d), program_id(%d) quantum_ns(%ld) created_time(%s) end_time(%s)\n",
+      printf("id(%s), status(%d), program_id(%d) quantum_ns(%" PRId64 ") created_time(%s) end_time(%s)\n",
              job->id,
              job->status,
              job->program_id,

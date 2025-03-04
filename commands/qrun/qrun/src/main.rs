@@ -42,10 +42,6 @@ struct Args {
     #[arg(short, long)]
     results: Option<String>,
 
-    /// Log output file.
-    #[arg(short, long)]
-    logs: Option<String>,
-
     /// Log level.
     #[arg(
         long,
@@ -131,9 +127,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // to prevent file writing errors after a long job execution.
     if let Some(ref results_file) = args.results {
         check_file_argument(results_file);
-    }
-    if let Some(ref logs_file) = args.logs {
-        check_file_argument(logs_file);
     }
 
     // Check to see if the environment variables required to run this program are set.
@@ -281,17 +274,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Some(logs_file) = args.logs {
-        match primitive_job.get_logs().await {
-            Ok(retval) => {
-                write_to_file(&logs_file, retval.as_bytes());
-            }
-            Err(e) => {
-                eprintln!(
-                    "Error occurred while fetching logs from S3 bucket: {:?}",
-                    e.to_string()
-                );
-            }
+
+    match primitive_job.get_logs().await {
+        Ok(retval) => {
+            // It it enough to simply write to stdout so that Slurm will output to the
+            // log file specified by sbatch --output option.
+            println!("{}", retval);
+        }
+        Err(e) => {
+            eprintln!(
+                "Error occurred while fetching logs from S3 bucket: {:?}",
+                e.to_string()
+            );
         }
     }
 

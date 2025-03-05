@@ -130,16 +130,15 @@ Slurm Cluster is now set up as shown.
 
 4. Installing SPANK Plugins
 
+> [!NOTE]
+> The plugstack.conf file and the plugin library must be available on the node where the user executes the `sbatch` command and on the compute node where the QRUN command is executed.
+
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
 
 ```bash
 optional /shared/spank-plugins/plugins/skeleton/build/spank_skeleton.so
 optional /shared/spank-plugins/plugins/spank_ibm_qrun/build/spank_ibm_qrun.so
 ```
-
-> [!NOTE]
-> The plugstack.conf file and the plugin library must be available on the node where the user executes the `sbatch` command and on the compute node where the QRUN command is executed.
-
 
 5. Checking SPANK Plugins installation
 

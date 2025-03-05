@@ -42,20 +42,6 @@ struct Args {
     #[arg(short, long)]
     results: Option<String>,
 
-    /// Log output file.
-    #[arg(short, long)]
-    logs: Option<String>,
-
-    /// Log level.
-    #[arg(
-        long,
-        default_value_t = LogLevel::Warning,
-        value_parser = clap::builder::PossibleValuesParser::new(
-            ["debug", "info", "warning", "error", "critical"])
-            .map(|s| s.parse::<LogLevel>().unwrap()),
-    )]
-    log_level: LogLevel,
-
     /// HTTP request timeout in seconds.
     #[arg(long, default_value_t = 60)]
     http_timeout: u64,
@@ -97,7 +83,6 @@ fn write_to_file(filename: &String, data: &[u8]) {
         match f.write_all(data) {
             Ok(()) => {
                 let _ = f.flush();
-                println!("Wrote results to {}", filename);
             }
             Err(e) => {
                 eprintln!("{:?}", e);
@@ -121,6 +106,44 @@ fn check_file_argument(path: &str) {
     }
 }
 
+// Convert SRUN_DEBUG environment value to DA LogLevel
+fn get_log_level(srun_debug: &str) -> LogLevel {
+    match srun_debug.parse::<i32>() {
+        Ok(level) => match level {
+            // --quiet
+            2 => LogLevel::Error,
+            // default
+            3 => LogLevel::Info,
+            // --verbose
+            4 => LogLevel::Debug,
+            // -vv or more
+            n if n >= 5 => LogLevel::Debug,
+            // default is Info as same as srun
+            _ => LogLevel::Info,
+        },
+        Err(_) => LogLevel::Info,
+    }
+}
+
+// Convert SRUN_DEBUG environment value to RUST_LOG value
+fn get_rust_log_level(srun_debug: &str) -> &str {
+    match srun_debug.parse::<i32>() {
+        Ok(level) => match level {
+            // --quiet
+            2 => "error",
+            // default
+            3 => "info",
+            // --verbose
+            4 => "debug",
+            // -vv or more
+            n if n >= 5 => "debug",
+            // default is Info as same as srun
+            _ => "info",
+        },
+        Err(_) => "info",
+    }
+}
+
 #[tokio::main]
 #[allow(unreachable_code)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -131,9 +154,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // to prevent file writing errors after a long job execution.
     if let Some(ref results_file) = args.results {
         check_file_argument(results_file);
-    }
-    if let Some(ref logs_file) = args.logs {
-        check_file_argument(logs_file);
     }
 
     // Check to see if the environment variables required to run this program are set.
@@ -161,7 +181,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         job_id = None;
     }
 
-    env_logger::init();
+    let log_level: LogLevel;
+    if let Ok(srun_debug) = env::var("SRUN_DEBUG") {
+        // Direct Access - service side log level
+        log_level = get_log_level(&srun_debug);
+        // Direct Access - client side log level
+        env_logger::Builder::from_env(
+            env_logger::Env::default().default_filter_or(get_rust_log_level(&srun_debug)),
+        )
+        .init();
+    } else {
+        // Info is default as same as srun's default
+        log_level = LogLevel::Info;
+        env_logger::init();
+    }
 
     let retry_policy = ExponentialBackoff::builder()
         .retry_bounds(Duration::from_secs(1), Duration::from_secs(5))
@@ -223,7 +256,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             &backend_name,
             program_id.parse().unwrap(),
             timeout_secs,
-            args.log_level,
+            log_level,
             &job,
             job_id,
         )
@@ -281,17 +314,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Some(logs_file) = args.logs {
-        match primitive_job.get_logs().await {
-            Ok(retval) => {
-                write_to_file(&logs_file, retval.as_bytes());
-            }
-            Err(e) => {
-                eprintln!(
-                    "Error occurred while fetching logs from S3 bucket: {:?}",
-                    e.to_string()
-                );
-            }
+    match primitive_job.get_logs().await {
+        Ok(retval) => {
+            // It it enough to simply write to stdout so that Slurm will output to the
+            // log file specified by sbatch --output option.
+            println!("{}", retval);
+        }
+        Err(e) => {
+            eprintln!(
+                "Error occurred while fetching logs from S3 bucket: {:?}",
+                e.to_string()
+            );
         }
     }
 

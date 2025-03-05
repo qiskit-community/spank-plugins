@@ -74,15 +74,15 @@ docker compose up -d
 > [!NOTE]
 > Ensure that the following seven containers are running on the PC.
 >
-> - daapi
-> - c2
-> - c1
-> - slurmctld
-> - slurmdbd
-> - slurm-docker-cluster-minio-1
-> - mysql
+> - daapi ([Direct Access API Simulator](./daa_sim/README.md) node)
+> - c2 (Compute Node #2)
+> - c1 (Compute Node #1)
+> - slurmctld (Central Management Node)
+> - slurmdbd (Slurm DB Node)
+> - slurm-docker-cluster-minio-1 (S3 Bucket Node, used by Direct Access)
+> - mysql (Database node)
 
-Slurm Cluster was set up as shown.
+Slurm Cluster is now set up as shown.
 
 <p align="center">
   <img src="./docs/images/slurm-docker-cluster.png" width="640">
@@ -149,7 +149,7 @@ Options provided by plugins:
 
 4. Install QRUN Command
 
-Login to compute nodes (`c1` and `c2 in above slurm docker cluster example).
+Login to compute nodes (`c1` and `c2` in above slurm docker cluster example).
 
 ```bash
 % docker exec -it c1 bash

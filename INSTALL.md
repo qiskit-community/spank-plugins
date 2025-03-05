@@ -93,7 +93,7 @@ Slurm Cluster is now set up as shown.
 
 The following explanation assumes the Slurm Docker Cluster set up above. If you use other existing environments, do the equivalent.
 
-1. Building QRUN command and SPANK Plugins
+1. Building [QRUN](./commands/qrun/README.md)
 
 > [!NOTE]
 > Following description assumes to log in to `slurmctld` node and build there. Other nodes are also acceptable.
@@ -104,14 +104,22 @@ The following explanation assumes the Slurm Docker Cluster set up above. If you 
 [root@slurmctld /]# source ~/.cargo/env
 [root@slurmctld /]# cd /shared/spank-plugins/commands/qrun
 [root@slurmctld /]# cargo build --release
+```
 
+2. Building SPANK Plugin - [skeleton](./plugins/skeleton/README.md)
+
+```bash
 [root@slurmctld /]# cd /shared/spank-plugins/plugins/skeleton
 [root@slurmctld /]# mkdir build
 [root@slurmctld /]# pushd build
 [root@slurmctld /]# cmake ..
 [root@slurmctld /]# make
 [root@slurmctld /]# popd
+```
 
+3. Building SPANK Plugin - [spank_ibm_qrun](./plugins/spank_ibm_qrun/README.md)
+
+```bash
 [root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_ibm_qrun
 [root@slurmctld /]# mkdir build
 [root@slurmctld /]# pushd build
@@ -120,7 +128,7 @@ The following explanation assumes the Slurm Docker Cluster set up above. If you 
 [root@slurmctld /]# popd
 ```
 
-2. Installing SPANK Plugins
+4. Installing SPANK Plugins
 
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
 
@@ -133,7 +141,7 @@ optional /shared/spank-plugins/plugins/spank_ibm_qrun/build/spank_ibm_qrun.so
 > The plugstack.conf file and the plugin library must be available on the node where the user executes the `sbatch` command and on the compute node where the QRUN command is executed.
 
 
-3. Checking SPANK Plugins installation
+5. Checking SPANK Plugins installation
 
 If you complete above step, you must see additional options of `sbatch` like below.
 
@@ -147,7 +155,7 @@ Options provided by plugins:
 
 ```
 
-4. Install QRUN Command
+6. Install QRUN Command
 
 Login to compute nodes (`c1` and `c2` in above slurm docker cluster example).
 
@@ -160,7 +168,7 @@ Login to compute nodes (`c1` and `c2` in above slurm docker cluster example).
 [root@c2 /]# exit
 ```
 
-5. Checking QRUN command
+7. Checking QRUN command
 
 Login to compute nodes (`c1` and `c2 in above slurm docker cluster example).
 

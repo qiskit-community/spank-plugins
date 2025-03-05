@@ -55,15 +55,6 @@ Example:
 $ ./target/release/qrun ../../demo/qrun/pubs/sampler_input.json
 ```
 
-Debug level mapping
-
-| SRUN | SRUN_DEBUG env var | QRUN(Direct Access) |
-| ---- | ---- | ---- |
-| (default = info) | 3 | info | 
-| -v / --verbose | 4 | debug |
-| -vv or more | 5 | debug |
-| --quiet | 2 | error |
-
 ### Environment variables
 
 | environment variable | descriptions |
@@ -81,6 +72,17 @@ Debug level mapping
 | IBMQRUN_IAM_ENDPOINT | IBM Cloud IAM endpoint URL (e.g. https://iam.cloud.ibm.com) |
 | IBMQRUN_APPID_CLIENT_ID | (Deprecated) IBM Cloud AppId client ID to get access token from Direct Access API (POST /v1/token). |
 | IBMQRUN_APPID_SECRET | (Deprecated) IBM Cloud AppId secret to get access token from Direct Access API (POST /v1/token). |
+
+### Logging level mapping
+
+QRUN logging level can be controlled by `srun` options like `--verbose`, `--quiet` etc..
+
+| SRUN | SRUN_DEBUG env var | QRUN(Direct Access) |
+| ---- | ---- | ---- |
+| (default = info) | 3 | info | 
+| -v / --verbose | 4 | debug |
+| -vv or more | 5 | debug |
+| --quiet | 2 | error |
 
 
 ## Feature flags

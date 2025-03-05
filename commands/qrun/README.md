@@ -44,8 +44,7 @@ Arguments:
   <INPUT>  Qiskit Primitive Unified Bloc(PUB)s file
 
 Options:
-  -r, --results <RESULTS>            Result output file
-      --log-level <LOG_LEVEL>        Log level [default: warning] [possible values: debug, info, warning, error, critical]
+  -r, --results <RESULTS>            Result output file [default: stdout]
       --http-timeout <HTTP_TIMEOUT>  HTTP request timeout in seconds [default: 60]
   -h, --help                         Print help
   -V, --version                      Print version
@@ -55,6 +54,15 @@ Example:
 ```shell-session
 $ ./target/release/qrun ../../demo/qrun/pubs/sampler_input.json
 ```
+
+Debug level mapping
+
+| SRUN | SRUN_DEBUG env var | QRUN(Direct Access) |
+| ---- | ---- |
+| (default = info) | 3 | info | 
+| -v / --verbose | 4 | debug |
+| -vv or more | 5 | debug |
+| --quiet | 2 | error |
 
 ### Environment variables
 

@@ -1,6 +1,16 @@
 # Installation
 
+This document describes how to setup development environment and the plugins developed in this project.
+
+
 ## Setup Local Development Environment
+
+### Jump To:
+- [Pre-requisites](#pre-requisites)
+- [Creating Docker-based Slurm Cluster](#creating-docker-based-slurm-cluster)
+- [Building and installing our SPANK Plugins](#building-and-installing-our-spank-plugins)
+- [Running examples of primitive job in Slurm Cluster](#running-examples-of-primitive-job-in-slurm-cluster)
+
 
 ### Pre-requisites
 
@@ -91,10 +101,12 @@ Slurm Cluster is now set up as shown.
 
 ### Building and installing our SPANK Plugins
 
+
 > [!NOTE]
 > The following explanation assumes:
 > - using Slurm Docker Cluster set up above. If you use other existing environments, do the equivalent.
 > - building code on `slurmctld` node. Other nodes are also acceptable.
+
 
 1. Building [QRUN](./commands/qrun/README.md)
 

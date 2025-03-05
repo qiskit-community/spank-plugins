@@ -91,12 +91,12 @@ Slurm Cluster is now set up as shown.
 
 ### Building and installing our SPANK Plugins
 
-The following explanation assumes the Slurm Docker Cluster set up above. If you use other existing environments, do the equivalent.
+> [!NOTE]
+> The following explanation assumes:
+> - using Slurm Docker Cluster set up above. If you use other existing environments, do the equivalent.
+> - building code on `slurmctld` node. Other nodes are also acceptable.
 
 1. Building [QRUN](./commands/qrun/README.md)
-
-> [!NOTE]
-> Following description assumes to log in to `slurmctld` node and build there. Other nodes are also acceptable.
 
 ```bash
 % docker exec -it slurmctld bash

@@ -58,7 +58,7 @@ $ ./target/release/qrun ../../demo/qrun/pubs/sampler_input.json
 Debug level mapping
 
 | SRUN | SRUN_DEBUG env var | QRUN(Direct Access) |
-| ---- | ---- |
+| ---- | ---- | ---- |
 | (default = info) | 3 | info | 
 | -v / --verbose | 4 | debug |
 | -vv or more | 5 | debug |

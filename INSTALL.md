@@ -193,21 +193,76 @@ Options:
 
 ### Running examples of primitive job in Slurm Cluster
 
-1. Login to slurmctld node
+1. Loging in to slurmctld node
 
 ```bash
 % docker exec -it slurmctld bash
 ```
 
-2. Goto demo directory
+2. Going to demo directory
 
 ```bash
 [root@slurmctld /]# cd /shared/spank-plugins/demo/jobs
+```
+
+3. Running Sampler job
+
+```bash
 [root@slurmctld /]# sbatch run_sampler.sh
+```
+
+4. Running Estimator job
+
+```bash
 [root@slurmctld /]# sbatch run_estimator.sh
 ```
  
+5. Checking primitive results
+
 Once above scripts are completed, you must find `/data/sampler_output.json` and `/data/estimator_output.json` as described in above scripts.
 
+For example,
+```bash
+[root@slurmctld /]# cat /data/estimator_output.json
+{
+  "metadata": {
+    "version": 2
+  },
+  "results": [
+    {
+      "data": {
+        "evs": [
+          0.004016745250604636,
+          0.0,
+          0.0025120469911992793,
+          0.0,
+          0.9937272990440552,
+          0.9919255461264646
+        ],
+        "stds": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "metadata": {
+        "circuit_metadata": {},
+        "simulator_metadata": {
+          "max_gpu_memory_mb": 0,
+          "max_memory_mb": 23995,
+          "omp_enabled": true,
+          "parallel_experiments": 1,
+          "time_taken_execute": 0.006059958,
+          "time_taken_parameter_binding": 0.000015292
+        },
+        "target_precision": 0.0
+      }
+    }
+  ]
+}
+```
 
 ## END OF DOCUMENT

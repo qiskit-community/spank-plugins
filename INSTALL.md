@@ -69,11 +69,57 @@ docker compose up -d
 
 #### 8. Creating a S3 bucket for testing
 
-- Open http://localhost:9001 with your browser
+S3 Bucket creation can be done via a)Web Browser or b)CLI.
+
+a) Using MinIO Object Browser
+- Open http://localhost:9001 with your browser running on your Host
 - Login with minioadmin / minioadmin
 - Click 'Create a Bucket' hyperlink in Object Browser tab
 - Specify `slurm-qrun` as Bucket Name.
 - Click 'Create Bucket'
+
+
+b) Using CLI
+
+```bash
+% docker exec -it slurm-docker-cluster-minio-1 bash
+bash-5.1# mc alias set local http://localhost:9000 minioadmin minioadmin
+bash-5.1# mc alias list
+gcs
+  URL       : https://storage.googleapis.com
+  AccessKey : YOUR-ACCESS-KEY-HERE
+  SecretKey : YOUR-SECRET-KEY-HERE
+  API       : S3v2
+  Path      : dns
+  Src       : /tmp/.mc/config.json
+
+local
+  URL       : http://localhost:9000
+  AccessKey : minioadmin
+  SecretKey : minioadmin
+  API       : s3v4
+  Path      : auto
+  Src       : /tmp/.mc/config.json
+
+play
+  URL       : https://play.min.io
+  AccessKey : Q3AM3UQ867SPQQA43P2F
+  SecretKey : zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+  API       : S3v4
+  Path      : auto
+  Src       : /tmp/.mc/config.json
+
+s3
+  URL       : https://s3.amazonaws.com
+  AccessKey : YOUR-ACCESS-KEY-HERE
+  SecretKey : YOUR-SECRET-KEY-HERE
+  API       : S3v4
+  Path      : dns
+  Src       : /tmp/.mc/config.json
+
+bash-5.1# mc mb local/slurm-qrun
+bash-5.1# exit
+```
 
 #### 9. Starting Slurm Cluster
 

@@ -47,6 +47,9 @@ static char qrun_job_id[MAXLEN_JOB_ID+1];
 /* Maximum length of API Key (See IBM Cloud documentation) */
 #define MAXLEN_IAM_APIKEY   128
 
+/* QRUN executable name */
+static const char* QRUN_COMMAND = "qrun";
+
 /*
  * @function strncpy_s
  *
@@ -90,6 +93,25 @@ static int primitive_type_cb(int val, const char *optarg, int remote)
             plugin_name, __FUNCTION__, val, optarg, remote);
     strncpy_s(primitive_type, optarg, sizeof(primitive_type));
     return ESPANK_SUCCESS;
+}
+
+/*
+ * @function is_qrun_task
+ *
+ * Returns true if this is qrun task, otherwise false.
+ *
+ */
+static bool is_qrun_task(spank_t spank_ctxt) {
+    int argc = 0;
+    char **argv = NULL;
+
+    if (spank_get_item(spank_ctxt, S_JOB_ARGV, &argc, &argv) ==
+        ESPANK_SUCCESS) {
+        if ((argc > 0) && (strncmp(QRUN_COMMAND, argv[0], strlen(QRUN_COMMAND)) == 0)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /*
@@ -328,7 +350,9 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
         spank_unsetenv(spank_ctxt, "IBMQRUN_BACKEND");
         spank_unsetenv(spank_ctxt, "IBMQRUN_PRIMITIVE");
 #ifndef FREE_RESOURCE_BY_QRUN
-        if (delete_qrun_job(spank_ctxt, qrun_job_id) != ESPANK_SUCCESS) {
+        /* try to delete a job if this task is 'QRUN'. */
+        if (is_qrun_task(spank_ctxt) &&
+            delete_qrun_job(spank_ctxt, qrun_job_id) != ESPANK_SUCCESS) {
             slurm_error("%s: failed to delete qrun job(%s).", plugin_name, qrun_job_id);
             rc = SLURM_ERROR;
         }

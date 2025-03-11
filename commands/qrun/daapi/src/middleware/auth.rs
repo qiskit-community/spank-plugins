@@ -74,10 +74,10 @@ impl TokenManager {
             }
         }
         if let AuthMethod::IbmCloudIam { apikey, .. } = self.auth_method.clone() {
-            let data: String = format!(
-                "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={}",
-                apikey
-            );
+            let params = [
+                ("grant_type", "urn:ibm:params:oauth:grant-type:apikey"),
+                ("apikey", &apikey),
+            ];
             let response = self
                 .client
                 .post(&self.token_url)
@@ -86,7 +86,7 @@ impl TokenManager {
                     reqwest::header::CONTENT_TYPE,
                     "application/x-www-form-urlencoded",
                 )
-                .body(data)
+                .form(&params)
                 .send()
                 .await?;
             if response.status().is_success() {

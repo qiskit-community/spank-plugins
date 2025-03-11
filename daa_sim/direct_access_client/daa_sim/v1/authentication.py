@@ -13,10 +13,10 @@
 # pylint: disable=line-too-long
 
 """Authentication API Mock"""
-import re
 import datetime as dt
 import logging.config
 from typing import Annotated
+import urllib
 import jwt
 from fastapi import APIRouter, Request, Depends
 from fastapi.security import (
@@ -122,15 +122,19 @@ async def get_iam_access_token(
         TokenResponse: Access token
     """
     body = await request.body()
-    body = body.decode("utf-8")
+    body = urllib.parse.unquote(body.decode("utf-8"))
 
     apikey = None
-    try:
-        apikey = re.search(
-            r"grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey=(.+)", body
-        ).group(1)
-    except AttributeError:
-        pass
+    grant_type = None
+    params = body.split("&")
+    for param in params:
+        if param.startswith("apikey="):
+            apikey = param[len("apikey=") :]
+        elif param.startswith("grant_type="):
+            grant_type = param[len("grant_type=") :]
+
+    if grant_type is None or grant_type != "urn:ibm:params:oauth:grant-type:apikey":
+        raise IAMPropertyMissingOrEmptyError()
 
     if apikey is not None:
         apikeys = request.app.daa_iam_apikeys

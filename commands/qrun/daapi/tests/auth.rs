@@ -339,6 +339,7 @@ async fn test_auth_iam_bearer_token() {
 
     const IAM_APIKEY: &str = "demoapikey";
     const SERVICE_CRN: &str = "crn:v1:local:test";
+    const GRANT_TYPE: &str = "urn:ibm:params:oauth:grant-type:apikey";
 
     let mut server = mockito::Server::new_async().await;
 
@@ -370,13 +371,10 @@ async fn test_auth_iam_bearer_token() {
         .mock("POST", "/identity/token")
         .with_status(200)
         .with_header("content-type", "application/x-www-form-urlencoded")
-        .match_body(
-            format!(
-                "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={}",
-                IAM_APIKEY
-            )
-            .as_str(),
-        )
+        .match_body(mockito::Matcher::AllOf(vec![
+            mockito::Matcher::UrlEncoded("grant_type".to_string(), GRANT_TYPE.to_string()),
+            mockito::Matcher::UrlEncoded("apikey".to_string(), IAM_APIKEY.to_string()),
+        ]))
         .with_body(access_token_response.to_string())
         .create_async()
         .await;

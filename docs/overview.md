@@ -7,11 +7,13 @@ Spank plugins for Slurm to support quantum resources
 - [Definitions](#definitions)
   - [QPU](#qpu)
   - [Quantum computer](#quantum-computer)
-  - [IBM Quantum Platform](#ibm-quantum-platform)
-  - [Direct Access API](#direct-access-api) 
   - [Spank plugins](#spank-plugins)
   - [Spank quantum plugin](#spank-quantum-plugin)
   - [Qiskit primitives (Sampler and Estimator)](#qiskit-primitives-sampler-and-estimator)
+- [Vendor-Specific Context: IBM](#vendor-specific-context-ibm)
+- [Vendor-Specific Definitions: IBM](#vendor-specific-definitions-ibm
+  - [IBM Quantum Platform](#ibm-quantum-platform)
+  - [Direct Access API](#direct-access-api) 
 - [High Level Structure](#high-level-structure) 
 - [Quantum resource for workload management systems](#quantum-resource-for-workload-management-system)
 - [Quantum resource API](#quantum-resource-api)
@@ -37,12 +39,6 @@ A `QPU` includes all of the hardware responsible for accepting an executable qua
 ### Quantum Computer
 A `Quantum Computer` is comprised of the QPU and the classical compute needed to execute requests coming in through an API (its endpoint).
 
-### IBM Quantum Platform
-Cloud-based quantum computing iservice providing access to IBM's fleet of quantum backends. Sometimes abbreviated as IQP.
-
-### Direct Access API
-Local interface to am IBM Quantum Computer. Sometimes abbreviated as DA API. Below the Direct Access API, classical preparation of jobs prior to the actual quantum execution can run in parallel (called *lanes* in the API definition).
-
 ### Spank plugins
 `SPANK` provides a very generic interface for stackable plug-ins which may be used to dynamically modify the job launch code in Slurm.
 https://slurm.schedmd.com/spank.html
@@ -57,6 +53,20 @@ The two most common tasks for quantum computers are sampling quantum states and 
 - Sampler samples the output register from quantum circuit execution.
 
 In short, the computational model introduced by the Qiskit primitives moves quantum programming one step closer to where classical programming is today, where the focus is less on the hardware details and more on the results you are trying to achieve.
+
+## Vendor-Specific Context: IBM
+
+Extension of the context overview of involved components, personas and backend service options for IBM:
+![context diagram IBM](./images/context_diagram_ibm.png)
+
+## Vendor-Specific Definitions: IBM
+
+### IBM Quantum Platform
+Cloud-based quantum computing iservice providing access to IBM's fleet of quantum backends. Sometimes abbreviated as IQP.
+
+### Direct Access API
+Local interface to am IBM Quantum Computer. Sometimes abbreviated as DA API. Below the Direct Access API, classical preparation of jobs prior to the actual quantum execution can run in parallel (called *lanes* in the API definition).
+
 
 ## High Level Structure
 
@@ -103,7 +113,7 @@ and then be bound in the actual source code with something like this:
 backend=slurm_provider(name="my_qpu_resource")
 ```
 
-Note exact syntax is not the point here and needs refinement, but the conceptual separation of resource definition (which includes backend selection/selection policy) and binding to the resource when using it. In that spirit, slurm provides access to the backends it is configured with.
+Note exact syntax (and example) is not the point here and needs refinement, but the conceptual separation of resource definition (which includes backend selection/selection policy) and binding to the resource when using it. In that spirit, slurm provides access to the backends it is configured with.
 
 As transpilation needs the backend information, this eventually can be a two step process, which only locks the backend when it's used, but offers binding in source for transpilation before acquiring the lock. In an initial implementation, transpilation can be done while holding the lock, not impacting machine utilization dramatically in practice for large workloads.
 
@@ -230,7 +240,7 @@ Quantum plugin will be using Spank architecture events sequence of call during j
   * parallelism abstracts (such as execution lanes which are anonymous units to prepare jobs in parallel for quantum execution which is still serialized) are abstracted behind the slurm QPU resource. Qualifiers may be used to deal with specifics (such as: are these lanes held exclusive for one user, or is there a shared access possible)
 * Quantum resources are acquired/locked before usage
   * as identification/selection of the quantum resource is through the slurm resource, transpilation can only happen after that
-  * initially, transpilation will happen after acquiring the resource, which can can lead to slightly lower QPU utilization, as other jobs may be locked out. This may be improved in a later phase.
+  * initially, transpilation will happen after acquiring the resource, which can can lead to slightly lower QPU utilization, as other jobs may be locked out. This may (should!) be improved in a later phase and requires an extended concept (such as first step is define the resource, which may or may not result in actions, second step is lock for execution) -- more details required at a later time!
 * Primitive calls will trigger submission towards the Quantum Computer
   * Flow is triggered from the qiskit-level code, without scheduling additional intermediate slurm jobs
   * The network flow can go through the slurm plugin, to govern user access or manage access to the Quantum Computer

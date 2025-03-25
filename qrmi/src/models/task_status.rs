@@ -16,6 +16,8 @@ use pyo3::prelude::*;
 #[pyclass(eq, eq_int)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TaskStatus {
+    /// Task is queued
+    Queued,
     /// Task is running
     Running,
     /// Task was completed

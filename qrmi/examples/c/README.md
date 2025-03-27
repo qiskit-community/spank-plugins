@@ -40,9 +40,9 @@ $ make
 ## How to run this example
 ```shell-session
 $ ./build/direct_access
-direct_access <primitive input file>
+direct_access <primitive input file> <program id>
 ```
 For example,
 ```shell-session
-$ ./build/direct_access sampler_input.json
+$ ./build/direct_access sampler_input.json sampler
 ```

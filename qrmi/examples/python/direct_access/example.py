@@ -23,6 +23,7 @@ from qrmi import IBMDirectAccess, Payload, TaskStatus
 
 parser = argparse.ArgumentParser(description="An example of IBM Direct Access QRMI")
 parser.add_argument("input", help="primitive input file")
+parser.add_argument("program_id", help="'estimator' or 'sampler'")
 args = parser.parse_args()
 
 load_dotenv()
@@ -40,8 +41,8 @@ print(json.dumps(target_json, indent=2))
 print(qrmi.metadata())
 
 with open(args.input, encoding="utf-8") as f:
-    input = f.read()
-    payload = Payload.QiskitPrimitive(input=input, program_id="sampler")
+    primitive_input = f.read()
+    payload = Payload.QiskitPrimitive(input=primitive_input, program_id=args.program_id)
     job_id = qrmi.task_start(payload)
     print(f"Task started {job_id}")
 

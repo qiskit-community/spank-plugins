@@ -22,8 +22,8 @@ extern const char *read_file(const char *);
 
 int main(int argc, char *argv[]) {
 
-  if (argc != 2) {
-    fprintf(stderr, "direct_access <primitive input file>\n");
+  if (argc != 3) {
+    fprintf(stderr, "direct_access <primitive input file> <program id>\n");
     return 0;
   }
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
   qrmi_free_string((char *)target);
 
   const char *input = read_file(argv[1]);
-  const char *job_id = qrmi_ibmda_task_start(qrmi, "sampler", input);
+  const char *job_id = qrmi_ibmda_task_start(qrmi, argv[2], input);
   if (job_id == NULL) {
     fprintf(stderr, "failed to start a task.\n");
     free((void*)input);

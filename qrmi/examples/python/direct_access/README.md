@@ -38,9 +38,19 @@ Refer [this tool](../../../../commands/qrun/qiskit_pubs_gen) to generate. You ca
 ## How to run
 
 ```shell-session
-$ python example.py <primitive input file>
+$ python example.py -h
+usage: example.py [-h] input program_id
+
+An example of IBM Direct Access QRMI
+
+positional arguments:
+  input       primitive input file
+  program_id  'estimator' or 'sampler'
+
+options:
+  -h, --help  show this help message and exit
 ```
 For example,
 ```shell-session
-$ python example.py sampler_input.json
+$ python example.py sampler_input.json sampler
 ```

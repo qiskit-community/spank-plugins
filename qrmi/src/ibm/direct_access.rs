@@ -15,8 +15,8 @@ use crate::QuantumResource;
 use anyhow::{bail, Result};
 use direct_access_api::utils::s3::S3Client;
 use direct_access_api::{
-    models::Backend, models::BackendStatus, models::JobStatus, models::LogLevel, models::ProgramId,
-    AuthMethod, Client, ClientBuilder,
+    models::Backend, models::BackendStatus, models::Job, models::JobStatus, models::LogLevel,
+    models::ProgramId, AuthMethod, Client, ClientBuilder,
 };
 use retry_policies::policies::ExponentialBackoff;
 use retry_policies::Jitter;
@@ -286,6 +286,30 @@ impl IBMDirectAccess {
     /// Wrapper of async call for QRMI task_result() function.
     #[tokio::main]
     async fn _task_result(&mut self, task_id: &str) -> Result<TaskResult> {
+        let job = self.api_client.get_job::<Job>(task_id).await?;
+        if matches!(job.status, JobStatus::Failed) {
+            let reason_code = job.reason_code.map_or("".to_string(), |v| v.to_string());
+            let reason_message = job.reason_message.unwrap_or("".to_string());
+            let reason_solution = job.reason_solution.unwrap_or("".to_string());
+            bail!(
+                format!(
+                    "Unable to retrieve result for task {}. Task was failed. code: {}, message: {}, solution: {}",
+                    task_id, reason_code, reason_message, reason_solution
+                )
+            );
+        }
+        if matches!(job.status, JobStatus::Cancelled) {
+            bail!(format!(
+                "Unable to retrieve result for task {}. Task was cancelled.",
+                task_id
+            ));
+        }
+        if matches!(job.status, JobStatus::Running) {
+            bail!(format!(
+                "Unable to retrieve result for task {}. Task is running.",
+                task_id
+            ));
+        }
         let s3_object_key = format!("results_{}.json", task_id);
         let object = self
             .s3_client

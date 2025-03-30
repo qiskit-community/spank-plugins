@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -29,6 +29,7 @@ from os.path import isdir, isfile
 import multiprocessing as mp
 import threading
 import importlib
+from collections import OrderedDict
 
 import numpy as np
 import urllib3
@@ -40,9 +41,6 @@ from qiskit.primitives.containers import (
     BitArray,
     DataBin,
 )
-from qiskit.transpiler.target import target_to_backend_properties
-
-from qiskit_aer import AerSimulator
 from qiskit_aer.primitives import SamplerV2, EstimatorV2
 
 from qiskit_ibm_runtime import RuntimeEncoder, RuntimeDecoder
@@ -164,15 +162,14 @@ class DAAService:
 
     DEFAULT_SAMPLER_SHOTS: int = 1000
 
-    DEFAULT_BACKEND = "aer"
-
-    DEFAULT_AVALIABLE_BACKENDS = {
-        DEFAULT_BACKEND: AerSimulator,
-        FakeBrisbane.backend_name: FakeBrisbane,  # 127Q
-        FakeCairoV2.backend_name: FakeCairoV2,  # 27Q
-        FakeLagosV2.backend_name: FakeLagosV2,  # 7Q
-        FakeTorino.backend_name: FakeTorino,  # 133Q
-    }
+    DEFAULT_AVALIABLE_BACKENDS = OrderedDict(
+        [
+            (FakeBrisbane.backend_name, FakeBrisbane),  # 127Q
+            (FakeCairoV2.backend_name, FakeCairoV2),  # 27Q
+            (FakeLagosV2.backend_name, FakeLagosV2),  # 7Q
+            (FakeTorino.backend_name, FakeTorino),  # 133Q
+        ]
+    )
 
     def __init__(
         self,
@@ -206,7 +203,7 @@ class DAAService:
         if backends is None:
             self._available_backends = DAAService.DEFAULT_AVALIABLE_BACKENDS
         else:
-            self._available_backends = {}
+            self._available_backends = OrderedDict()
             for backend in backends:
                 try:
                     backend_name, clazz = self.load_backend(
@@ -244,6 +241,13 @@ class DAAService:
             self._status_lock = mp.RLock()
         else:
             self._status_lock = threading.RLock()
+
+    @property
+    def default_backend_name(self):
+        """Returns the name of the first backend in self._available_backends as default.
+        This is used by pytest testcases only.
+        """
+        return list(self._available_backends.keys())[0]
 
     def _assert_if_inactive(self):
         """throw execption if service is closed"""
@@ -442,9 +446,7 @@ class DAAService:
             }
 
         # if backend != aer
-        props = target_to_backend_properties(
-            self._get_backend(backend_name).target
-        ).to_dict()
+        props = self._get_backend(backend_name).properties().to_dict()
         config_dict = self.get_backend_configuration(backend_name)
         for fill_key in ["backend_name", "backend_version"]:
             if props.get(fill_key) in {None, ""}:
@@ -453,17 +455,6 @@ class DAAService:
         # Workaround to pickup the date value in the first qubit's Nduv.
         props["last_update_date"] = props["qubits"][0][0]["date"]
         return props
-
-    def get_backend_pulse_defaults(self, backend_name: str) -> Dict:
-        backend = self._get_backend(backend_name)  # check backend name is correct
-        if (
-            hasattr(backend, "defs_filename")
-            and backend.defs_filename is not None
-            and hasattr(backend, "_load_json")
-        ):
-            return backend._load_json(backend.defs_filename)
-        # return an empty JSON if not available
-        return {}
 
     def _get_storage(self, storage_type: str) -> SharedStorage:
         if storage_type in self._storage_options:
@@ -700,7 +691,7 @@ class DAAService:
 
             storage = job["storage"]
             backend_name = (
-                job["backend"] if "backend" in job else DAAService.DEFAULT_BACKEND
+                job["backend"] if "backend" in job else self.default_backend_name
             )
             backend = self._get_backend(backend_name)
 
@@ -772,10 +763,7 @@ class DAAService:
                         )
                     )
 
-            if backend_name == DAAService.DEFAULT_BACKEND:
-                sampler = SamplerV2(options=options)
-            else:
-                sampler = SamplerV2.from_backend(backend, options=options)
+            sampler = SamplerV2.from_backend(backend, options=options)
 
             result = sampler.run(pubs, shots=shots).result()
             usage_nanoseconds = 0
@@ -826,7 +814,7 @@ class DAAService:
 
             storage = job["storage"]
             backend_name = (
-                job["backend"] if "backend" in job else DAAService.DEFAULT_BACKEND
+                job["backend"] if "backend" in job else self.default_backend_name
             )
             backend = self._get_backend(backend_name)
 
@@ -880,10 +868,7 @@ class DAAService:
                 if isinstance(input_publike[0], str):
                     input_publike[0] = qasm3.loads(input_publike[0])
 
-            if backend_name == DAAService.DEFAULT_BACKEND:
-                estimator = EstimatorV2(options=options)
-            else:
-                estimator = EstimatorV2.from_backend(backend, options=options)
+            estimator = EstimatorV2.from_backend(backend, options=options)
 
             if "precision" in estimator_input:
                 result = estimator.run(

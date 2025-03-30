@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -18,12 +18,11 @@ import numpy as np
 
 from qiskit import QuantumCircuit, qasm3
 from qiskit.circuit import ClassicalRegister, QuantumRegister, Parameter
-from qiskit.circuit.library import RealAmplitudes
+from qiskit.circuit.library import real_amplitudes
 from qiskit.primitives import PrimitiveResult, PubResult
 from qiskit.primitives.containers import BitArray
 from qiskit.primitives.containers.sampler_pub import SamplerPub, SamplerPubLike
 from qiskit.primitives.containers.data_bin import DataBin
-from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
 from qiskit_ibm_runtime.utils import RuntimeEncoder
 
@@ -90,10 +89,6 @@ class DAASamplerTest(DAASTestBase):
         self._shots = 10000
         self._seed = 123
 
-        self._pm = generate_preset_pass_manager(
-            optimization_level=0, basis_gates=["rz", "sx", "ecr"]
-        )
-
         self._cases = []
         hadamard = QuantumCircuit(1, 1, name="Hadamard")
         hadamard.h(0)
@@ -106,7 +101,7 @@ class DAASamplerTest(DAASTestBase):
         bell.measure_all()
         self._cases.append((bell, None, {0: 5000, 3: 5000}))  # case 1
 
-        pqc = RealAmplitudes(num_qubits=2, reps=2)
+        pqc = real_amplitudes(num_qubits=2, reps=2)
         pqc.measure_all()
         self._cases.append((pqc, [0] * 6, {0: 10000}))  # case 2
         self._cases.append((pqc, [1] * 6, {0: 168, 1: 3389, 2: 470, 3: 5973}))  # case 3
@@ -117,7 +112,7 @@ class DAASamplerTest(DAASTestBase):
             (pqc, [1, 2, 3, 4, 5, 6], {0: 634, 1: 291, 2: 6039, 3: 3036})
         )  # case 5
 
-        pqc2 = RealAmplitudes(num_qubits=2, reps=3)
+        pqc2 = real_amplitudes(num_qubits=2, reps=3)
         pqc2.measure_all()
         self._cases.append(
             (pqc2, [0, 1, 2, 3, 4, 5, 6, 7], {0: 1898, 1: 6864, 2: 928, 3: 311})
@@ -132,6 +127,7 @@ class DAASamplerTest(DAASTestBase):
             self.service.execute_job,
             generate_sampler_input(inputs, shots, options, use_qasm3),
             "sampler",
+            self.service.default_backend_name,
         )
         return result
 
@@ -356,7 +352,7 @@ class DAASamplerTest(DAASTestBase):
         """Test for errors with run method"""
         qc1 = QuantumCircuit(1)
         qc1.measure_all()
-        qc2 = RealAmplitudes(num_qubits=1, reps=1)
+        qc2 = real_amplitudes(num_qubits=1, reps=1)
         qc2.measure_all()
         qc1, qc2 = self._pm.run([qc1, qc2])
 
@@ -547,6 +543,7 @@ class DAASamplerTest(DAASTestBase):
         qc.h(0)
         qc.measure(0, 0)
 
+        qc = self._pm.run(qc)
         result = self._sampler_run([qc], shots=self._shots)
         self.assertEqual(result[0].data.c1.array.shape, (self._shots, 0))
 

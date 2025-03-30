@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -19,7 +19,7 @@ from typing import Any, Dict, List
 import warnings
 import boto3
 from qiskit import QuantumCircuit, qasm3, transpile
-from qiskit.circuit.library import QuantumVolume, RealAmplitudes
+from qiskit.circuit.library import QuantumVolume, real_amplitudes
 from qiskit.primitives.containers.estimator_pub import EstimatorPub
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
@@ -209,7 +209,7 @@ def main():
                 optimization_level=0,
                 basis_gates=args.gates,
             )
-        psi1 = pm.run(RealAmplitudes(num_qubits=2, reps=2))
+        psi1 = pm.run(real_amplitudes(num_qubits=2, reps=2))
         H1 = SparsePauliOp.from_list([("II", 1), ("IZ", 2), ("XI", 3)])
         theta1 = [0, 1, 1, 2, 3, 5]
 

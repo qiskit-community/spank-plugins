@@ -282,7 +282,7 @@ app.include_router(job.router)
 )
 def get_version() -> Version:
     """Get the current version of the service"""
-    return Version(version=SERVICE_VERSION).dict()
+    return Version(version=SERVICE_VERSION).model_dump()
 
 
 def _create_fastapi(fastapi_app: FastAPI):

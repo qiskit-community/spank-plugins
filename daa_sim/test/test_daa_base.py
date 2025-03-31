@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -25,8 +25,11 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qiskit.primitives.containers import BitArray
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
 from qiskit_ibm_runtime.utils.result_decoder import ResultDecoder
+from qiskit_ibm_runtime.utils.backend_converter import convert_to_target
+from qiskit_ibm_runtime.models import BackendProperties, BackendConfiguration
 
 from direct_access_client.daa_sim.daa_service import DAAService
 from direct_access_client.daa_sim.consts import PYTEST_JOBS_DIR
@@ -60,6 +63,18 @@ class DAASTestBase(unittest.TestCase, ABC):
         )
         self._storage_dir_name = self._storage_dir.name
         self._request_count = 0
+
+        config = BackendConfiguration.from_dict(
+            self.service.get_backend_configuration(self.service.default_backend_name)
+        )
+        props = BackendProperties.from_dict(
+            self.service.get_backend_properties(self.service.default_backend_name)
+        )
+        target = convert_to_target(config, props)
+        self._pm = generate_preset_pass_manager(
+            optimization_level=0,
+            target=target,
+        )
 
     def tearDown(self):
         if self.service:
@@ -95,7 +110,7 @@ class DAASTestBase(unittest.TestCase, ABC):
         service_method,
         input_str: str,
         program_id: str,
-        backend: str = DAAService.DEFAULT_BACKEND,
+        backend: str,
         wait_completion: bool = True,
     ):
         """run daa sampler with a list of SamplerPub"""

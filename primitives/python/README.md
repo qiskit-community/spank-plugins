@@ -1,4 +1,4 @@
-# Implementation of Sampler and Estimator primitives
+# Python Implementation of Sampler/Estimator primitives
 
 ## Directory structure
 
@@ -45,7 +45,7 @@ Required-by:
 
 ### Install QRMI Primitive package
 ```shell-session
-$ pushd primitives
+$ pushd primitives/python
 $ pip install .
 $ popd
 ```

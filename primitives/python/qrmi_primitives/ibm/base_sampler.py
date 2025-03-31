@@ -39,7 +39,8 @@ class Options:
 
 
 class QRMIBaseSamplerV2(BaseSamplerV2):
-    """Sampler V2 base class for IBM QRMI"""
+    """Sampler V2 base class for IBM QRMI
+    """
 
     def __init__(
         self,
@@ -51,13 +52,16 @@ class QRMIBaseSamplerV2(BaseSamplerV2):
         self._options = Options(**options) if options else Options()
 
     def run(self, pubs: Iterable[SamplerPubLike], *, shots: int | None = None):
-        dict_pubs = []
 
         if shots is None:
             shots = self._options.default_shots
 
+        # for each Pub (Primitive Unified Bloc)
+        dict_pubs = []
         for pub in pubs:
+            # Coerce a SamplerPubLike object into a SamplerPub instance.
             coerced_pub = SamplerPub.coerce(pub, shots)
+            # Generate OpenQASM3 string which can be consumed by IBM Quantum APIs
             qasm3_str = qasm3.dumps(
                 coerced_pub.circuit,
                 disable_constants=True,
@@ -80,6 +84,8 @@ class QRMIBaseSamplerV2(BaseSamplerV2):
                 else:
                     dict_pubs.append((qasm3_str, param_array))
 
+        # Create SamplerV2 input
+        # https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/sampler_v2_schema.json
         input_json = {
             "pubs": dict_pubs,
             "shots": shots,

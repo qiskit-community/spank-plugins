@@ -55,9 +55,12 @@ class QRMIBaseEstimatorV2(BaseEstimatorV2):
         if precision is None:
             precision = self._options.default_precision
 
+        # for each Pub (Primitive Unified Bloc)
         dict_pubs = []
         for pub in pubs:
+            # Coerce a EstimatorPubLike object into a EstimatorPub instance.
             coerced_pub = EstimatorPub.coerce(pub, precision)
+            # Generate OpenQASM3 string which can be consumed by IBM Quantum APIs
             qasm3_str = qasm3.dumps(
                 coerced_pub.circuit,
                 disable_constants=True,
@@ -85,6 +88,8 @@ class QRMIBaseEstimatorV2(BaseEstimatorV2):
                         (qasm3_str, observables, param_array, coerced_pub.precision)
                     )
 
+        # Create EstimatorV2 input
+        # https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/estimator_v2_schema.json
         input_json = {
             "pubs": dict_pubs,
             "options": self._options.run_options,

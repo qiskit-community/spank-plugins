@@ -1,9 +1,9 @@
 PyYAML~=6.0
 uvicorn[standard]
 fastapi
-qiskit>=1.2.2
-qiskit-aer>=0.15.1
-qiskit_ibm_runtime>=0.30.0
+qiskit>=1.4.2
+qiskit-aer>=0.17.0
+qiskit_ibm_runtime>=0.37.0
 qiskit_qasm3_import
 numpy>=1.26,<2
 sympy>=1.13

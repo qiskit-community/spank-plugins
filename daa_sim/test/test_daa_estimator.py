@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -18,7 +18,7 @@ import numpy as np
 
 from qiskit import QuantumCircuit, qasm3
 from qiskit.circuit import Parameter
-from qiskit.circuit.library import RealAmplitudes
+from qiskit.circuit.library import real_amplitudes
 from qiskit.primitives import StatevectorEstimator
 from qiskit.primitives.containers.bindings_array import BindingsArray
 from qiskit.primitives.containers.estimator_pub import EstimatorPub, EstimatorPubLike
@@ -106,7 +106,7 @@ class DAAEstimatorTest(DAASTestBase):
             "default_precision": self._precision,
             "seed_simulator": self._seed,
         }
-        self.ansatz = RealAmplitudes(num_qubits=2, reps=2)
+        self.ansatz = real_amplitudes(num_qubits=2, reps=2)
         self.observable = SparsePauliOp.from_list(
             [
                 ("II", -1.052373245772859),
@@ -119,8 +119,8 @@ class DAAEstimatorTest(DAASTestBase):
         self.expvals = -1.0284380963435145, -1.284366511861733
 
         self.psi = (
-            RealAmplitudes(num_qubits=2, reps=2),
-            RealAmplitudes(num_qubits=2, reps=3),
+            real_amplitudes(num_qubits=2, reps=2),
+            real_amplitudes(num_qubits=2, reps=3),
         )
         self.params = tuple(psi.parameters for psi in self.psi)
         self.hamiltonian = (
@@ -155,6 +155,7 @@ class DAAEstimatorTest(DAASTestBase):
                 inputs, options, resilience_level, precision, use_qasm3=use_qasm3
             ),
             "estimator",
+            self.service.default_backend_name,
         )
         return result
 
@@ -406,7 +407,7 @@ class DAAEstimatorTest(DAASTestBase):
 
     def test_run_numpy_params(self):
         """Test for numpy array as parameter values"""
-        qc = RealAmplitudes(num_qubits=2, reps=2)
+        qc = real_amplitudes(num_qubits=2, reps=2)
         qc = self._pm.run(qc)
         op = SparsePauliOp.from_list([("IZ", 1), ("XI", 2), ("ZY", -1)])
         op = op.apply_layout(qc.layout)
@@ -496,8 +497,8 @@ class DAAEstimatorTest(DAASTestBase):
     def test_estimator_run_without_qasm3(self):
         """Test Estimator.run()"""
         psi1, psi2 = self.psi
-        hamiltonian1, hamiltonian2, hamiltonian3 = self.hamiltonian
-        theta1, theta2, theta3 = self.theta
+        hamiltonian1, _hamiltonian2, _hamiltonian3 = self.hamiltonian
+        theta1, _theta2, _theta3 = self.theta
         psi1, psi2 = self._pm.run([psi1, psi2])
         # estimator.options.abelian_grouping = abelian_grouping
         # Specify the circuit and observable by indices.

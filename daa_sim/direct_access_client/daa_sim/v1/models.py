@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -93,7 +93,7 @@ class GateConfig(BaseModel):
     )
 
     parameters: List[str] = Field(
-        min_items=1,
+        min_length=1,
         description="Variable names for the gate parameters (if any)",
     )
 
@@ -235,19 +235,19 @@ class BackendConfigurationResponse(BaseModel):
     )
 
     basis_gates: List[str] = Field(
-        min_items=1,
+        min_length=1,
         description="List of basis gates names on the backend",
     )
 
     # TODO: No need Optional - This is workaround of daa_service.py
     coupling_map: Optional[List[List[int]]] = Field(
         default=None,
-        min_items=1,
+        min_length=1,
         description="Array grouping qubits that are physically coupled together on the backend",
     )
 
     gates: List[GateConfig] = Field(
-        min_items=0,
+        min_length=0,
         description="List of basis gates on the backend",
     )
 
@@ -364,12 +364,12 @@ class BackendConfigurationResponse(BaseModel):
     )
 
     qubit_lo_range: List[List[float]] = Field(
-        min_items=1,
+        min_length=1,
         description="Frequency range for the qubit LO",
     )
 
     meas_lo_range: List[List[float]] = Field(
-        min_items=1,
+        min_length=1,
         description="Frequency range for the measurement LO",
     )
 
@@ -451,107 +451,6 @@ class BackendConfigurationResponse(BaseModel):
     )
 
 
-class Command(BaseModel):
-    """Backend calibrated QASM to Pulse definitions"""
-
-    name: str = Field(
-        description="QASM command name",
-    )
-
-    qubits: List[int] = Field(
-        default=None,
-        description="Qubits to which this command def applies",
-    )
-
-    sequence: Any = Field(
-        default=None,
-        description="Sequence of pulse instructions",
-    )
-
-
-class Discriminator(BaseModel):
-    """Class representing a Discriminator."""
-
-    name: str = Field(
-        default=None,
-        description="The name of the discriminator",
-    )
-
-    params: Any = Field(
-        default=None,
-        description="The parameters of the discriminator",
-    )
-
-
-class MeasurementKernel(BaseModel):
-    """Class representing a Measurement Kernel."""
-
-    name: str = Field(
-        default=None,
-        description="The name of the measurement kernel",
-    )
-
-    params: Any = Field(
-        default=None,
-        description="The parameters of the measurement kernel",
-    )
-
-
-class PulseLibraryItem(BaseModel):
-    """Class representing pulse library item"""
-
-    name: str = Field(
-        description="Pulse name",
-    )
-
-    samples: List[Any] = Field(
-        description="JSON representation of a complex vector",
-    )
-
-
-class EmptyPulseDefaultsResponse(BaseModel):
-    """Response of GET /v1/backends/{backend_name}/defaults"""
-
-    # empty JSON if pulse default is not supported by the backend
-
-
-class PulseDefaultsResponse(BaseModel):
-    """Response of GET /v1/backends/{backend_name}/defaults"""
-
-    buffer: int = Field(
-        default=1,
-        ge=0,
-        description="Default buffer time between pulses",
-    )
-
-    cmd_def: List[Command] = Field(
-        default=None,
-        description="Backend calibrated QASM to Pulse definitions",
-    )
-
-    discriminator: Discriminator = Field(
-        default=None,
-        description="Default measurement kernel",
-    )
-
-    meas_freq_est: List[float] = Field(
-        description="Backend calibrated qubit frequencies",
-    )
-
-    meas_kernel: MeasurementKernel = Field(
-        default=None,
-        description="Default measurement kernel",
-    )
-
-    pulse_library: List[PulseLibraryItem] = Field(
-        description="Backend pulse library",
-    )
-
-    qubit_freq_est: List[float] = Field(
-        description="Backend calibrated qubit frequencies",
-    )
-
-
 class Nduv(BaseModel):
     """Name-date-unit-value"""
 
@@ -605,7 +504,7 @@ class BackendPropertiesResponse(BaseModel):
     )
 
     qubits: List[List[Nduv]] = Field(
-        min_items=1,
+        min_length=1,
         description="System qubit parameters",
     )
 

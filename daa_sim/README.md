@@ -27,7 +27,6 @@ Following Direct Access APIs are provided by the current version of this API sim
   * `GET /v1/backends/{backend-name}`
   * `GET /v1/backends/{backend-name}/configuration`
   * `GET /v1/backends/{backend-name}/properties`
-  * `GET /v1/backends/{backend-name}/defaults`
 * Jobs
   * `POST /v1/jobs`
   * `GET /v1/jobs`
@@ -65,13 +64,13 @@ pip install .
 ```bash
 % pip show direct-access
 Name: direct-access
-Version: 0.1.0
+Version: 0.7.0
 Summary: Direct Access API Simulator
 Home-page: https://quantum.ibm.com/
 Author: IBM Quantum
 Author-email: qiskit@us.ibm.com
 License: Apache 2.0
-Location: /Users/ohtanim/py311_daa_sim_1006_0/lib/python3.11/site-packages
+Location: /Users/ohtanim/py311venv_daa_sim/lib/python3.11/site-packages
 Requires: boto3, fastapi, numpy, pyjwt, PyYAML, qiskit, qiskit-aer, qiskit-ibm-runtime, qiskit-qasm3-import, sympy, urllib3, uvicorn
 Required-by: 
 ```
@@ -158,10 +157,6 @@ You will have two different API documents available if you run this API simulato
 
 - `status` in the returned backends is always `online`
 - Optional fields (`message`, `version`) are not included in the response.
-
-### Get backend pulse defaults (GET /v1/backends/{backend_name}/defaults)
-
-- Returns an empty JSON if `backend_name` is specified as `aer`.
 
 ### Get jobs (GET /v1/jobs)
 

@@ -293,7 +293,7 @@ impl IBMDirectAccess {
             let reason_solution = job.reason_solution.unwrap_or("".to_string());
             bail!(
                 format!(
-                    "Unable to retrieve result for task {}. Task was failed. code: {}, message: {}, solution: {}",
+                    "Unable to retrieve result for task {}. Task failed. code: {}, message: {}, solution: {}",
                     task_id, reason_code, reason_message, reason_solution
                 )
             );

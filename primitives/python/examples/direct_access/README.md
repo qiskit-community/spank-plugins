@@ -48,4 +48,4 @@ $ python estimator.py
 
 ### SQD tutorial
 
-QRMI primitive port of [Improving energy estimation of a chemistry Hamiltonian with SQD](https://github.com/Qiskit/qiskit-addon-sqd/blob/main/docs/tutorials/01_chemistry_hamiltonian.ipynb) 
+[01_chemistry_hamiltonian.ipynb](./01_chemistry_hamiltonian.ipynb) is QRMI primitive port of [Improving energy estimation of a chemistry Hamiltonian with SQD](https://github.com/Qiskit/qiskit-addon-sqd/blob/main/docs/tutorials/01_chemistry_hamiltonian.ipynb). Start jupyter notebook and run all cells from beginning.

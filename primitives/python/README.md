@@ -4,8 +4,8 @@
 
 | Directory | Description |
 | ---- | ---- |
-| [qrmi_primitive](./qrmi_primitive) | Sampler and Estimator primitive implementations based on QRMI |
-| [qrmi_primitive/ibm](./qrmi_primitive/ibm) | Primitives implementation for IBM Quantum services |
+| [qrmi_primitives](./qrmi_primitives) | Sampler and Estimator primitive implementations based on QRMI |
+| [qrmi_primitives/ibm](./qrmi_primitives/ibm) | Primitives implementation for IBM Quantum services |
 | [examples](./examples) | Sample programs to demonstrate Sampler and Estimator primitives. |
 
 ## How to install
@@ -26,7 +26,7 @@ $ pip install -r requirements-dev.txt
 $ maturin develop --release
 $ popd
 ```
-The `qrmi` package is installed in the virtual environment. Refer the [README](../qrmi/README.md) for more details.
+The `qrmi` package is installed in the virtual environment. Refer the [README](../../qrmi/README.md) for more details.
 
 ```shell-session
 $ pip show qrmi
@@ -80,7 +80,7 @@ Contributor must execute the commands below and fix any issues before submitting
 
 #### Python code
 ```shell-session 
-$ pushd primitives
+$ pushd primitives/python
 $ pylint ./qrmi_primitives
 $ black --check ./qrmi_primitives
 ``` 

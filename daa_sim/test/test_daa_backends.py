@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -132,14 +132,6 @@ class DAABackendsTest(DAASTestBase):
             self.assertIn("last_update_date", backend_props)
             self.assertIn("qubits", backend_props)
 
-    def test_backend_pulse_defaults(self):
-        """Test backend_pulse_defaults"""
-        backend_list = self.service.backends()
-        for backend in backend_list["backends"]:
-            self.assertIn("name", backend)
-            backend_name = backend["name"]
-            self.service.get_backend_pulse_defaults(backend_name)
-
     def test_sampler(self):
         """test noisy backend"""
         hadamard = QuantumCircuit(2, 2, name="Bell")
@@ -168,9 +160,6 @@ class DAABackendsTest(DAASTestBase):
             self.assertIsInstance(result[0], PubResult)
             self.assertIsInstance(result[0].data, DataBin)
             self.assertIsInstance(result[0].data.c, BitArray)
-            if backend_name == DAAService.DEFAULT_BACKEND:
-                self.assertEqual(len(result[0].data.c.get_counts()), 2)  # must be ideal
-            else:
-                self.assertNotEqual(
-                    len(result[0].data.c.get_counts()), 2
-                )  # must include noise
+            self.assertNotEqual(
+                len(result[0].data.c.get_counts()), 2
+            )  # must include noise

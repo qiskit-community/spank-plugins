@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -16,7 +16,7 @@ This file defines constants used by the python modules in daa_sim.
 """
 
 # Direct Access API service version, consistent with the latest deployment
-SERVICE_VERSION = "1.0.0"
+SERVICE_VERSION = "0.7.0"
 
 # Default max execution lanes
 # This default value can be overridden by $.max_execution_lanes in the config.yaml

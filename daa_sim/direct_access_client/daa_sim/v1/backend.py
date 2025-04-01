@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -14,7 +14,7 @@
 
 """Backend API Mock"""
 import logging.config
-from typing import Union, Annotated
+from typing import Annotated
 from fastapi import APIRouter, Request, Depends
 from fastapi.security import HTTPAuthorizationCredentials
 from direct_access_client.daa_sim.auth import (
@@ -28,8 +28,6 @@ from direct_access_client.daa_sim.v1.models import (
     BackendResponse,
     ErrorResponse,
     BackendConfigurationResponse,
-    PulseDefaultsResponse,
-    EmptyPulseDefaultsResponse,
     BackendPropertiesResponse,
 )
 
@@ -188,41 +186,3 @@ def get_backend_properties(
     verify_token(request, access_token, internal_shared_key)
     service = request.app.daa_service
     return service.get_backend_properties(backend_name)
-
-
-@router.get(
-    "/v1/backends/{backend_name}/defaults",
-    summary="Get backend pulse defaults",
-    description="Returns pulse defaults of a backend.",
-    responses={
-        200: {"model": PulseDefaultsResponse},
-        401: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-    },
-    response_model_exclude_none=True,
-    tags=["Backends"],
-)
-def get_backend_pulse_defaults(
-    request: Request,
-    backend_name: str,
-    access_token: Annotated[
-        HTTPAuthorizationCredentials, Depends(access_token_security)
-    ],
-    internal_shared_key: Annotated[
-        HTTPAuthorizationCredentials, Depends(internal_shared_key_security)
-    ],
-) -> Union[PulseDefaultsResponse, EmptyPulseDefaultsResponse]:
-    """Returns pulse defaults of a backend.
-
-    Args:
-        request(Request): Incoming HTTP request
-        backend_name(str): backend name
-        access_token(HTTPAuthorizationCredentials): access token credentials
-        internal_shared_key(HTTPAuthorizationCredentials): internal shared key credentials
-
-    Returns:
-        PulseDefaultsResponse: API response
-    """
-    verify_token(request, access_token, internal_shared_key)
-    service = request.app.daa_service
-    return service.get_backend_pulse_defaults(backend_name)

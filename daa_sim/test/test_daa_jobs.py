@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# (C) Copyright 2024 IBM. All Rights Reserved.
+# (C) Copyright 2024, 2025 IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -15,7 +15,6 @@
 import logging
 
 from qiskit import QuantumCircuit
-from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
 from direct_access_client.daa_sim.daa_service import DAAService
 from direct_access_client.daa_sim.errors import (
@@ -54,16 +53,8 @@ class DAABackendsTest(DAASTestBase):
         bell.measure(0, 0)
         bell.measure(1, 1)
 
-        backend_name = DAAService.DEFAULT_BACKEND
-        backend_config = self.service.get_backend_configuration(backend_name)
-
-        pm = generate_preset_pass_manager(
-            optimization_level=0,
-            basis_gates=backend_config["basis_gates"],
-            coupling_map=backend_config["coupling_map"],
-        )
-
-        circ = pm.run(bell)
+        backend_name = self.service.default_backend_name
+        circ = self._pm.run(bell)
         job, _ = self._sampler_run([(circ)], backend_name, wait_completion=sync)
         return job, None
 

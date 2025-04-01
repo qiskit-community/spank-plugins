@@ -303,22 +303,22 @@ impl IBMQiskitRuntimeService {
     }
 
     /// Acquires a new session by calling the get_session function.
+    /// The default channel is set to "ibm_quantum".
     #[tokio::main]
     async fn _acquire_session(&mut self) -> Result<String> {
-        self.api_client.get_session(&self.session_mode, self.session_ttl).await
+        self.api_client.create_session(
+            Some(&self.session_mode),
+            Some(&self.backend_name),
+            None,// instance
+            Some(self.session_ttl),
+            Some("ibm_quantum")
+        ).await
     }
     
-
     /// Releases an existing session by issuing a DELETE to the session endpoint.
     #[tokio::main]
     async fn _release_session(&mut self, session_id: &str) -> Result<()> {
-        let url = format!("{}/v1/sessions/{}", self.api_client.base_url, session_id);
-        let resp = self.api_client.client.delete(url).send().await?;
-        if resp.status().is_success() {
-            Ok(())
-        } else {
-            bail!("Failed to release session: {}", resp.status())
-        }
+        self.api_client.close_session(session_id).await
     }
 }
 

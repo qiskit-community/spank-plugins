@@ -25,3 +25,4 @@ pub mod run_job;
 pub mod run_primitive;
 
 pub mod service_version;
+pub mod session;

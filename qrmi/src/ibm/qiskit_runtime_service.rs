@@ -306,14 +306,22 @@ impl IBMQiskitRuntimeService {
     /// The default channel is set to "ibm_quantum".
     #[tokio::main]
     async fn _acquire_session(&mut self) -> Result<String> {
-        self.api_client.create_session(
+        let json_data = self.api_client.create_session(
             Some(&self.session_mode),
             Some(&self.backend_name),
-            None,// instance
+            Some(&self.service_crn), 
             Some(self.session_ttl),
-            Some("ibm_quantum")
-        ).await
+            Some("ibm_cloud")
+        ).await?;
+        
+        // Attempt to extract the session id as a string from the JSON.
+        if let Some(session_id) = json_data.get("session_id").and_then(|v| v.as_str()) {
+            Ok(session_id.to_string())
+        } else {
+            bail!("Session ID not found in response")
+        }
     }
+    
     
     /// Releases an existing session by issuing a DELETE to the session endpoint.
     #[tokio::main]

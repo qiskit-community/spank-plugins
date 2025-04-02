@@ -41,26 +41,25 @@ def _active_session(func):  # type: ignore
 class QRS_Session(Session):
     def __init__(self, qrmi_instance: IBMQiskitRuntimeService):
         self.qrmi = qrmi_instance
-
         self._service = None
-        
         self._instance = None
-        self._active = True
-        self._session_id = None
-        # Acquire a session using the backend resource ID from environment variables
         self._backend = None
-        self._max_time = os.environ["QRMI_IBM_QRS_SESSION_TTL"]
-        self.qrmi.backend_name = os.environ["QRMI_RESOURCE_ID"]
-        self.session_id = self.qrmi.acquire()
-        print(f"Session acquired with ID: {self.session_id}")
 
-    def _run(self, program_id: str, primitive_input: str):
+        self._active = True
+        self._max_time = os.environ["SESSION_MAX_TTL"]
+        self.backend_name = os.environ["QRMI_RESOURCE_ID"]
+        # Acquire a session using the backend resource ID from environment variables
+        self._session_id = self.qrmi.acquire(self.backend_name)
+        print(f"Session acquired with ID: {self._session_id}")
+    @_active_session
+    def _run(self, program_id: str, inputs: str, **kwargs):
         """
         Run a Qiskit primitive by sending a task via the QRMI service.
         This method creates a payload, starts the task, polls for status,
         prints the result, and stops the task.
         """
-        payload = Payload.QiskitPrimitive(input=primitive_input, program_id=program_id)
+        json_inputs = json.dumps(inputs, default=str)
+        payload = Payload.QiskitPrimitive(input=json_inputs, program_id=program_id)
         job_id = self.qrmi.task_start(payload)
         print(f"Task started: {job_id}")
 
@@ -85,36 +84,13 @@ class QRS_Session(Session):
 
     def close(self):
         """Release the acquired session."""
-        self.qrmi.release(self.session_id)
-        print(f"Session {self.session_id} released.")
+        self.qrmi.release(self._session_id)
+        print(f"Session {self._session_id} released.")
 
     def cancel(self, job_id: str):
         """Cancel a running task."""
         self.qrmi.task_stop(job_id)
         print(f"Task {job_id} cancelled.")
-
-    @property
-    def status(self):
-        """Return a placeholder session status."""
-        return NotImplementedError
-    
-    @classmethod
-    def from_id(cls, session_id: str):
-        """Construct a Session object with a given session_id
-
-        Args:
-            session_id: the id of the session to be created. This must be an already
-                existing session id.
-            service: instance of the ``QiskitRuntimeService`` class.
-
-         Raises:
-            IBMInputValueError: If given `session_id` does not exist.
-
-        Returns:
-            A new Session with the given ``session_id``
-
-        """
-        return NotImplementedError
     
     def target(self):
         # Call the target function with the resource_id and parse the returned JSON string.
@@ -127,22 +103,28 @@ class QRS_Session(Session):
         # Extract configuration and properties from the parsed dictionary.
         self.backend_config = target_json["configuration"]
         self.backend_props = target_json["properties"]
-        
-        return convert_to_target(self.backend_config, self.backend_props)
+        try:
+            return convert_to_target(self.backend_config, self.backend_props)
+        except:
+            return None
         
 if __name__ == "__main__":
+
     load_dotenv()
 
     # Instantiate the Qiskit Runtime Service.
     qrmi = IBMQiskitRuntimeService()
     print("Qiskit Runtime Service instantiated:")
-    print(qrmi)
+
+    # Create a session with the acquired QRMI instance.
+    session = QRS_Session(qrmi)
+    print(f'session_id from qrmi = {session._session_id}')
+    print(f'session_id from envinronment = {os.environ["QRMI_IBM_QRS_SESSION_ID"]}')
 
     # Check if the backend is accessible.
     resource_id = os.environ["QRMI_RESOURCE_ID"]
     accessible = qrmi.is_accessible(resource_id)
     print(f"Backend {resource_id} accessible: {accessible}")
-
 
     # Build a Bell state circuit.
     qr = QuantumRegister(2, name="qr")
@@ -151,10 +133,6 @@ if __name__ == "__main__":
     qc.h(qr[0])
     qc.cx(qr[0], qr[1])
     qc.measure(qr, cr)
-
-    # Create a session with the acquired QRMI instance.
-    session = QRS_Session(qrmi)
-
 
     # Transpile the circuit using a preset pass manager.
     target = session.target()
@@ -167,7 +145,7 @@ if __name__ == "__main__":
     # Run the circuit using the Sampler.
     # The sampler will invoke session._run under the hood.
     sampler = Sampler(mode=session)
-    job = sampler.run([isa_circuit])
+    job = sampler.run([qc])
     pub_result = job.result()[0]
     print(f"Sampler job ID: {job.job_id()}")
     print(f"Counts: {pub_result.data.cr.get_counts()}")

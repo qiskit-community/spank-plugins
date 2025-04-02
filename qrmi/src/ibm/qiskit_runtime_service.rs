@@ -1,4 +1,3 @@
-//
 // This code is part of Qiskit.
 //
 // (C) Copyright IBM 2025
@@ -16,8 +15,8 @@ use crate::QuantumResource;
 use anyhow::{bail, Result};
 use direct_access_api::utils::s3::S3Client;
 use direct_access_api::{
-    models::Backend, models::BackendStatus, models::JobStatus, models::LogLevel, models::ProgramId,
-    AuthMethod, Client, ClientBuilder,
+    models::Backend, models::BackendStatus, models::Job, models::JobStatus, models::LogLevel,
+    models::ProgramId, AuthMethod, Client, ClientBuilder,
 };
 use retry_policies::policies::ExponentialBackoff;
 use retry_policies::Jitter;
@@ -31,11 +30,12 @@ use std::time::Duration;
 use pyo3::prelude::*;
 
 // c binding
-use crate::consts::{QRMI_SUCCESS, QRMI_ERROR};
-use std::ffi::{CStr, CString};
+use crate::consts::{QRMI_ERROR, QRMI_SUCCESS};
+use std::ffi::CStr;
+use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
-/// QRMI implementation for IBM Qiskit Runtime Service (QRS)
+/// QRMI implementation for IBM Qiskit Runtime Service
 #[pyclass]
 pub struct IBMQiskitRuntimeService {
     pub(crate) api_client: Client,
@@ -43,57 +43,47 @@ pub struct IBMQiskitRuntimeService {
     pub(crate) backend_name: String,
     pub(crate) s3_bucket: String,
     pub(crate) timeout_secs: u64,
-    pub(crate) session_mode: String,
-    pub(crate) session_ttl: u64,
+    pub(crate) session_id: String,
 }
 
 #[pymethods]
 impl IBMQiskitRuntimeService {
     /// Constructs a QRMI to access IBM Qiskit Runtime Service.
     ///
-    /// Environment variables (for QRS) include:
-    /// * `QRMI_RESOURCE_ID`         - IBM Quantum backend name
-    /// * `QRMI_IBM_QRS_ENDPOINT`    - Qiskit Runtime Service API endpoint URL
-    /// * `QRMI_IBM_QRS_AWS_ACCESS_KEY_ID`
-    /// * `QRMI_IBM_QRS_AWS_SECRET_ACCESS_KEY`
-    /// * `QRMI_IBM_QRS_S3_ENDPOINT`
-    /// * `QRMI_IBM_QRS_S3_BUCKET`
-    /// * `QRMI_IBM_QRS_S3_REGION`
-    /// * `QRMI_IBM_QRS_IAM_ENDPOINT`
-    /// * `QRMI_IBM_QRS_IAM_APIKEY`
-    /// * `QRMI_IBM_QRS_SERVICE_CRN`
-    /// * `QRMI_IBM_QRS_TIMEOUT_SECONDS`
-    /// * `QRMI_IBM_QRS_SESSION_MODE`
-    /// * `QRMI_IBM_QRS_SESSION_TTL`
+    /// # Environment variables
+    ///
+    /// * `QRMI_RESOURCE_ID`: IBM Quantum backend name
+    /// * `QRMI_IBM_DA_ENDPOINT`: IBM Qiskit Runtime Direct Access API endpoint URL
+    /// * `QRMI_IBM_DA_AWS_ACCESS_KEY_ID`: AWS Access Key ID to access S3 bucket
+    /// * `QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY`: AWS Secret Access Key to access S3 bucket
+    /// * `QRMI_IBM_DA_S3_ENDPOINT`: S3 API endpoint URL
+    /// * `QRMI_IBM_DA_S3_BUCKET`: S3 Bucket name
+    /// * `QRMI_IBM_DA_S3_REGION`: S3 Region name
+    /// * `QRMI_IBM_DA_IAM_ENDPOINT`: IBM Cloud IAM API endpoint URL
+    /// * `QRMI_IBM_DA_IAM_APIKEY`: IBM Cloud API Key
+    /// * `QRMI_IBM_DA_SERVICE_CRN`: Provisioned Direct Access Service instance
+    /// * `QRMI_IBM_QRS_SESSION_ID`: Session ID for Qiskit Runtime Service
     #[new]
     pub fn new() -> Self {
-        // Retrieve QRS-specific environment variables.
         let backend_name = env::var("QRMI_RESOURCE_ID").expect("QRMI_RESOURCE_ID");
-        let qrs_endpoint = env::var("QRMI_IBM_QRS_ENDPOINT").expect("QRMI_IBM_QRS_ENDPOINT");
+        let daapi_endpoint = env::var("QRMI_IBM_DA_ENDPOINT").expect("QRMI_IBM_DA_ENDPOINT");
         let aws_access_key_id =
-            env::var("QRMI_IBM_QRS_AWS_ACCESS_KEY_ID").expect("QRMI_IBM_QRS_AWS_ACCESS_KEY_ID");
-        let aws_secret_access_key = env::var("QRMI_IBM_QRS_AWS_SECRET_ACCESS_KEY")
-            .expect("QRMI_IBM_QRS_AWS_SECRET_ACCESS_KEY");
-        let s3_endpoint = env::var("QRMI_IBM_QRS_S3_ENDPOINT").expect("QRMI_IBM_QRS_S3_ENDPOINT");
-        let s3_bucket = env::var("QRMI_IBM_QRS_S3_BUCKET").expect("QRMI_IBM_QRS_S3_BUCKET");
-        let s3_region = env::var("QRMI_IBM_QRS_S3_REGION").expect("QRMI_IBM_QRS_S3_REGION");
+            env::var("QRMI_IBM_DA_AWS_ACCESS_KEY_ID").expect("QRMI_IBM_DA_AWS_ACCESS_KEY_ID");
+        let aws_secret_access_key = env::var("QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY")
+            .expect("QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY");
+        let s3_endpoint = env::var("QRMI_IBM_DA_S3_ENDPOINT").expect("QRMI_IBM_DA_S3_ENDPOINT");
+        let s3_bucket = env::var("QRMI_IBM_DA_S3_BUCKET").expect("QRMI_IBM_DA_S3_BUCKET");
+        let s3_region = env::var("QRMI_IBM_DA_S3_REGION").expect("QRMI_IBM_DA_S3_REGION");
 
         let iam_endpoint_url =
-            env::var("QRMI_IBM_QRS_IAM_ENDPOINT").expect("QRMI_IBM_QRS_IAM_ENDPOINT");
-        let apikey = env::var("QRMI_IBM_QRS_IAM_APIKEY").expect("QRMI_IBM_QRS_IAM_APIKEY");
-        let service_crn = env::var("QRMI_IBM_QRS_SERVICE_CRN").expect("QRMI_IBM_QRS_SERVICE_CRN");
+            env::var("QRMI_IBM_DA_IAM_ENDPOINT").expect("QRMI_IBM_DA_IAM_ENDPOINT");
+        let apikey = env::var("QRMI_IBM_DA_IAM_APIKEY").expect("QRMI_IBM_DA_IAM_APIKEY");
+        let service_crn = env::var("QRMI_IBM_DA_SERVICE_CRN").expect("QRMI_IBM_DA_SERVICE_CRN");
 
-        let timeout = env::var("QRMI_IBM_QRS_TIMEOUT_SECONDS").expect("QRMI_IBM_QRS_TIMEOUT_SECONDS");
-        let timeout_secs = timeout.parse::<u64>().expect("QRMI_IBM_QRS_TIMEOUT_SECONDS");
+        let timeout = env::var("QRMI_IBM_DA_TIMEOUT_SECONDS").expect("QRMI_IBM_DA_TIMEOUT_SECONDS");
+        let timeout_secs = timeout.parse::<u64>().expect("QRMI_IBM_DA_TIMEOUT_SECONDS");
 
-        // Read session configuration from environment variables.
-        // Defaults: mode = "dedicated", TTL = 28800 seconds.
-        let session_mode = env::var("QRMI_IBM_QRS_SESSION_MODE")
-            .unwrap_or_else(|_| "dedicated".to_string());
-        let session_ttl_str = env::var("QRMI_IBM_QRS_SESSION_TTL")
-            .unwrap_or_else(|_| "28800".to_string());
-        let session_ttl = session_ttl_str.parse::<u64>().unwrap_or(28800);
-
+        let session_id = env::var("QRMI_IBM_QRS_SESSION_ID").expect("QRMI_IBM_QRS_SESSION_ID");
 
         let retry_policy = ExponentialBackoff::builder()
             .retry_bounds(Duration::from_secs(1), Duration::from_secs(5))
@@ -107,7 +97,7 @@ impl IBMQiskitRuntimeService {
             iam_endpoint_url,
         };
 
-        let api_client = ClientBuilder::new(qrs_endpoint)
+        let api_client = ClientBuilder::new(daapi_endpoint)
             .with_timeout(Duration::from_secs(60))
             .with_retry_policy(retry_policy)
             .with_s3bucket(
@@ -134,75 +124,83 @@ impl IBMQiskitRuntimeService {
             backend_name,
             s3_bucket,
             timeout_secs,
-            session_mode,
-            session_ttl,
+            session_id,
         }
     }
 
+    /// Python binding of QRMI is_accessible() function.
     #[pyo3(name = "is_accessible")]
     fn pyfunc_is_accessible(&mut self, id: &str) -> PyResult<bool> {
         Ok(self.is_accessible(id))
     }
 
+    /// Python binding of QRMI acquire() function.
     #[pyo3(name = "acquire")]
     fn pyfunc_acquire(&mut self, id: &str) -> PyResult<String> {
         match self.acquire(id) {
             Ok(v) => Ok(v),
-            Err(e) => Err(e.into()),
+            Err(v) => Err(v.into()),
         }
     }
 
+    /// Python binding of QRMI release() function.
     #[pyo3(name = "release")]
     fn pyfunc_release(&mut self, id: &str) -> PyResult<()> {
         match self.release(id) {
             Ok(()) => Ok(()),
-            Err(e) => Err(e.into()),
+            Err(v) => Err(v.into()),
         }
     }
 
+    /// Python binding of QRMI task_start() function.
     #[pyo3(name = "task_start")]
     fn pyfunc_task_start(&mut self, payload: Payload) -> PyResult<String> {
         match self.task_start(payload) {
             Ok(v) => Ok(v),
-            Err(e) => Err(e.into()),
+            Err(v) => Err(v.into()),
         }
     }
 
+    /// Python binding of QRMI task_stop() function.
     #[pyo3(name = "task_stop")]
     fn pyfunc_task_stop(&mut self, task_id: &str) -> PyResult<()> {
         match self.task_stop(task_id) {
             Ok(()) => Ok(()),
-            Err(e) => Err(e.into()),
+            Err(v) => Err(v.into()),
         }
     }
 
+    /// Python binding of QRMI task_status() function.
     #[pyo3(name = "task_status")]
     fn pyfunc_task_status(&mut self, task_id: &str) -> PyResult<TaskStatus> {
         match self.task_status(task_id) {
             Ok(v) => Ok(v),
-            Err(e) => Err(e.into()),
+            Err(v) => Err(v.into()),
         }
     }
 
+    /// Python binding of QRMI task_result() function.
     #[pyo3(name = "task_result")]
     fn pyfunc_task_result(&mut self, task_id: &str) -> PyResult<TaskResult> {
         match self.task_result(task_id) {
             Ok(v) => Ok(v),
-            Err(e) => Err(e.into()),
+            Err(v) => Err(v.into()),
         }
     }
 
+    /// Python binding of QRMI target() function.
     #[pyo3(name = "target")]
     fn pyfunc_target(&mut self, id: &str) -> PyResult<Target> {
         match self.target(id) {
             Ok(v) => Ok(v),
-            Err(e) => Err(e.into()),
+            Err(v) => Err(v.into()),
         }
     }
 
+    /// Python binding of QRMI metadata() function.
     #[pyo3(name = "metadata")]
     fn pyfunc_metadata(&mut self) -> PyResult<HashMap<String, String>> {
-        let mut metadata = HashMap::new();
+        let mut metadata: HashMap<String, String> = HashMap::new();
         metadata.insert("backend_name".to_string(), self.backend_name.clone());
         Ok(metadata)
     }
@@ -214,8 +212,9 @@ impl Default for IBMQiskitRuntimeService {
     }
 }
 
+/// QuantumResource Trait implementation for IBM Qiskit Runtime Service
 impl IBMQiskitRuntimeService {
-    /// Wrapper of async call for QRS is_accessible() function.
+    /// Wrapper of async call for QRMI is_accessible() function.
     #[tokio::main]
     async fn _is_accessible(&mut self, id: &str) -> bool {
         match self.api_client.get_backend::<Backend>(id).await {
@@ -224,11 +223,11 @@ impl IBMQiskitRuntimeService {
         }
     }
 
-    /// Wrapper of async call for QRS task_start() function.
+    /// Wrapper of async call for QRMI task_start() function.
     #[tokio::main]
     async fn _task_start(&mut self, payload: Payload) -> Result<String> {
         if let Payload::QiskitPrimitive { input, program_id } = payload {
-            let job: serde_json::Value = serde_json::from_str(&input)?;
+            let job: serde_json::Value = serde_json::from_str(input.as_str())?;
             if let Ok(program_id_enum) = ProgramId::from_str(&program_id) {
                 match self
                     .api_client
@@ -239,21 +238,27 @@ impl IBMQiskitRuntimeService {
                         LogLevel::Debug,
                         &job,
                         None,
+                        Some(self.session_id.clone()),
                     )
                     .await
                 {
                     Ok(val) => Ok(val.job_id),
-                    Err(err) => bail!("Error starting task: {}", err),
+                    Err(err) => {
+                        bail!(format!(
+                            "An error occurred during starting a task: {}",
+                            err
+                        ));
+                    }
                 }
             } else {
-                bail!("Unknown program ID: {}", program_id)
+                bail!(format!("Unknown program ID is specified. {}", program_id));
             }
         } else {
-            bail!("Unsupported payload type: {:?}", payload)
+            bail!(format!("Payload type is not supported. {:?}", payload));
         }
     }
 
-    /// Wrapper of async call for QRS task_stop() function.
+    /// Wrapper of async call for QRMI task_stop() function.
     #[tokio::main]
     async fn _task_stop(&mut self, task_id: &str) -> Result<()> {
         let status = self.api_client.get_job_status(task_id).await?;
@@ -264,69 +269,78 @@ impl IBMQiskitRuntimeService {
         Ok(())
     }
 
-    /// Wrapper of async call for QRS task_status() function.
+    /// Wrapper of async call for QRMI task_status() function.
     #[tokio::main]
     async fn _task_status(&mut self, task_id: &str) -> Result<TaskStatus> {
         let status = self.api_client.get_job_status(task_id).await?;
-        Ok(match status {
-            JobStatus::Running => TaskStatus::Running,
-            JobStatus::Completed => TaskStatus::Completed,
-            JobStatus::Cancelled => TaskStatus::Cancelled,
-            JobStatus::Failed => TaskStatus::Failed,
-        })
+        match status {
+            JobStatus::Running => Ok(TaskStatus::Running),
+            JobStatus::Completed => Ok(TaskStatus::Completed),
+            JobStatus::Cancelled => Ok(TaskStatus::Cancelled),
+            JobStatus::Failed => Ok(TaskStatus::Failed),
+        }
     }
 
-    /// Wrapper of async call for QRS task_result() function.
+    /// Wrapper of async call for QRMI task_result() function.
     #[tokio::main]
     async fn _task_result(&mut self, task_id: &str) -> Result<TaskResult> {
+        let job = self.api_client.get_job::<Job>(task_id).await?;
+        if matches!(job.status, JobStatus::Failed) {
+            let reason_code = job.reason_code.map_or("".to_string(), |v| v.to_string());
+            let reason_message = job.reason_message.unwrap_or("".to_string());
+            let reason_solution = job.reason_solution.unwrap_or("".to_string());
+            bail!(format!(
+                "Unable to retrieve result for task {}. Task failed. code: {}, message: {}, solution: {}",
+                task_id, reason_code, reason_message, reason_solution
+            ));
+        }
+        if matches!(job.status, JobStatus::Cancelled) {
+            bail!(format!(
+                "Unable to retrieve result for task {}. Task was cancelled.",
+                task_id
+            ));
+        }
+        if matches!(job.status, JobStatus::Running) {
+            bail!(format!(
+                "Unable to retrieve result for task {}. Task is running.",
+                task_id
+            ));
+        }
         let s3_object_key = format!("results_{}.json", task_id);
         let object = self.s3_client.get_object(&self.s3_bucket, &s3_object_key).await?;
         let retrieved_txt = String::from_utf8(object)?;
-        Ok(TaskResult { value: retrieved_txt })
+        Ok(TaskResult {
+            value: retrieved_txt,
+        })
     }
 
-    /// Wrapper of async call for QRS target() function.
+    /// Wrapper of async call for QRMI target() function.
     #[tokio::main]
     async fn _target(&mut self, id: &str) -> Result<Target> {
         let mut resp = json!({});
-        if let Ok(config) = self.api_client.get_backend_configuration::<serde_json::Value>(id).await {
+        if let Ok(config) = self
+            .api_client
+            .get_backend_configuration::<serde_json::Value>(id)
+            .await
+        {
             resp["configuration"] = config;
         } else {
             resp["configuration"] = json!(null);
         }
-        if let Ok(props) = self.api_client.get_backend_properties::<serde_json::Value>(id).await {
+
+        if let Ok(props) = self
+            .api_client
+            .get_backend_properties::<serde_json::Value>(id)
+            .await
+        {
             resp["properties"] = props;
         } else {
             resp["properties"] = json!(null);
         }
-        Ok(Target { value: resp.to_string() })
-    }
 
-    /// Acquires a new session by calling the get_session function.
-    /// The default channel is set to "ibm_quantum".
-    #[tokio::main]
-    async fn _acquire_session(&mut self) -> Result<String> {
-        let json_data = self.api_client.create_session(
-            Some(&self.session_mode),
-            Some(&self.backend_name),
-            Some(&self.service_crn), 
-            Some(self.session_ttl),
-            Some("ibm_cloud")
-        ).await?;
-        
-        // Attempt to extract the session id as a string from the JSON.
-        if let Some(session_id) = json_data.get("session_id").and_then(|v| v.as_str()) {
-            Ok(session_id.to_string())
-        } else {
-            bail!("Session ID not found in response")
-        }
-    }
-    
-    
-    /// Releases an existing session by issuing a DELETE to the session endpoint.
-    #[tokio::main]
-    async fn _release_session(&mut self, session_id: &str) -> Result<()> {
-        self.api_client.close_session(session_id).await
+        Ok(Target {
+            value: resp.to_string(),
+        })
     }
 }
 
@@ -336,11 +350,11 @@ impl QuantumResource for IBMQiskitRuntimeService {
     }
 
     fn acquire(&mut self, _id: &str) -> Result<String> {
-        self._acquire_session()
+        Ok(self.session_id.clone())
     }
 
-    fn release(&mut self, id: &str) -> Result<()> {
-        self._release_session(id)
+    fn release(&mut self, _id: &str) -> Result<()> {
+        Ok(())
     }
 
     fn task_start(&mut self, payload: Payload) -> Result<String> {
@@ -364,38 +378,71 @@ impl QuantumResource for IBMQiskitRuntimeService {
     }
 
     fn metadata(&mut self) -> HashMap<String, String> {
-        let mut metadata = HashMap::new();
+        let mut metadata: HashMap<String, String> = HashMap::new();
         metadata.insert("backend_name".to_string(), self.backend_name.clone());
         metadata
     }
 }
 
-// C API bindings for QRS
+// The following code is for C API binding.
 
+/// @brief Returns a IBMQiskitRuntimeService QRMI handle.
+///
+/// Created IBMQiskitRuntimeService instance needs to be removed by qrmi_ibmqrs_free() call if
+/// no longer needed.
+///
+/// # Safety
+///
+/// @return a IBMQiskitRuntimeService QRMI handle if succeeded, otherwise NULL. Must call qrmi_string_free() to free if no longer used.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_new() -> *mut IBMQiskitRuntimeService {
-    let qrs = Box::new(IBMQiskitRuntimeService::new());
-    Box::into_raw(qrs)
+    let qrmi = Box::new(IBMQiskitRuntimeService::new());
+    Box::into_raw(qrmi)
 }
 
+/// @brief Returns true if device is accessible, otherwise false.
+///
+/// # Safety
+///   
+/// * `qrmi` must have been returned by a previous call to qrmi_ibmqrs_new().
+/// * The memory pointed to by `id` must contain a valid nul terminator at the end of the string.
+/// * The memory pointed to by `outp` must have enough room to store boolean value.
+/// * `id` must be valid for reads of bytes up to and including the nul terminator.
+/// * The memory referenced by the returned `CStr` must not be mutated for the duration of lifetime `'a`.
+/// * The nul terminator must be within `isize::MAX` from `id`
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (id) [in] A resource identifier
+/// @param (outp) [out] accessible or not
+/// @return QRMI_SUCCESS(0) if succeeded, otherwise QRMI_ERROR.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_is_accessible(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     id: *const c_char,
     outp: *mut bool,
 ) -> c_int {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return QRMI_ERROR;
     }
     ffi_helpers::null_pointer_check!(id, QRMI_ERROR);
     ffi_helpers::null_pointer_check!(outp, QRMI_ERROR);
+
     if let Ok(id_str) = CStr::from_ptr(id).to_str() {
-        *outp = (*qrs).is_accessible(id_str);
+        *outp = (*qrmi).is_accessible(id_str);
         return QRMI_SUCCESS;
     }
     QRMI_ERROR
 }
 
+/// @brief Frees the memory space pointed to by `ptr`, which must have been returned by a previous call to qrmi_ibmqrs_new(). Otherwise, or if ptr has already been freed, segmentation fault occurs.  If `ptr` is NULL, returns QRMI_ERROR.
+/// # Safety
+///
+/// * `ptr` must have been returned by a previous call to qrmi_ibmqrs_new().
+///
+/// @param (ptr) [in] A IBMQiskitRuntimeService QRMI handle
+/// @return QRMI_SUCCESS(0) if succeeded, otherwise QRMI_ERROR.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_free(ptr: *mut IBMQiskitRuntimeService) -> c_int {
     if ptr.is_null() {
@@ -405,58 +452,103 @@ pub unsafe extern "C" fn qrmi_ibmqrs_free(ptr: *mut IBMQiskitRuntimeService) -> 
     QRMI_SUCCESS
 }
 
+/// @brief Acquires quantum resource.
+///
+/// # Safety
+///   
+/// * `qrmi` must have been returned by a previous call to qrmi_ibmqrs_new().
+/// * The memory pointed to by `id` must contain a valid nul terminator at the end of the string.
+/// * `id` must be valid for reads of bytes up to and including the nul terminator.
+/// * The memory referenced by the returned `CStr` must not be mutated for the duration of lifetime `'a`.
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (id) [in] A resource identifier
+/// @return Acquisition token if succeeded, otherwise NULL. Must call qrmi_string_free() to free if no longer used.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_acquire(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     id: *const c_char,
 ) -> *const c_char {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return std::ptr::null();
     }
     ffi_helpers::null_pointer_check!(id, std::ptr::null());
-    // In QRS, the provided id is ignored; we acquire a session.
-    match (*qrs).acquire("") {
-        Ok(token) => {
-            if let Ok(token_cstr) = CString::new(token) {
-                return token_cstr.into_raw();
+
+    if let Ok(backend_name) = CStr::from_ptr(id).to_str() {
+        match (*qrmi).acquire(backend_name) {
+            Ok(token) => {
+                if let Ok(token_cstr) = CString::new(token) {
+                    return token_cstr.into_raw();
+                }
             }
-        }
-        Err(e) => {
-            eprintln!("{:?}", e);
+            Err(err) => {
+                eprintln!("{:?}", err);
+            }
         }
     }
     std::ptr::null()
 }
 
+/// @brief Releases quantum resource.
+///
+/// # Safety
+///  
+/// * `qrmi` must have been returned by a previous call to qrmi_ibmqrs_new().
+/// * The memory pointed to by `id` must contain a valid nul terminator at the end of the string.
+/// * `id` must be valid for reads of bytes up to and including the nul terminator.
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (id) [in] A resource identifier
+/// @return QRMI_SUCCESS if succeeded, otherwise QRMI_ERROR.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_release(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     id: *const c_char,
 ) -> c_int {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return QRMI_ERROR;
     }
     ffi_helpers::null_pointer_check!(id, QRMI_ERROR);
+
     if let Ok(token) = CStr::from_ptr(id).to_str() {
-        match (*qrs).release(token) {
-            Ok(()) => return QRMI_SUCCESS,
-            Err(e) => eprintln!("{:?}", e),
+        match (*qrmi).release(token) {
+            Ok(()) => {
+                return QRMI_SUCCESS;
+            }
+            Err(err) => {
+                eprintln!("{:?}", err);
+            }
         }
     }
-    QRMI_ERROR
+    QRMI_SUCCESS
 }
 
+/// @brief Starts a task.
+///
+/// # Safety
+///
+/// * `qrmi` must have been returned by a previous call to qrmi_ibmqrs_new().
+/// * The memory pointed to by `program_id` must contain a valid nul terminator at the end of the string.
+/// * The memory pointed to by `input` must contain a valid nul terminator at the end of the string.
+/// * `program_id` and `input` must be valid for reads of bytes up to and including the nul terminator.
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (program_id) [in] Program ID (`sampler` or `estimator`)
+/// @param (input) [in] primitive input
+/// @return A task identifier if succeeded, otherwise NULL. Must call qrmi_string_free() to free if no longer used.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_task_start(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     program_id: *const c_char,
     input: *const c_char,
 ) -> *const c_char {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return std::ptr::null();
     }
+
     ffi_helpers::null_pointer_check!(program_id, std::ptr::null());
     ffi_helpers::null_pointer_check!(input, std::ptr::null());
+
     if let (Ok(program_id_str), Ok(input_str)) = (
         CStr::from_ptr(program_id).to_str(),
         CStr::from_ptr(input).to_str(),
@@ -465,100 +557,158 @@ pub unsafe extern "C" fn qrmi_ibmqrs_task_start(
             input: input_str.to_string(),
             program_id: program_id_str.to_string(),
         };
-        match (*qrs).task_start(payload) {
+
+        match (*qrmi).task_start(payload) {
             Ok(job_id) => {
                 if let Ok(job_id_cstr) = CString::new(job_id) {
                     return job_id_cstr.into_raw();
                 }
             }
-            Err(e) => {
-                eprintln!("{:?}", e);
+            Err(err) => {
+                eprintln!("{:?}", err);
             }
         }
     }
     std::ptr::null()
 }
 
+/// @brief Stops a task.
+///
+/// # Safety
+///
+/// * `qrmi` must have been returned by a previous call to qrmi_ibmqrs_new().
+/// * The memory pointed to by `task_id` must contain a valid nul terminator at the end of the string.
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (task_id) [in] A task ID, returned by a previous call to qrmi_ibmqrs_task_start()
+/// @return QRMI_SUCCESS if succeeded, otherwise QRMI_ERROR.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_task_stop(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     task_id: *const c_char,
 ) -> c_int {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return QRMI_ERROR;
     }
+
     ffi_helpers::null_pointer_check!(task_id, QRMI_ERROR);
+
     if let Ok(task_id_str) = CStr::from_ptr(task_id).to_str() {
-        match (*qrs).task_stop(task_id_str) {
-            Ok(()) => return QRMI_SUCCESS,
-            Err(e) => eprintln!("{:?}", e),
+        match (*qrmi).task_stop(task_id_str) {
+            Ok(()) => {
+                return QRMI_SUCCESS;
+            }
+            Err(err) => {
+                eprintln!("{:?}", err);
+            }
         }
     }
     QRMI_ERROR
 }
 
+/// @brief Returns the status of the specified task.
+///
+/// # Safety
+///  
+/// * `qrmi` must have been returned by a previous call to qrmi_ibmqrs_new().
+/// * The memory pointed to by `task_id` must contain a valid nul terminator at the end of the string.
+/// * The memory pointed to by `outp` must have enough room to store `TaskStatus` value.
+/// * `task_id` must be valid for reads of bytes up to and including the nul terminator.
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (task_id) [in] A task identifier
+/// @param (outp) [out] task status
+/// @return QRMI_SUCCESS if succeeded, otherwise QRMI_ERROR.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_task_status(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     task_id: *const c_char,
     outp: *mut TaskStatus,
 ) -> c_int {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return QRMI_ERROR;
     }
+
     ffi_helpers::null_pointer_check!(task_id, QRMI_ERROR);
     ffi_helpers::null_pointer_check!(outp, QRMI_ERROR);
+
     if let Ok(task_id_str) = CStr::from_ptr(task_id).to_str() {
-        match (*qrs).task_status(task_id_str) {
-            Ok(status) => {
-                *outp = TaskStatus::from(status);
+        match (*qrmi).task_status(task_id_str) {
+            Ok(v) => {
+                *outp = v;
                 return QRMI_SUCCESS;
             }
-            Err(e) => eprintln!("{:?}", e),
+            Err(err) => {
+                eprintln!("{:?}", err);
+            }
         }
     }
     QRMI_ERROR
 }
 
+/// @brief Returns the result of a task.
+///
+/// # Safety
+///
+/// * `qrmi` must have been returned by a previous call to qrmi_ibmqrs_new().
+/// * The memory pointed to by `task_id` must contain a valid nul terminator at the end of the string.
+/// * `task_id` must be valid for reads of bytes up to and including the nul terminator.
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (task_id) [in] A task identifier
+/// @return Task result if succeeded, otherwise NULL. Must call qrmi_string_free() to free if no longer used.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_task_result(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     task_id: *const c_char,
 ) -> *const c_char {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return std::ptr::null();
     }
+
     ffi_helpers::null_pointer_check!(task_id, std::ptr::null());
+
     if let Ok(task_id_str) = CStr::from_ptr(task_id).to_str() {
-        match (*qrs).task_result(task_id_str) {
-            Ok(result) => {
-                if let Ok(result_cstr) = CString::new(result.value) {
+        match (*qrmi).task_result(task_id_str) {
+            Ok(v) => {
+                if let Ok(result_cstr) = CString::new(v.value) {
                     return result_cstr.into_raw();
                 }
             }
-            Err(e) => eprintln!("{:?}", e),
+            Err(err) => {
+                eprintln!("{:?}", err);
+            }
         }
     }
     std::ptr::null()
 }
 
+/// @brief Returns a Target for the specified device. Vendor specific serialized data.
+/// @param (qrmi) [in] A IBMQiskitRuntimeService QRMI handle
+/// @param (id) [in] A quantum resource identifier
+/// @return A serialized target data if succeeded, otherwise NULL. Must call qrmi_string_free() to free if no longer used.
+/// @version 0.1.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_ibmqrs_target(
-    qrs: *mut IBMQiskitRuntimeService,
+    qrmi: *mut IBMQiskitRuntimeService,
     id: *const c_char,
 ) -> *const c_char {
-    if qrs.is_null() {
+    if qrmi.is_null() {
         return std::ptr::null();
     }
+
     ffi_helpers::null_pointer_check!(id, std::ptr::null());
+
     if let Ok(id_str) = CStr::from_ptr(id).to_str() {
-        match (*qrs).target(id_str) {
-            Ok(target) => {
-                if let Ok(target_cstr) = CString::new(target.value) {
+        match (*qrmi).target(id_str) {
+            Ok(v) => {
+                if let Ok(target_cstr) = CString::new(v.value) {
                     return target_cstr.into_raw();
                 }
             }
-            Err(e) => eprintln!("{:?}", e),
+            Err(err) => {
+                eprintln!("{:?}", err);
+            }
         }
     }
     std::ptr::null()

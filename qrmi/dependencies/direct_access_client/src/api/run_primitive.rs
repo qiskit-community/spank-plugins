@@ -93,6 +93,7 @@ impl Client {
         log_level: LogLevel,
         payload: &serde_json::Value,
         job_id: Option<String>,
+        session_id: Option<String>,
     ) -> Result<PrimitiveJob> {
         let s3_config = self.s3_config.clone().context(
             "S3 bucket is not configured. Use ClientBuilder.with_s3_bucket() to use this function.",
@@ -139,7 +140,7 @@ impl Client {
             crate::storages::s3::get_presigned_url_for_put(&s3_client, &s3_bucket, &logs_key)
                 .await?;
 
-        let job_param = serde_json::json!({
+        let mut job_param = serde_json::json!({
             "id": id,
             "backend": backend.to_string(),
             "program_id": program_id.to_string(),
@@ -160,6 +161,13 @@ impl Client {
                 },
             }
         });
+
+        if let Some(sid) = session_id {
+            if let Some(obj) = job_param.as_object_mut() {
+                obj.insert("session_id".to_string(), serde_json::Value::String(sid));
+            }
+        }
+        
         let job_id = self.run_job(&job_param).await?;
         Ok(PrimitiveJob {
             job_id,

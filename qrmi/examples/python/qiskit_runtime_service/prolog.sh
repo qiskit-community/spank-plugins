@@ -1,56 +1,56 @@
 #!/bin/bash
-# Prolog: Set up IBM Quantum session if using QRMI_RESOURCE_ID as backend
+# Prolog: Set up session if using QRMI_RESOURCE_ID as backend
 
 echo "Setting up IBM Quantum session..."
 
-# Load variables, this should come from Spank-plugin
-#----------------------------------------------------
+# Load variables (from your .env file or Spank-plugin)
+set -a        # Enable automatic export of all variables
 source .env
-#----------------------------------------------------
 
-echo "Setting up IBM Quantum session..."
-
-# Ensure required secret and configuration variables are available.
-# Report error and exit if any are missing.
-if [ -z "$QRMI_IBM_DA_SERVICE_CRN" ]; then
-  echo "Error: QRMI_IBM_DA_SERVICE_CRN is not set."
-  exit 1
+# Ensure required configuration variables are available.
+if [ -z "$QRMI_IBM_QRS_SERVICE_CRN" ]; then
+  echo "Error: QRMI_IBM_QRS_SERVICE_CRN is not set."
 fi
 
-if [ -z "$QRMI_IBM_DA_IAM_APIKEY" ]; then
-  echo "Error: QRMI_IBM_DA_IAM_APIKEY is not set."
-  exit 1
+if [ -z "$QRMI_IBM_QRS_IAM_APIKEY" ]; then
+  echo "Error: QRMI_IBM_QRS_IAM_APIKEY is not set."
 fi
 
 if [ -z "$QRMI_RESOURCE_ID" ]; then
   echo "Error: QRMI_RESOURCE_ID is not set."
-  exit 1
 fi
 
-# Set defaults for session TTL and mode if not provided.
-SESSION_MAX_TTL=${SESSION_MAX_TTL:-60}
-SESSION_MODE=${SESSION_MODE:-"dedicated"}
+# Set defaults for session TTL and session mode if not provided.
+export QRMI_IBM_QRS_SESSION_MAX_TTL=${QRMI_IBM_QRS_SESSION_MAX_TTL:-60}
+export QRMI_IBM_QRS_SESSION_MODE=${QRMI_IBM_QRS_SESSION_MODE:-"dedicated"}
 
-# Create a session via the IBM Quantum API
-response=$(curl -X POST "https://quantum.cloud.ibm.com/api/v1/sessions" \
--H "Accept: application/json" \
--H "Authorization: Bearer $QRMI_IBM_DA_IAM_APIKEY" \
--H "Service-CRN: $QRMI_IBM_DA_SERVICE_CRN" \
--H "Content-Type: application/json" \
-  --data-raw "{
-  'mode': $SESSION_MODE,
-  'max_ttl': $SESSION_MAX_TTL
-  }"
-  )
+# For testing purposes, we invoke the acquire here.
+echo "Invoking QRMI acquire function via inline Python..."
 
-# Extract the session id using jq (ensure jq is installed)
-QRMI_IBM_QRS_SESSION_ID=$(echo "$response" | jq -r '.id')
+# Inline Python to read env variables and call acquire from qrmi
+python3 <<'EOF'
+import os
+from qrmi import IBMQiskitRuntimeService
 
-if [ "$QRMI_IBM_QRS_SESSION_ID" != "null" ] && [ -n "$QRMI_IBM_QRS_SESSION_ID" ]; then
+# The service constructor reads the required env variables.
+service = IBMQiskitRuntimeService()
+
+# Use QRMI_RESOURCE_ID (or another identifier if needed)
+resource_id = os.getenv("QRMI_RESOURCE_ID", "default_resource")
+try:
+    session_id = service.acquire(resource_id)
+    os.environ['QRMI_IBM_QRS_SESSION_ID'] = session_id
+    print(session_id, end="")
+except Exception as e:
+    print(f"Error acquiring session: {e}", flush=True)
+    exit(1)
+EOF
+
+
+# Check that a session ID was returned and export it.
+if [ -z "$QRMI_IBM_QRS_SESSION_ID" ]; then
+  echo "Failed to acquire session."
+fi
+
 export QRMI_IBM_QRS_SESSION_ID
-echo "Session started with session_id: $QRMI_IBM_QRS_SESSION_ID"
-else
-echo "Failed to start session. Response: $response"
-exit 1
-fi
-
+set +a

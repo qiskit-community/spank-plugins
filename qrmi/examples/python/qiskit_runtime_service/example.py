@@ -27,17 +27,6 @@ from qiskit_ibm_runtime import Session, SamplerV2 as Sampler
 from qiskit_ibm_runtime.exceptions import IBMRuntimeError
 from qiskit_ibm_runtime.utils.backend_converter import convert_to_target
 
-def _active_session(func):  # type: ignore
-    """Decorator used to ensure the session is active."""
-
-    @wraps(func)
-    def _wrapper(self, *args, **kwargs):  # type: ignore
-        if not self._active:
-            raise IBMRuntimeError("The session is closed.")
-        return func(self, *args, **kwargs)
-
-    return _wrapper
-
 class QRS_Session(Session):
     def __init__(self, qrmi_instance: IBMQiskitRuntimeService):
         self.qrmi = qrmi_instance
@@ -51,7 +40,7 @@ class QRS_Session(Session):
         # Acquire a session using the backend resource ID from environment variables
         self._session_id = self.qrmi.acquire(self.backend_name)
         print(f"Session acquired with ID: {self._session_id}")
-    @_active_session
+        
     def _run(self, program_id: str, inputs: str, **kwargs):
         """
         Run a Qiskit primitive by sending a task via the QRMI service.
@@ -81,16 +70,6 @@ class QRS_Session(Session):
         # Stop the task.
         self.qrmi.task_stop(job_id)
         return result
-
-    def close(self):
-        """Release the acquired session."""
-        self.qrmi.release(self._session_id)
-        print(f"Session {self._session_id} released.")
-
-    def cancel(self, job_id: str):
-        """Cancel a running task."""
-        self.qrmi.task_stop(job_id)
-        print(f"Task {job_id} cancelled.")
     
     def target(self):
         # Call the target function with the resource_id and parse the returned JSON string.

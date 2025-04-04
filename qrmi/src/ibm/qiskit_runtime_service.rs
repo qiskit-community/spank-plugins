@@ -266,7 +266,9 @@ impl IBMQiskitRuntimeService {
         if status == models::job_response::Status::Running {
                 let _ = jobs_api::cancel_job_jid(&self.config, task_id, None, None).await;
             }
-        jobs_api::delete_job_jid(&self.config, task_id, None).await?;
+        if status == models::job_response::Status::Queued {
+                let _ = jobs_api::delete_job_jid(&self.config, task_id, None).await?;
+            }
         Ok(())
     }
 
@@ -292,6 +294,12 @@ impl IBMQiskitRuntimeService {
     /// This function calls GET /v1/jobs/{id}/results and serializes the returned JSON into a string.
     #[tokio::main]
     async fn _task_result(&mut self, task_id: &str) -> Result<TaskResult> {
+        // Check if the task is completed before fetching the results.
+        let job_details = jobs_api::get_job_details_jid(&self.config, task_id, None, None).await?;
+        let status = job_details.status;
+        if status != models::job_response::Status::Completed {
+            return Err(anyhow::anyhow!("Task is not completed. Current status: {:?}", status));
+        } 
         let results = jobs_api::get_job_results_jid(&self.config, task_id, None).await?;
         let result_str = serde_json::to_string(&results)?;
         Ok(TaskResult { value: result_str })

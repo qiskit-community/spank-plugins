@@ -21,7 +21,7 @@ Because QRMI is an environment variable driven software library, all configurati
 | Environment variables | Descriptions |
 | ---- | ---- |
 | QRMI_RESOURCE_ID | Quantum backend name(e.g. `ibm_torino`) |
-| QRMI_IBM_QRS_ENDPOINT | Direct Access endpoint URL |
+| QRMI_IBM_QRS_ENDPOINT | Qiskit Runtime Service endpoint URL(e.g. `https://quantum.cloud.ibm.com/api`) |
 | QRMI_IBM_QRS_IAM_ENDPOINT | IBM Cloud IAM endpoint URL(e.g. `https://iam.cloud.ibm.com`) |
 | QRMI_IBM_QRS_IAM_APIKEY | IBM Cloud IAM API Key |
 | QRMI_IBM_QRS_SERVICE_CRN | Cloud Resource Name(CRN) of the provisioned Direct Access instance, starting with `crn:v1:`. |

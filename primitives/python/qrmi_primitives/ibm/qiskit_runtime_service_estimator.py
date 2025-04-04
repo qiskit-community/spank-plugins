@@ -10,14 +10,17 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""IBM implementations of Primitive"""
+"""EstimatorV2 Primitive implementation with IBM Direct Access QRMI"""
+from qrmi import IBMQiskitRuntimeService
+from .base_estimator import QRMIBaseEstimatorV2
 
-from .direct_access_estimator import (
-    IBMDirectAccessEstimatorV2,
-    IBMQiskitRuntimeServiceEstimatorV2,
-)
-from .direct_access_sampler import (
-    IBMDirectAccessSamplerV2,
-    IBMQiskitRuntimeServiceSamplerV2,
-)
-from .runtime_job_v2 import RuntimeJobV2
+
+class IBMQiskitRuntimeServiceEstimatorV2(QRMIBaseEstimatorV2):
+    """EstimatorV2 for IBMDirectAccess QRMI"""
+
+    def __init__(
+        self,
+        *,
+        options: dict | None = None,
+    ) -> None:
+        super().__init__(IBMQiskitRuntimeService(), options=options)

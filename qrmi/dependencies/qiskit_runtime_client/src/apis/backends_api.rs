@@ -69,38 +69,10 @@ pub async fn get_backend_configuration(configuration: &configuration::Configurat
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Authorization", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Backend-Authentication", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("external-service-token", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Service-CRN", value);
-    };
+    if let Some(ref crn) = configuration.crn {
+        req_builder = req_builder.header("Service-CRN", crn.clone());
+    }
+    req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -110,7 +82,7 @@ pub async fn get_backend_configuration(configuration: &configuration::Configurat
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
+        .unwrap_or("application/json");
     let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {
@@ -145,39 +117,11 @@ pub async fn get_backend_defaults(configuration: &configuration::Configuration, 
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Authorization", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Backend-Authentication", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("external-service-token", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Service-CRN", value);
-    };
 
+    if let Some(ref crn) = configuration.crn {
+        req_builder = req_builder.header("Service-CRN", crn.clone());
+    }
+    req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
 
@@ -186,7 +130,7 @@ pub async fn get_backend_defaults(configuration: &configuration::Configuration, 
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
+        .unwrap_or("application/json");
     let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {
@@ -225,39 +169,10 @@ pub async fn get_backend_properties(configuration: &configuration::Configuration
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Authorization", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Backend-Authentication", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("external-service-token", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Service-CRN", value);
-    };
-
+    if let Some(ref crn) = configuration.crn {
+        req_builder = req_builder.header("Service-CRN", crn.clone());
+    }
+    req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
 
@@ -266,7 +181,7 @@ pub async fn get_backend_properties(configuration: &configuration::Configuration
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
+        .unwrap_or("application/json");
     let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {
@@ -291,6 +206,7 @@ pub async fn get_backend_status(configuration: &configuration::Configuration, id
 
     let uri_str = format!("{}/v1/backends/{id}/status", configuration.base_path, id=crate::apis::urlencode(p_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+    req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
 
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -301,38 +217,9 @@ pub async fn get_backend_status(configuration: &configuration::Configuration, id
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Authorization", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Backend-Authentication", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("external-service-token", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Service-CRN", value);
-    };
+    if let Some(ref crn) = configuration.crn {
+        req_builder = req_builder.header("Service-CRN", crn.clone());
+    }
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -342,7 +229,7 @@ pub async fn get_backend_status(configuration: &configuration::Configuration, id
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
+        .unwrap_or("application/json");
     let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {
@@ -376,39 +263,10 @@ pub async fn list_backends(configuration: &configuration::Configuration, ibm_api
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Authorization", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Backend-Authentication", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("external-service-token", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Service-CRN", value);
-    };
-
+    if let Some(ref crn) = configuration.crn {
+        req_builder = req_builder.header("Service-CRN", crn.clone());
+    }
+    req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
 
@@ -417,7 +275,7 @@ pub async fn list_backends(configuration: &configuration::Configuration, ibm_api
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
+        .unwrap_or("application/json");
     let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {

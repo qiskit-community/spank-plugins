@@ -47,38 +47,10 @@ pub async fn list_tags(configuration: &configuration::Configuration, r#type: &st
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Authorization", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Backend-Authentication", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("external-service-token", value);
-    };
-    if let Some(ref apikey) = configuration.api_key {
-        let key = apikey.key.clone();
-        let value = match apikey.prefix {
-            Some(ref prefix) => format!("{} {}", prefix, key),
-            None => key,
-        };
-        req_builder = req_builder.header("Service-CRN", value);
-    };
+    if let Some(ref crn) = configuration.crn {
+        req_builder = req_builder.header("Service-CRN", crn.clone());
+    }
+    req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -88,7 +60,7 @@ pub async fn list_tags(configuration: &configuration::Configuration, r#type: &st
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
+        .unwrap_or("application/json");
     let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {

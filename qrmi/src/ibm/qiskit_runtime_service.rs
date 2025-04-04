@@ -56,26 +56,25 @@ impl IBMQiskitRuntimeService {
             .expect("QRMI_RESOURCE_ID environment variable is not set");
         let qrs_endpoint = env::var("QRMI_IBM_QRS_ENDPOINT")
             .expect("QRMI_IBM_QRS_ENDPOINT environment variable is not set");
-        let _iam_endpoint = env::var("QRMI_IBM_QRS_IAM_ENDPOINT")
+        let iam_endpoint = env::var("QRMI_IBM_QRS_IAM_ENDPOINT")
             .expect("QRMI_IBM_QRS_IAM_ENDPOINT environment variable is not set");
         let apikey = env::var("QRMI_IBM_QRS_IAM_APIKEY")
             .expect("QRMI_IBM_QRS_IAM_APIKEY environment variable is not set");
-        let _service_crn = env::var("QRMI_IBM_QRS_SERVICE_CRN")
+        let service_crn = env::var("QRMI_IBM_QRS_SERVICE_CRN")
             .expect("QRMI_IBM_QRS_SERVICE_CRN environment variable is not set");
         let timeout = env::var("QRMI_IBM_QRS_TIMEOUT_SECONDS")
             .expect("QRMI_IBM_QRS_TIMEOUT_SECONDS environment variable is not set");
         let timeout_secs = timeout.parse::<u64>().expect("QRMI_IBM_QRS_TIMEOUT_SECONDS parse error");
         let session_mode = env::var("QRMI_IBM_QRS_SESSION_MODE").unwrap_or_else(|_| "dedicated".to_string());
         let session_id = env::var("QRMI_IBM_QRS_SESSION_ID").ok();
-
-
         let runtime = tokio::runtime::Runtime::new().unwrap();
-        let bearer_token = runtime.block_on(auth::fetch_access_token(&apikey)).expect("Failed to fetch access token");
+        let bearer_token = runtime.block_on(auth::fetch_access_token(&apikey, &iam_endpoint)).expect("Failed to fetch access token");
+
         // Set up the config
         let mut config = configuration::Configuration::new();
         config.base_path = qrs_endpoint;
         config.bearer_access_token = Some(bearer_token);
-        config.api_key = Some(configuration::ApiKey { prefix: Some("".to_string()), key: apikey });
+        config.crn = Some(service_crn);
         
         Self {
             config,
@@ -165,21 +164,26 @@ impl Default for IBMQiskitRuntimeService {
 }
 
 impl IBMQiskitRuntimeService {
+
+
     /// Asynchronously checks if a backend is accessible.
     #[tokio::main]
     async fn _is_accessible(&mut self, id: &str) -> bool {
         match backends_api::get_backend_status(&self.config, id, None).await {
             Ok(status_response) => {
-                if let Some(status) = status_response.status {
-                    if status.to_lowercase() == "running" || status.to_lowercase() == "online" {
-                        return true;
-                    }
-                }
+                // Print the status, using "unknown" if no status is available
+                let status_str = status_response.status.unwrap_or_else(|| "unknown".to_string());
+                // Return true if status is "active" or "online"
+                status_str.to_lowercase() == "active" || status_str.to_lowercase() == "online"
+            }
+            Err(e) => {
+                // Print a message indicating an error occurred
+                println!("status: error ({:?})", e);
                 false
             }
-            Err(_) => false,
         }
     }
+    
 
     /// Creates a new session.
     ///

@@ -32,7 +32,13 @@ pub async fn get_version(configuration: &configuration::Configuration, ) -> Resu
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
-
+    if let Some(ref token) = configuration.bearer_access_token {
+        req_builder = req_builder.bearer_auth(token.to_owned());
+    };
+    if let Some(ref crn) = configuration.crn {
+        req_builder = req_builder.header("Service-CRN", crn.clone());
+    }
+    req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
 
@@ -41,7 +47,7 @@ pub async fn get_version(configuration: &configuration::Configuration, ) -> Resu
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
+        .unwrap_or("application/json");
     let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {

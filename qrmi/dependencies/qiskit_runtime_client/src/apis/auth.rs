@@ -1,16 +1,17 @@
 #[derive(Debug)]
-pub enum MyError {
+pub enum AuthError {
     Reqwest(reqwest::Error),
     MissingToken,
 }
 
-impl From<reqwest::Error> for MyError {
-    fn from(err: reqwest::Error) -> MyError {
-        MyError::Reqwest(err)
+impl From<reqwest::Error> for AuthError {
+    fn from(err: reqwest::Error) -> AuthError {
+        AuthError::Reqwest(err)
     }
 }
 
-pub async fn fetch_access_token(api_key: &str) -> Result<String, MyError> {
+/// Returns a bearer token based on api_key and iam_endpoint.
+pub async fn fetch_access_token(api_key: &str, iam_endpoint: &str) -> Result<String, AuthError> {
     let client = reqwest::Client::new();
     let params = [
         ("grant_type", "urn:ibm:params:oauth:grant-type:apikey"),
@@ -18,7 +19,7 @@ pub async fn fetch_access_token(api_key: &str) -> Result<String, MyError> {
     ];
 
     let response = client
-        .post("https://iam.cloud.ibm.com/identity/token")
+        .post(format!("{}/identity/token", iam_endpoint))
         .header("Content-Type", "application/x-www-form-urlencoded")
         .form(&params)
         .send()
@@ -29,6 +30,6 @@ pub async fn fetch_access_token(api_key: &str) -> Result<String, MyError> {
     if let Some(token) = json.get("access_token").and_then(serde_json::Value::as_str) {
         Ok(token.to_string())
     } else {
-        Err(MyError::MissingToken)
+        Err(AuthError::MissingToken)
     }
 }

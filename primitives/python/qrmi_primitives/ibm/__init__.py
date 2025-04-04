@@ -14,10 +14,14 @@
 
 from .direct_access_estimator import (
     IBMDirectAccessEstimatorV2,
-    IBMQiskitRuntimeServiceEstimatorV2,
 )
 from .direct_access_sampler import (
     IBMDirectAccessSamplerV2,
+)
+from .qiskit_runtime_service_estimator import (
+    IBMQiskitRuntimeServiceEstimatorV2,
+)
+from .qiskit_runtime_service_sampler import (
     IBMQiskitRuntimeServiceSamplerV2,
 )
 from .runtime_job_v2 import RuntimeJobV2

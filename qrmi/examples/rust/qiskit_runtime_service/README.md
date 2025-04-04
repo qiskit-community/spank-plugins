@@ -1,4 +1,4 @@
-# Direct Access QRMI - Examples in Rust
+# Qiskit Runtime Service QRMI - Examples in Rust
 
 ## Prerequisites
 
@@ -35,10 +35,10 @@ $ cargo build --release
 
 ## How to run this example
 ```shell-session
-$ ../target/release/qrmi-example-direct-access --help
-QRMI for IBM Direct Access - Example
+$ ../target/release/qiskit_runtime_service --help
+QRMI for Qiskit Runtime Service - Example
 
-Usage: qrmi-example-direct-access --input <INPUT> --program-id <PROGRAM_ID>
+Usage: qrmi-example-qiskit_runtime_service --input <INPUT> --program-id <PROGRAM_ID>
 
 Options:
   -i, --input <INPUT>            primitive input file
@@ -48,5 +48,5 @@ Options:
 ```
 For example,
 ```shell-session
-$ ../target/release/qrmi-example-direct-access -i sampler_input.json -p sampler
+$ ../target/release/qrmi-example-qiskit_runtime_service -i sampler_input.json -p sampler
 ```

@@ -241,7 +241,6 @@ impl IBMDirectAccess {
                         LogLevel::Debug,
                         &job,
                         None,
-                        None,
                     )
                     .await
                 {

@@ -35,32 +35,32 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  IBMQiskitRuntimeService *qrmi = qrmi_ibmqrs_new();
+  IBMDirectAccess *qrmi = qrmi_ibmda_new();
   bool is_accessible = false;
-  int rc = qrmi_ibmqrs_is_accessible(qrmi, backend_name, &is_accessible);
+  int rc = qrmi_ibmda_is_accessible(qrmi, backend_name, &is_accessible);
   if (rc == QRMI_SUCCESS) {
     if (is_accessible == false) {
       fprintf(stderr, "%s cannot be accessed.\n", backend_name);
       return -1;
     }
   } else {
-    fprintf(stderr, "qrmi_ibmqrs_is_accessible() failed.\n");
+    fprintf(stderr, "qrmi_ibmda_is_accessible() failed.\n");
     return -1;
   }
 
-  const char *acquisition_token = qrmi_ibmqrs_acquire(qrmi, backend_name);
+  const char *acquisition_token = qrmi_ibmda_acquire(qrmi, backend_name);
   fprintf(stdout, "acquisition_token = %s\n", acquisition_token);
 
-  rc = qrmi_ibmqrs_release(qrmi, acquisition_token);
-  fprintf(stdout, "qrmi_ibmqrs_release rc = %d\n", rc);
+  rc = qrmi_ibmda_release(qrmi, acquisition_token);
+  fprintf(stdout, "qrmi_ibmda_release rc = %d\n", rc);
   qrmi_free_string((char *)acquisition_token);
 
-  const char *target = qrmi_ibmqrs_target(qrmi, backend_name);
+  const char *target = qrmi_ibmda_target(qrmi, backend_name);
   fprintf(stdout, "target = %s\n", target);
   qrmi_free_string((char *)target);
 
   const char *input = read_file(argv[1]);
-  const char *job_id = qrmi_ibmqrs_task_start(qrmi, argv[2], input);
+  const char *job_id = qrmi_ibmda_task_start(qrmi, argv[2], input);
   if (job_id == NULL) {
     fprintf(stderr, "failed to start a task.\n");
     free((void*)input);
@@ -71,25 +71,25 @@ int main(int argc, char *argv[]) {
 
   TaskStatus status;
   while (1) {
-    rc = qrmi_ibmqrs_task_status(qrmi, job_id, &status);
+    rc = qrmi_ibmda_task_status(qrmi, job_id, &status);
     if (rc != QRMI_SUCCESS || status != RUNNING) {
       break;
     }
     sleep(1);
   }
 
-  rc = qrmi_ibmqrs_task_status(qrmi, job_id, &status);
+  rc = qrmi_ibmda_task_status(qrmi, job_id, &status);
   if (rc == QRMI_SUCCESS && status == COMPLETED) {
-    const char *result = qrmi_ibmqrs_task_result(qrmi, job_id);
+    const char *result = qrmi_ibmda_task_result(qrmi, job_id);
     fprintf(stdout, "%s\n", result);
     qrmi_free_string((char *)result);
   }
 
-  qrmi_ibmqrs_task_stop(qrmi, job_id);
+  qrmi_ibmda_task_stop(qrmi, job_id);
 
   qrmi_free_string((char *)job_id);
 
-  qrmi_ibmqrs_free(qrmi);
+  qrmi_ibmda_free(qrmi);
 
   return 0;
 }

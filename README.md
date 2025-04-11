@@ -8,11 +8,12 @@ This is repository with Slurm Spank plugins for Quantum resources and jobs suppo
 ##### For Users
 
 1. [About the Project](./docs/overview.md)
-2. [Installation](INSTALL.md)
-3. [How-Tos](./docs/howtos/)
-4. [How to Give Feedback](#how-to-give-feedback)
-5. [Contribution Guidelines](#contribution-guidelines)
-6. [References and Acknowledgements](#references-and-acknowledgements)
+1. [HPC user experience, HPC developer experience and usage patterns](./docs/ux.md)
+1. [Installation](INSTALL.md)
+1. [How-Tos](./docs/howtos/)
+1. [How to Give Feedback](#how-to-give-feedback)
+1. [Contribution Guidelines](#contribution-guidelines)
+1. [References and Acknowledgements](#references-and-acknowledgements)
 
 
 ----------------------------------------------------------------------------------------------------

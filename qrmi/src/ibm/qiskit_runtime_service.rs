@@ -13,14 +13,14 @@
 use crate::models::{Payload, Target, TaskResult, TaskStatus};
 use crate::QuantumResource;
 use anyhow::{bail, Result};
-use qiskit_runtime_client::apis::{sessions_api, jobs_api, backends_api, configuration, auth};
-use qiskit_runtime_client::models::create_session_request_one_of::Mode;
+use qiskit_runtime_client::apis::{auth, backends_api, configuration, jobs_api, sessions_api};
 use qiskit_runtime_client::models;
+use qiskit_runtime_client::models::create_session_request_one_of::Mode;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::env;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
-use std::env;
 
 // python binding
 use pyo3::prelude::*;
@@ -35,6 +35,10 @@ pub struct IBMQiskitRuntimeService {
     pub(crate) session_id: Option<String>,
     pub(crate) timeout_secs: u64,
     pub(crate) session_mode: String,
+    pub(crate) api_key: String,
+    pub(crate) iam_endpoint: String,
+    pub(crate) token_expiration: i64,
+    pub(crate) token_lifetime: i64,
 }
 
 #[pymethods]
@@ -52,36 +56,45 @@ impl IBMQiskitRuntimeService {
     /// * QRMI_IBM_QRS_SESSION_ID - (optional) pre‐set session ID
     #[new]
     pub fn new() -> Self {
-        let backend_name = env::var("QRMI_RESOURCE_ID")
-            .expect("QRMI_RESOURCE_ID environment variable is not set");
+        let backend_name =
+            env::var("QRMI_RESOURCE_ID").expect("QRMI_RESOURCE_ID environment variable is not set");
         let qrs_endpoint = env::var("QRMI_IBM_QRS_ENDPOINT")
             .expect("QRMI_IBM_QRS_ENDPOINT environment variable is not set");
         let iam_endpoint = env::var("QRMI_IBM_QRS_IAM_ENDPOINT")
             .expect("QRMI_IBM_QRS_IAM_ENDPOINT environment variable is not set");
-        let apikey = env::var("QRMI_IBM_QRS_IAM_APIKEY")
+        let api_key = env::var("QRMI_IBM_QRS_IAM_APIKEY")
             .expect("QRMI_IBM_QRS_IAM_APIKEY environment variable is not set");
         let service_crn = env::var("QRMI_IBM_QRS_SERVICE_CRN")
             .expect("QRMI_IBM_QRS_SERVICE_CRN environment variable is not set");
         let timeout = env::var("QRMI_IBM_QRS_TIMEOUT_SECONDS")
             .expect("QRMI_IBM_QRS_TIMEOUT_SECONDS environment variable is not set");
-        let timeout_secs = timeout.parse::<u64>().expect("QRMI_IBM_QRS_TIMEOUT_SECONDS parse error");
-        let session_mode = env::var("QRMI_IBM_QRS_SESSION_MODE").unwrap_or_else(|_| "dedicated".to_string());
+        let timeout_secs = timeout
+            .parse::<u64>()
+            .expect("QRMI_IBM_QRS_TIMEOUT_SECONDS parse error");
+        let session_mode =
+            env::var("QRMI_IBM_QRS_SESSION_MODE").unwrap_or_else(|_| "dedicated".to_string());
         let session_id = env::var("QRMI_IBM_QRS_SESSION_ID").ok();
         let runtime = tokio::runtime::Runtime::new().unwrap();
-        let bearer_token = runtime.block_on(auth::fetch_access_token(&apikey, &iam_endpoint)).expect("Failed to fetch access token");
-
+        // Get bearer token info
+        let (bearer_token, token_expiration, token_lifetime) = runtime
+            .block_on(auth::fetch_access_token(&api_key, &iam_endpoint))
+            .expect("Failed to fetch access token");
         // Set up the config
         let mut config = configuration::Configuration::new();
         config.base_path = qrs_endpoint;
         config.bearer_access_token = Some(bearer_token);
         config.crn = Some(service_crn);
-        
+
         Self {
             config,
             backend_name,
             session_id,
             timeout_secs,
             session_mode,
+            api_key,
+            iam_endpoint,
+            token_expiration,
+            token_lifetime,
         }
     }
 
@@ -164,15 +177,27 @@ impl Default for IBMQiskitRuntimeService {
 }
 
 impl IBMQiskitRuntimeService {
-
-
     /// Asynchronously checks if a backend is accessible.
     #[tokio::main]
     async fn _is_accessible(&mut self, id: &str) -> bool {
+        // Ensure the bearer token is valid
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        }
         match backends_api::get_backend_status(&self.config, id, None).await {
             Ok(status_response) => {
                 // Print the status, using "unknown" if no status is available
-                let status_str = status_response.status.unwrap_or_else(|| "unknown".to_string());
+                let status_str = status_response
+                    .status
+                    .unwrap_or_else(|| "unknown".to_string());
                 // Return true if status is "active" or "online"
                 status_str.to_lowercase() == "active" || status_str.to_lowercase() == "online"
             }
@@ -183,7 +208,6 @@ impl IBMQiskitRuntimeService {
             }
         }
     }
-    
 
     /// Creates a new session.
     ///
@@ -193,6 +217,17 @@ impl IBMQiskitRuntimeService {
 
     #[tokio::main]
     async fn _acquire(&mut self, _id: &str) -> Result<String> {
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        }
         let mode_value = match self.session_mode.to_lowercase().as_str() {
             "batch" => Mode::Batch,
             "dedicated" => Mode::Dedicated,
@@ -201,11 +236,13 @@ impl IBMQiskitRuntimeService {
         let create_session_request_one_of = models::CreateSessionRequestOneOf {
             max_ttl: Some(self.timeout_secs as i32),
             mode: mode_value,
-            ..Default::default()
         };
-        let create_session_request = models::CreateSessionRequest::CreateSessionRequestOneOf(Box::new(create_session_request_one_of));
-        let response = sessions_api::create_session(&self.config, None, Some(create_session_request)).await?;
-        
+        let create_session_request = models::CreateSessionRequest::CreateSessionRequestOneOf(
+            Box::new(create_session_request_one_of),
+        );
+        let response =
+            sessions_api::create_session(&self.config, None, Some(create_session_request)).await?;
+
         self.session_id = Some(response.id.clone());
         Ok(response.id)
     }
@@ -216,6 +253,18 @@ impl IBMQiskitRuntimeService {
 
     #[tokio::main]
     async fn _release(&mut self, _id: &str) -> Result<()> {
+        // Ensure the bearer token is valid
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        }
         if let Some(ref session_id) = self.session_id {
             sessions_api::delete_session_close(&self.config, session_id, None).await?;
             self.session_id = None;
@@ -229,12 +278,24 @@ impl IBMQiskitRuntimeService {
     /// and the job is created using the qiskit_runtime_api client function jobs_api::create_job.
     #[tokio::main]
     async fn _task_start(&mut self, payload: Payload) -> Result<String> {
+        // Ensure the bearer token is valid
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        }
         if let Payload::QiskitPrimitive { input, program_id } = payload {
             let input_json: Value = serde_json::from_str(&input)?;
             let params = match input_json {
                 Value::Object(map) => Some(map.into_iter().collect::<HashMap<String, Value>>()),
                 _ => None,
-            };            
+            };
             let create_job_request_one_of = models::CreateJobRequestOneOf {
                 program_id,
                 backend: self.backend_name.clone(),
@@ -243,11 +304,14 @@ impl IBMQiskitRuntimeService {
                 log_level: None, // or Some(LogLevel::Debug) if needed
                 cost: None,
                 session_id: self.session_id.clone(),
-                params: params,
+                params,
             };
-            let create_job_request = models::CreateJobRequest::CreateJobRequestOneOf(Box::new(create_job_request_one_of));
-            let response = jobs_api::create_job(&self.config, None, None, Some(create_job_request)).await?;
-            
+            let create_job_request = models::CreateJobRequest::CreateJobRequestOneOf(Box::new(
+                create_job_request_one_of,
+            ));
+            let response =
+                jobs_api::create_job(&self.config, None, None, Some(create_job_request)).await?;
+
             Ok(response.id)
         } else {
             bail!("Payload type is not supported: {:?}", payload)
@@ -261,14 +325,26 @@ impl IBMQiskitRuntimeService {
 
     #[tokio::main]
     async fn _task_stop(&mut self, task_id: &str) -> Result<()> {
+        // Ensure the bearer token is valid
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        }
         let job_details = jobs_api::get_job_details_jid(&self.config, task_id, None, None).await?;
         let status = job_details.status;
-        if status == models::job_response::Status::Running {
-                let _ = jobs_api::cancel_job_jid(&self.config, task_id, None, None).await;
-            }
-        if status == models::job_response::Status::Queued {
-                let _ = jobs_api::delete_job_jid(&self.config, task_id, None).await?;
-            }
+        if status == models::job_response::Status::Running
+            || status == models::job_response::Status::Queued
+        {
+            let _ = jobs_api::cancel_job_jid(&self.config, task_id, None, None).await;
+            jobs_api::delete_job_jid(&self.config, task_id, None).await?;
+        }
         Ok(())
     }
 
@@ -278,13 +354,26 @@ impl IBMQiskitRuntimeService {
     /// TaskStatus enum.
     #[tokio::main]
     async fn _task_status(&mut self, task_id: &str) -> Result<TaskStatus> {
-        let job_details = jobs_api::get_job_details_jid( &self.config, task_id, None, None).await?;
+        // Ensure the bearer token is valid
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        }
+        let job_details = jobs_api::get_job_details_jid(&self.config, task_id, None, None).await?;
         let status = job_details.status;
         match status {
             models::job_response::Status::Running => Ok(TaskStatus::Running),
             models::job_response::Status::Queued => Ok(TaskStatus::Queued),
             models::job_response::Status::Completed => Ok(TaskStatus::Completed),
-            models::job_response::Status::Cancelled | models::job_response::Status::CancelledRanTooLong => Ok(TaskStatus::Cancelled),
+            models::job_response::Status::Cancelled
+            | models::job_response::Status::CancelledRanTooLong => Ok(TaskStatus::Cancelled),
             models::job_response::Status::Failed => Ok(TaskStatus::Failed),
         }
     }
@@ -294,12 +383,26 @@ impl IBMQiskitRuntimeService {
     /// This function calls GET /v1/jobs/{id}/results and serializes the returned JSON into a string.
     #[tokio::main]
     async fn _task_result(&mut self, task_id: &str) -> Result<TaskResult> {
-        // Check if the task is completed before fetching the results.
+        // Ensure the bearer token is valid
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        } // Check if the task is completed before fetching the results.
         let job_details = jobs_api::get_job_details_jid(&self.config, task_id, None, None).await?;
         let status = job_details.status;
         if status != models::job_response::Status::Completed {
-            return Err(anyhow::anyhow!("Task is not completed. Current status: {:?}", status));
-        } 
+            return Err(anyhow::anyhow!(
+                "Task is not completed. Current status: {:?}",
+                status
+            ));
+        }
         let results = jobs_api::get_job_results_jid(&self.config, task_id, None).await?;
         let result_str = serde_json::to_string(&results)?;
         Ok(TaskResult { value: result_str })
@@ -311,18 +414,33 @@ impl IBMQiskitRuntimeService {
     /// GET /v1/backends/{id}/properties into a single JSON object.
     #[tokio::main]
     async fn _target(&mut self, id: &str) -> Result<Target> {
+        // Ensure the bearer token is valid
+        if let Err(e) = auth::check_token(
+            &self.api_key,
+            &self.iam_endpoint,
+            &mut self.config.bearer_access_token,
+            &mut self.token_expiration,
+            &mut self.token_lifetime,
+        )
+        .await
+        {
+            println!("Token renewal failed: {:?}", e);
+        }
         let mut resp = json!({});
         if let Ok(cfg) = backends_api::get_backend_configuration(&self.config, id, None).await {
             resp["configuration"] = serde_json::to_value(cfg)?;
         } else {
             resp["configuration"] = json!(null);
         }
-        if let Ok(props) = backends_api::get_backend_properties(&self.config, id, None, None).await {
+        if let Ok(props) = backends_api::get_backend_properties(&self.config, id, None, None).await
+        {
             resp["properties"] = serde_json::to_value(props)?;
         } else {
             resp["properties"] = json!(null);
         }
-        Ok(Target { value: resp.to_string() })
+        Ok(Target {
+            value: resp.to_string(),
+        })
     }
 }
 

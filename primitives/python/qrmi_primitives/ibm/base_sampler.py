@@ -39,8 +39,7 @@ class Options:
 
 
 class QRMIBaseSamplerV2(BaseSamplerV2):
-    """Sampler V2 base class for IBM QRMI
-    """
+    """Sampler V2 base class for IBM QRMI"""
 
     def __init__(
         self,

@@ -5,17 +5,17 @@ HPC user experience, HPC developer experience and usage patterns
 
 - [Principles](#principles)
 - [Connecting physical resources to slurm resoures and how to use them](#connecting-physical-resources-to-slurm-resoures-and-how-to-use-them)
-- [HPC admin scope](#hpc-admin-scope)
-- [HPC user scope](#hpc-user-scope)
-- [HPC application scope](#hpc-application-scope)
-- [Backend specifics](#backend-specifics)
-- [IBM Direct Access API](#ibm-direct-access-api)
-- [Qiskit Runtime Service](#qiskit-runtime-service)
+  - [HPC admin scope](#hpc-admin-scope)
+  - [HPC user scope](#hpc-user-scope)
+  - [HPC application scope](#hpc-application-scope)
+  - [Backend specifics](#backend-specifics)
+    - [IBM Direct Access API](#ibm-direct-access-api)
+    - [Qiskit Runtime Service](#qiskit-runtime-service)
 - [Examples](#examples)
-- [Running jobs with dependencies](#running-jobs-with-dependencies)
-- [Running a job with several slurm QPU resources](#running-a-job-with-several-slurm-qpu-resources)
-- [Running primitives directly](#running-primitives-directly)
-- [Other workflow tools](#other-workflow-tools)
+  - [Running jobs with dependencies](#running-jobs-with-dependencies)
+  - [Running a job with several slurm QPU resources](#running-a-job-with-several-slurm-qpu-resources)
+  - [Running primitives directly](#running-primitives-directly)
+  - [Other workflow tools](#other-workflow-tools)
 
 See [Overview](./overview.md) for a glossary of terms.
 
@@ -35,29 +35,28 @@ Note the exact syntax is subject to change -- this is a sketch of the UX at this
 ### HPC admin scope
 
 HPC administrators configure, what physical resources can be provided to slurm jobs.
+Note sensitivethe config could contain sensitive information and m
 
 ```
 # slurm quauntum plugin configuration
 
-name=da-local-backend                            \
-url=https://da-endpoint.my-local.domain/       \
-s3_url=https://s3.my-local.domain/...          \
-s3_accesstoken=4828d9bea...
+# DA backend
+name=da-local-backend                                                    \
+url=https://da-endpoint.my-local.domain/                                 \
+da_crn=crn:v1:bluemix:public:quantum-computing:us-east:a/43aac17...      \
+da_apikey_file=/root/da_apikey                                           \
+s3_url=https://s3.my-local.domain/...                                    \
+s3_accesstoken_file=/root/s3_accesstoken
 
-# crn, credential and s3 fields can be set for all users set or overridden by users individually
-name=ibm_fez                                                          \
-type=qiskit-runtime-service-ibmcloud                                \
-url=https://quantum.cloud.ibm.com/                                  \
-crn=crn:v1:bluemix:public:quantum-computing:us-east:a/43aac17...    \
-apikey=D82kc7Gs...                                                  \
-s3_instance=crn:v1:bluemix:public:cloud-object-storage:global:...   \
-s3_bucket_url= https://s3...                                        \
-s3_accesstoken=065f68a67c4a...
+# QRS backends
+name=ibm_fez                                                             \
+type=qiskit-runtime-service-ibmcloud
 
-name=ibm_marrakesh                                                    \
-type=qiskit-runtime-service-ibmcloud                                \
-url=https://quantum.cloud.ibm.com/
+name=ibm_marrakesh                                                       \
+type=qiskit-runtime-service-ibmcloud
 ```
+
+See the specific sections of the backend type for details on the parameters.
 
 In `slurm.conf`, qpu generic resources can be assigned to some or all nodes for usage:
 ```
@@ -85,6 +84,8 @@ Slurm qpu resources given an identifier (in this example: *my_qpu_resource*) tha
 srun ...
 ```
 
+There might be additional environment variables required, depending on the backend type.
+
 ### HPC application scope
 
 HPC applications refer to the slurm QPU resources assigned to the slurm job.
@@ -110,10 +111,20 @@ sampler = SamplerV2(target=target)
 
 ### Backend specifics
 #### IBM Direct Access API
+##### HPC admin scope
+Configuration of Direct Access API backends (HPC admin scope) includes endpoints and credentials to the Direct Access endpoint, authentication services as well as the S3 endpoint.
+Specifically, this includes:
 
-Configuration of Direct Access API backends (HPC admin scope) includes endpoints and credentials to the Direct Access endpoint as well as S3 endpoint.
-These credentials are not visible to the HPC users.
+* IBM Cloud API key for creating bearer tokens
+* endpoint of Direct Access API
+* S3 bucket and access details
 
+Access credentials should not visible to HPC users or other non-privileged users on the system.
+Therefore, sensitive data is put in separate files which can be access protected accordingly.
+
+Note that all users share the same access and hence need appropriate user vetting before getting access to quantum resources.
+
+##### HPC user scope
 Execution lanes are not exposed to the HPC administrator or user directly.
 Instead, mid term, there can be two different modes that HPC users can specify:
 
@@ -121,12 +132,20 @@ Instead, mid term, there can be two different modes that HPC users can specify:
 * `exclusive=false` allows other jobs to run in parallel. In that case, there can be as many jobs as there are execution lanes at the same time, and the job essentially only gets one lane
 
 #### Qiskit Runtime Service
+##### HPC user scope
 
-Configuration of Qiskit Runtime Service backends (HPC admin scope) includes endpoints and credentials to the Qiskit Runtime endpoint as well as S3 endpoint.
-All jobs run on the same IBM Cloud service instance under the the same IBM Cloud identity.
+It is expected, that users specify additional access details in environment variables.
+Specifically, this includes
 
-Alternatively (or, mandatorily, if no credentials are provided by the HPC admin), users can specify these endpoints and credentials, so that their own identity is used on defined service instances.
-In this case, IBM Quantum Platform's scheduling considers the user's and service instance's capabilities for scheduling. 
+* Qiskit Runtime service instance (CRN, Cloud Resource Name)
+* Endpoint for Qiskit Runtime (unless auto-detected from the CRN)
+* API key which has access to the CRN
+* S3 instance, bucket and access token/credentials for data transfers
+
+This determines under which user and service instance the Qiskit Runtime service is used
+Accordingly, IBM Quantum Platform's scheduling considers the user's and service instance's capabilities for scheduling.
+
+At this time, users have to provide the above details (no shared cluster-wide Quantum access).
 
 #### Pasqal
 

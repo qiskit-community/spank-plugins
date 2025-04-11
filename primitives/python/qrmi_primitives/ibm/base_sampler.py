@@ -19,14 +19,14 @@ from qiskit import qasm3
 from qiskit.primitives.base import BaseSamplerV2
 from qiskit.primitives.containers.sampler_pub import SamplerPub, SamplerPubLike
 
-from qrmi import IBMDirectAccess, Payload
+from qrmi import IBMDirectAccess, IBMQiskitRuntimeService, Payload
 
 from .runtime_job_v2 import RuntimeJobV2
 
 
 @dataclass
 class Options:
-    """Options for :class:`~.IBMDirectAccessSamplerV2`"""
+    """Options for :class:`~.QRMIBaseSamplerV2`"""
 
     default_shots: int = 1024
     """The default shots to use if none are specified in :meth:`~.run`.
@@ -39,12 +39,11 @@ class Options:
 
 
 class QRMIBaseSamplerV2(BaseSamplerV2):
-    """Sampler V2 base class for IBM QRMI
-    """
+    """Sampler V2 base class for IBM QRMI"""
 
     def __init__(
         self,
-        qrmi: Union[IBMDirectAccess],
+        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
         *,
         options: dict | None = None,
     ) -> None:

@@ -21,14 +21,14 @@ from qiskit import qasm3
 from qiskit.primitives.base import BaseEstimatorV2
 from qiskit.primitives.containers.estimator_pub import EstimatorPub, EstimatorPubLike
 
-from qrmi import IBMDirectAccess, Payload
+from qrmi import IBMDirectAccess, IBMQiskitRuntimeService, Payload
 
 from .runtime_job_v2 import RuntimeJobV2
 
 
 @dataclass
 class Options:
-    """Options for :class:`~.IBMDirectAccessEstimatorV2`."""
+    """Options for :class:`~.QRMIBaseEstimatorV2`."""
 
     default_precision: float = 0.015625
     """The default precision to use if none are specified in :meth:`~run`.
@@ -44,7 +44,7 @@ class QRMIBaseEstimatorV2(BaseEstimatorV2):
 
     def __init__(
         self,
-        qrmi: Union[IBMDirectAccess],
+        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
         *,
         options: dict | None = None,
     ) -> None:

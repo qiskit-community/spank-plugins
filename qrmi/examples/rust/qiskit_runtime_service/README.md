@@ -19,7 +19,6 @@ Because QRMI is an environment variable driven software library, all configurati
 | QRMI_IBM_QRS_SESSION_MODE | Session mode, default='dedicated', batch or dedicated. |
 | QRMI_IBM_QRS_TIMEOUT_SECONDS | Time (in seconds) after which job should time out and get cancelled. It is based on system execution time (not wall clock time). 
 | QRMI_IBM_QRS_SESSION_ID | Session ID, set by acquire function. Optional for acquire function, however, required other functions. |
-System execution time is the amount of time that the system is dedicated to processing your job. |
 
 
 ## Create Qiskit Primitive input file as input

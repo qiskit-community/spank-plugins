@@ -51,7 +51,7 @@ pub async fn find_instance_workloads(
     let p_created_before = created_before;
     let p_tags = tags;
 
-    let uri_str = format!("{}/v1/workloads", configuration.base_path);
+    let uri_str = format!("{}/workloads", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_sort {

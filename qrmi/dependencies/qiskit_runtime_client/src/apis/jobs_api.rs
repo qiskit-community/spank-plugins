@@ -145,7 +145,7 @@ pub async fn cancel_job_jid(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}/cancel",
+        "{}/jobs/{id}/cancel",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -200,7 +200,7 @@ pub async fn create_job(
     let p_parent_job_id = parent_job_id;
     let p_create_job_request = create_job_request;
 
-    let uri_str = format!("{}/v1/jobs", configuration.base_path);
+    let uri_str = format!("{}/jobs", configuration.base_path);
     let mut req_builder = configuration
         .client
         .request(reqwest::Method::POST, &uri_str);
@@ -263,7 +263,7 @@ pub async fn delete_job_jid(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}",
+        "{}/jobs/{id}",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -315,7 +315,7 @@ pub async fn get_interim_results_jid(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}/interim_results",
+        "{}/jobs/{id}/interim_results",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -378,7 +378,7 @@ pub async fn get_job_details_jid(
     let p_exclude_params = exclude_params;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}",
+        "{}/jobs/{id}",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -441,7 +441,7 @@ pub async fn get_job_metrics_jid(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}/metrics",
+        "{}/jobs/{id}/metrics",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -501,7 +501,7 @@ pub async fn get_job_results_jid(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}/results",
+        "{}/jobs/{id}/results",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -561,7 +561,7 @@ pub async fn get_jog_logs_jid(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}/logs",
+        "{}/jobs/{id}/logs",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -621,7 +621,7 @@ pub async fn get_transpiled_circuits_jid(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}/transpiled_circuits",
+        "{}/jobs/{id}/transpiled_circuits",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -700,7 +700,7 @@ pub async fn list_jobs(
     let p_session_id = session_id;
     let p_exclude_params = exclude_params;
 
-    let uri_str = format!("{}/v1/jobs", configuration.base_path);
+    let uri_str = format!("{}/jobs", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
     req_builder = req_builder.header(reqwest::header::ACCEPT, "application/json");
 
@@ -808,7 +808,7 @@ pub async fn replace_job_tags(
     let p_replace_job_tags_request = replace_job_tags_request;
 
     let uri_str = format!(
-        "{}/v1/jobs/{id}/tags",
+        "{}/jobs/{id}/tags",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );

@@ -24,7 +24,7 @@ pub enum GetVersionError {
 pub async fn get_version(
     configuration: &configuration::Configuration,
 ) -> Result<models::VersionResponse, Error<GetVersionError>> {
-    let uri_str = format!("{}/v1/versions", configuration.base_path);
+    let uri_str = format!("{}/versions", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {

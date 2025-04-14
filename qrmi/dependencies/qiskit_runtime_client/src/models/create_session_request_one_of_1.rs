@@ -16,13 +16,13 @@ use serde::{Deserialize, Serialize};
 pub struct CreateSessionRequestOneOf1 {
     /// The maximum time (in seconds) between jobs to keep the session active. Must be less than or equal to `active_ttl`.
     #[serde(rename = "interactive_ttl")]
-    pub interactive_ttl: i32,
+    pub interactive_ttl: u64,
     /// The remaining time (in seconds) for the session to be in the active state while jobs are running. Must be less than or equal to `max_ttl`. Defaults to `max_ttl`.
     #[serde(rename = "active_ttl", skip_serializing_if = "Option::is_none")]
-    pub active_ttl: Option<i32>,
+    pub active_ttl: Option<u64>,
     /// The maximum time (in seconds) for the session to run, subject to plan limits.
     #[serde(rename = "max_ttl", skip_serializing_if = "Option::is_none")]
-    pub max_ttl: Option<i32>,
+    pub max_ttl: Option<u64>,
     /// Execution mode to run the session in
     #[serde(rename = "mode")]
     pub mode: Mode,
@@ -30,7 +30,7 @@ pub struct CreateSessionRequestOneOf1 {
 
 impl CreateSessionRequestOneOf1 {
     /// Request to create a session. Only for use by channel partner.
-    pub fn new(interactive_ttl: i32, mode: Mode) -> CreateSessionRequestOneOf1 {
+    pub fn new(interactive_ttl: u64, mode: Mode) -> CreateSessionRequestOneOf1 {
         CreateSessionRequestOneOf1 {
             interactive_ttl,
             active_ttl: None,

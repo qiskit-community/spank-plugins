@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct CreateSessionRequestOneOf {
     /// The maximum time (in seconds) for the session to run, subject to plan limits.
     #[serde(rename = "max_ttl", skip_serializing_if = "Option::is_none")]
-    pub max_ttl: Option<i32>,
+    pub max_ttl: Option<u64>,
     /// Execution mode to run the session in
     #[serde(rename = "mode")]
     pub mode: Mode,

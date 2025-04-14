@@ -30,7 +30,7 @@ pub struct CreateJobRequestOneOf1 {
     pub log_level: Option<LogLevel>,
     /// Cost of the job as the estimated time it should take to complete (in seconds). Should not exceed the cost of the program
     #[serde(rename = "cost", skip_serializing_if = "Option::is_none")]
-    pub cost: Option<i32>,
+    pub cost: Option<u64>,
     /// Identifier of the session that the job is a part of
     #[serde(rename = "session_id", skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,

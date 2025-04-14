@@ -37,7 +37,7 @@ pub async fn get_account_config(
     let p_plan_id = plan_id;
 
     let uri_str = format!(
-        "{}/v1/accounts/{id}",
+        "{}/accounts/{id}",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );

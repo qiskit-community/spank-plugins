@@ -60,7 +60,7 @@ pub async fn get_backend_configuration(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/backends/{id}/configuration",
+        "{}/backends/{id}/configuration",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -120,7 +120,7 @@ pub async fn get_backend_defaults(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/backends/{id}/defaults",
+        "{}/backends/{id}/defaults",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -183,7 +183,7 @@ pub async fn get_backend_properties(
     let p_updated_before = updated_before;
 
     let uri_str = format!(
-        "{}/v1/backends/{id}/properties",
+        "{}/backends/{id}/properties",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -245,7 +245,7 @@ pub async fn get_backend_status(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/backends/{id}/status",
+        "{}/backends/{id}/status",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -302,7 +302,7 @@ pub async fn list_backends(
     // add a prefix to parameters to efficiently prevent name collisions
     let p_ibm_api_version = ibm_api_version;
 
-    let uri_str = format!("{}/v1/backends", configuration.base_path);
+    let uri_str = format!("{}/backends", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {

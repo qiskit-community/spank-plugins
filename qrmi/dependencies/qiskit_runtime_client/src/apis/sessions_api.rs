@@ -60,7 +60,7 @@ pub async fn create_session(
     let p_ibm_api_version = ibm_api_version;
     let p_create_session_request = create_session_request;
 
-    let uri_str = format!("{}/v1/sessions", configuration.base_path);
+    let uri_str = format!("{}/sessions", configuration.base_path);
     let mut req_builder = configuration
         .client
         .request(reqwest::Method::POST, &uri_str);
@@ -122,7 +122,7 @@ pub async fn delete_session_close(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/sessions/{id}/close",
+        "{}/sessions/{id}/close",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -174,7 +174,7 @@ pub async fn get_session_information(
     let p_ibm_api_version = ibm_api_version;
 
     let uri_str = format!(
-        "{}/v1/sessions/{id}",
+        "{}/sessions/{id}",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );
@@ -237,7 +237,7 @@ pub async fn update_session_state(
     let p_update_session_state_request = update_session_state_request;
 
     let uri_str = format!(
-        "{}/v1/sessions/{id}",
+        "{}/sessions/{id}",
         configuration.base_path,
         id = crate::apis::urlencode(p_id)
     );

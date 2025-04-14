@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""SamplerV2 Primitive implementation with IBM Direct Access QRMI"""
+"""SamplerV2 Primitive implementation with IBM Qiskit Runtime Service QRMI"""
 from qrmi import IBMQiskitRuntimeService
 from .base_sampler import QRMIBaseSamplerV2
 

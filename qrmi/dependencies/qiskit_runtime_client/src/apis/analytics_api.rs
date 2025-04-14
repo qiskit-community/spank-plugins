@@ -67,7 +67,7 @@ pub async fn analytics_filters(
     let p_ibm_api_version = ibm_api_version;
     let p_instance = instance;
 
-    let uri_str = format!("{}/v1/analytics/filters", configuration.base_path);
+    let uri_str = format!("{}/analytics/filters", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_instance {
@@ -152,7 +152,7 @@ pub async fn analytics_usage(
     let p_user_id = user_id;
     let p_simulators = simulators;
 
-    let uri_str = format!("{}/v1/analytics/usage", configuration.base_path);
+    let uri_str = format!("{}/analytics/usage", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_instance {
@@ -285,7 +285,7 @@ pub async fn get_usage_analytics_grouped(
     let p_user_id = user_id;
     let p_simulators = simulators;
 
-    let uri_str = format!("{}/v1/analytics/usage_grouped", configuration.base_path);
+    let uri_str = format!("{}/analytics/usage_grouped", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     req_builder = req_builder.query(&[("group_by", &p_group_by.to_string())]);
@@ -424,7 +424,7 @@ pub async fn get_usage_analytics_grouped_by_date(
     let p_simulators = simulators;
 
     let uri_str = format!(
-        "{}/v1/analytics/usage_grouped_by_date",
+        "{}/analytics/usage_grouped_by_date",
         configuration.base_path
     );
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);

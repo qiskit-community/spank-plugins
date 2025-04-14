@@ -53,7 +53,7 @@ pub async fn get_instance(
     // add a prefix to parameters to efficiently prevent name collisions
     let p_ibm_api_version = ibm_api_version;
 
-    let uri_str = format!("{}/v1/instance", configuration.base_path);
+    let uri_str = format!("{}/instance", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -107,7 +107,7 @@ pub async fn get_instance_configuration(
     // add a prefix to parameters to efficiently prevent name collisions
     let p_ibm_api_version = ibm_api_version;
 
-    let uri_str = format!("{}/v1/instances/configuration", configuration.base_path);
+    let uri_str = format!("{}/instances/configuration", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -163,7 +163,7 @@ pub async fn replace_instance_data(
     let p_ibm_api_version = ibm_api_version;
     let p_instance_update = instance_update;
 
-    let uri_str = format!("{}/v1/instances/configuration", configuration.base_path);
+    let uri_str = format!("{}/instances/configuration", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::PUT, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {

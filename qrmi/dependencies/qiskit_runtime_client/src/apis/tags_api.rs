@@ -35,7 +35,7 @@ pub async fn list_tags(
     let p_search = search;
     let p_ibm_api_version = ibm_api_version;
 
-    let uri_str = format!("{}/v1/tags", configuration.base_path);
+    let uri_str = format!("{}/tags", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     req_builder = req_builder.query(&[("type", &p_type.to_string())]);

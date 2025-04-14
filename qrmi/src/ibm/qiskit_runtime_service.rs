@@ -33,12 +33,13 @@ pub struct IBMQiskitRuntimeService {
     pub(crate) config: configuration::Configuration,
     pub(crate) backend_name: String,
     pub(crate) session_id: Option<String>,
-    pub(crate) timeout_secs: u64,
+    pub(crate) timeout_secs: Option<u64>,
     pub(crate) session_mode: String,
+    pub(crate) session_max_ttl: u64,
     pub(crate) api_key: String,
     pub(crate) iam_endpoint: String,
-    pub(crate) token_expiration: i64,
-    pub(crate) token_lifetime: i64,
+    pub(crate) token_expiration: u64,
+    pub(crate) token_lifetime: u64,
 }
 
 #[pymethods]
@@ -51,8 +52,9 @@ impl IBMQiskitRuntimeService {
     /// * QRMI_IBM_QRS_IAM_ENDPOINT - IAM endpoint URL
     /// * QRMI_IBM_QRS_IAM_APIKEY - IAM API key for QRS
     /// * QRMI_IBM_QRS_SERVICE_CRN - QRS service instance CRN
-    /// * QRMI_IBM_QRS_TIMEOUT_SECONDS - Timeout (seconds)
     /// * QRMI_IBM_QRS_SESSION_MODE - Session mode (default: dedicated)
+    /// * QRMI_IBM_QRS_SESSION_MAX_TTL - Session max_ttl (default: 28800)
+    /// * QRMI_IBM_QRS_TIMEOUT_SECONDS - (optional) Cost for the job (seconds)
     /// * QRMI_IBM_QRS_SESSION_ID - (optional) pre‐set session ID
     #[new]
     pub fn new() -> Self {
@@ -66,13 +68,15 @@ impl IBMQiskitRuntimeService {
             .expect("QRMI_IBM_QRS_IAM_APIKEY environment variable is not set");
         let service_crn = env::var("QRMI_IBM_QRS_SERVICE_CRN")
             .expect("QRMI_IBM_QRS_SERVICE_CRN environment variable is not set");
-        let timeout = env::var("QRMI_IBM_QRS_TIMEOUT_SECONDS")
-            .expect("QRMI_IBM_QRS_TIMEOUT_SECONDS environment variable is not set");
-        let timeout_secs = timeout
-            .parse::<u64>()
-            .expect("QRMI_IBM_QRS_TIMEOUT_SECONDS parse error");
         let session_mode =
             env::var("QRMI_IBM_QRS_SESSION_MODE").unwrap_or_else(|_| "dedicated".to_string());
+        let session_max_ttl: u64 = env::var("QRMI_IBM_QRS_SESSION_MAX_TTL")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(28800);
+        let timeout_secs: Option<u64> = env::var("QRMI_IBM_QRS_TIMEOUT_SECONDS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok());
         let session_id = env::var("QRMI_IBM_QRS_SESSION_ID").ok();
         let runtime = tokio::runtime::Runtime::new().unwrap();
         // Get bearer token info
@@ -91,6 +95,7 @@ impl IBMQiskitRuntimeService {
             session_id,
             timeout_secs,
             session_mode,
+            session_max_ttl,
             api_key,
             iam_endpoint,
             token_expiration,
@@ -211,7 +216,7 @@ impl IBMQiskitRuntimeService {
 
     /// Creates a new session.
     ///
-    /// This function wraps the qiskit_runtime_api client call to POST /v1/sessions. The underlying
+    /// This function wraps the qiskit_runtime_api client call to POST /sessions. The underlying
     /// function (sessions_api::create_session) builds the request with the required headers
     /// (including the API key, IAM token, and service CRN) from the configuration.
 
@@ -231,10 +236,10 @@ impl IBMQiskitRuntimeService {
         let mode_value = match self.session_mode.to_lowercase().as_str() {
             "batch" => Mode::Batch,
             "dedicated" => Mode::Dedicated,
-            other => panic!("Invalid session mode: {}", other),
+            other => bail!(format!("Invalid session mode: {}", other)),
         };
         let create_session_request_one_of = models::CreateSessionRequestOneOf {
-            max_ttl: Some(self.timeout_secs as i32),
+            max_ttl: Some(self.session_max_ttl),
             mode: mode_value,
         };
         let create_session_request = models::CreateSessionRequest::CreateSessionRequestOneOf(
@@ -249,7 +254,7 @@ impl IBMQiskitRuntimeService {
 
     /// Deletes the current session.
     ///
-    /// This sends a DELETE request to /v1/sessions/{session_id}/close via the qiskit_runtime_api client.
+    /// This sends a DELETE request to /sessions/{session_id}/close via the qiskit_runtime_api client.
 
     #[tokio::main]
     async fn _release(&mut self, _id: &str) -> Result<()> {
@@ -274,7 +279,7 @@ impl IBMQiskitRuntimeService {
 
     /// Starts a job task.
     ///
-    /// This function sends a POST request to /v1/jobs. The input payload is parsed as JSON,
+    /// This function sends a POST request to /jobs. The input payload is parsed as JSON,
     /// and the job is created using the qiskit_runtime_api client function jobs_api::create_job.
     #[tokio::main]
     async fn _task_start(&mut self, payload: Payload) -> Result<String> {
@@ -302,7 +307,7 @@ impl IBMQiskitRuntimeService {
                 runtime: None,
                 tags: None,
                 log_level: None, // or Some(LogLevel::Debug) if needed
-                cost: None,
+                cost: self.timeout_secs,
                 session_id: self.session_id.clone(),
                 params,
             };
@@ -320,8 +325,8 @@ impl IBMQiskitRuntimeService {
 
     /// Stops a running job.
     ///
-    /// This function checks the job status via GET /v1/jobs/{id}. If the job is still running,
-    /// it sends a cancellation (POST /v1/jobs/{id}/cancel) before deleting the job with DELETE /v1/jobs/{id}.
+    /// This function checks the job status via GET /jobs/{id}. If the job is still running,
+    /// it sends a cancellation (POST /jobs/{id}/cancel) before deleting the job with DELETE /jobs/{id}.
 
     #[tokio::main]
     async fn _task_stop(&mut self, task_id: &str) -> Result<()> {
@@ -343,14 +348,14 @@ impl IBMQiskitRuntimeService {
             || status == models::job_response::Status::Queued
         {
             let _ = jobs_api::cancel_job_jid(&self.config, task_id, None, None).await;
-            jobs_api::delete_job_jid(&self.config, task_id, None).await?;
+            //jobs_api::delete_job_jid(&self.config, task_id, None).await?;
         }
         Ok(())
     }
 
     /// Returns the current status of a job.
     ///
-    /// This function calls GET /v1/jobs/{id} and maps the returned status string to the
+    /// This function calls GET /jobs/{id} and maps the returned status string to the
     /// TaskStatus enum.
     #[tokio::main]
     async fn _task_status(&mut self, task_id: &str) -> Result<TaskStatus> {
@@ -380,7 +385,7 @@ impl IBMQiskitRuntimeService {
 
     /// Retrieves the results of a completed job.
     ///
-    /// This function calls GET /v1/jobs/{id}/results and serializes the returned JSON into a string.
+    /// This function calls GET /jobs/{id}/results and serializes the returned JSON into a string.
     #[tokio::main]
     async fn _task_result(&mut self, task_id: &str) -> Result<TaskResult> {
         // Ensure the bearer token is valid
@@ -398,20 +403,16 @@ impl IBMQiskitRuntimeService {
         let job_details = jobs_api::get_job_details_jid(&self.config, task_id, None, None).await?;
         let status = job_details.status;
         if status != models::job_response::Status::Completed {
-            return Err(anyhow::anyhow!(
-                "Task is not completed. Current status: {:?}",
-                status
-            ));
+            bail!("Task is not completed. Current status: {:?}", status);
         }
         let results = jobs_api::get_job_results_jid(&self.config, task_id, None).await?;
-        let result_str = serde_json::to_string(&results)?;
-        Ok(TaskResult { value: result_str })
+        Ok(TaskResult { value: results })
     }
 
     /// Retrieves target details.
     ///
-    /// This function combines the results of GET /v1/backends/{id}/configuration and
-    /// GET /v1/backends/{id}/properties into a single JSON object.
+    /// This function combines the results of GET /backends/{id}/configuration and
+    /// GET /backends/{id}/properties into a single JSON object.
     #[tokio::main]
     async fn _target(&mut self, id: &str) -> Result<Target> {
         // Ensure the bearer token is valid

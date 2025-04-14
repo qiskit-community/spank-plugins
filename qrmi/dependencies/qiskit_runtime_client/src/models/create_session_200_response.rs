@@ -37,13 +37,13 @@ pub struct CreateSession200Response {
     pub last_job_completed: Option<String>,
     /// The maximum time (in seconds) between jobs to keep the session active
     #[serde(rename = "interactive_ttl", skip_serializing_if = "Option::is_none")]
-    pub interactive_ttl: Option<i32>,
+    pub interactive_ttl: Option<u64>,
     /// The maximum time (in seconds) for session to run, subject to plan limits
     #[serde(rename = "max_ttl", skip_serializing_if = "Option::is_none")]
-    pub max_ttl: Option<i32>,
+    pub max_ttl: Option<u64>,
     /// The remaining time (in seconds) for the session to be in the active state while jobs are running.
     #[serde(rename = "active_ttl", skip_serializing_if = "Option::is_none")]
-    pub active_ttl: Option<i32>,
+    pub active_ttl: Option<u64>,
     /// The state of the session. - open: The session is waiting to run jobs. - active: The session has priority to run jobs on the backend and is running jobs or is waiting for more jobs to run. - inactive: The session does not have priority and is not running any jobs. - closed: The session is not running any jobs and will not accept/run new jobs.
     #[serde(rename = "state", skip_serializing_if = "Option::is_none")]
     pub state: Option<State>,

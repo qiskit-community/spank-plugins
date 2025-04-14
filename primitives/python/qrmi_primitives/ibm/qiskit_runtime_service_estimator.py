@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""EstimatorV2 Primitive implementation with IBM Direct Access QRMI"""
+"""EstimatorV2 Primitive implementation with IBM Qiskit Runtime Service QRMI"""
 from qrmi import IBMQiskitRuntimeService
 from .base_estimator import QRMIBaseEstimatorV2
 

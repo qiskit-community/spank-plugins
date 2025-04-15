@@ -19,13 +19,17 @@ pub struct CreateSessionRequestOneOf {
     /// Execution mode to run the session in
     #[serde(rename = "mode")]
     pub mode: Mode,
+    /// Name that identifies the backend on which to set session.
+    #[serde(rename = "backend")]
+    pub backend: String,
 }
 
 impl CreateSessionRequestOneOf {
-    pub fn new(mode: Mode) -> CreateSessionRequestOneOf {
+    pub fn new(mode: Mode, backend: String) -> CreateSessionRequestOneOf {
         CreateSessionRequestOneOf {
             max_ttl: None,
             mode,
+            backend,
         }
     }
 }

@@ -241,6 +241,7 @@ impl IBMQiskitRuntimeService {
         let create_session_request_one_of = models::CreateSessionRequestOneOf {
             max_ttl: Some(self.session_max_ttl),
             mode: mode_value,
+            backend: self.backend_name.clone(),
         };
         let create_session_request = models::CreateSessionRequest::CreateSessionRequestOneOf(
             Box::new(create_session_request_one_of),

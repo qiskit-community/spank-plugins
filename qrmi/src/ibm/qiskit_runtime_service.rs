@@ -233,6 +233,21 @@ impl IBMQiskitRuntimeService {
         {
             println!("Token renewal failed: {:?}", e);
         }
+
+        if let Some(existing_session_id) = self.session_id.clone() {
+            let response =
+                sessions_api::get_session_information(&self.config, &existing_session_id, None)
+                    .await?;
+            let active_ttl = response.active_ttl.unwrap_or(1);
+            let max_ttl = response.max_ttl.unwrap_or(1);
+
+            if max_ttl / 100 < active_ttl {
+                return Ok(existing_session_id);
+            } else {
+                let _ = self.release(&existing_session_id);
+            }
+        }
+
         let mode_value = match self.session_mode.to_lowercase().as_str() {
             "batch" => Mode::Batch,
             "dedicated" => Mode::Dedicated,

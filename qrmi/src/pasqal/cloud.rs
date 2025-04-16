@@ -16,6 +16,9 @@ use anyhow::{Result};
 // use retry_policies::policies::ExponentialBackoff;
 // use retry_policies::Jitter;
 // use serde_json::json;
+use pasqal_cloud_api::{
+    Client, ClientBuilder, GetAuthInfoResponse
+};
 use std::collections::HashMap;
 use std::env;
 // use std::str::FromStr;
@@ -24,6 +27,7 @@ use uuid::Uuid;
 
 // python binding
 use pyo3::prelude::*;
+use pyo3::exceptions::PyTypeError;
 
 // c binding
 // use crate::consts::{QRMI_ERROR, QRMI_SUCCESS};
@@ -34,8 +38,7 @@ use pyo3::prelude::*;
 /// QRMI implementation for Pasqal Cloud
 #[pyclass]
 pub struct PasqalCloud {
-    pub(crate) project_id: String,
-    pub(crate) auth_token: String,
+    pub(crate) api_client: Client,
 }
 
 #[pymethods]
@@ -52,10 +55,8 @@ impl PasqalCloud {
         // Check to see if the environment variables required to run this program are set.
         let project_id = env::var("QRMI_PASQAL_CLOUD_PROJECT_ID").expect("QRMI_PASQAL_CLOUD_PROJECT_ID");
         let auth_token = env::var("QRMI_PASQAL_CLOUD_AUTH_TOKEN").expect("QRMI_PASQAL_CLOUD_AUTH_TOKEN");
-        // TODO: Write and use a basic api client
         Self {
-            project_id,
-            auth_token
+            api_client: ClientBuilder::new(auth_token, project_id).build().unwrap(),
         }
     }
 
@@ -63,6 +64,12 @@ impl PasqalCloud {
     #[pyo3(name = "is_accessible")]
     fn pyfunc_is_accessible(&mut self, id: &str) -> PyResult<bool> {
         Ok(self.is_accessible(id))
+    }
+
+    /// Python binding for testing
+    #[pyo3(name = "get_auth_info")]
+    fn pyfunc_get_auth_info(&mut self) -> PyResult<String> {
+        self._get_auth_info()
     }
 
     /// Python binding of QRMI acquire() function.
@@ -125,6 +132,7 @@ impl PasqalCloud {
         match self.target(id) {
             Ok(v) => Ok(v),
             Err(v) => Err(v.into()),
+     
         }
     }
 
@@ -181,6 +189,14 @@ impl PasqalCloud {
         return Ok(Target {
             value: "target".to_string(),
         })
+    }
+
+    #[tokio::main]
+    async fn _get_auth_info(&mut self) -> PyResult<String> {
+        match self.api_client.get_auth_info().await {
+            Ok(v) => Ok(v),
+            Err(v) => Err(v.into()),
+        }
     }
 }
 

@@ -17,6 +17,9 @@ use log::{debug, info};
 use reqwest::header;
 use reqwest_middleware::ClientBuilder as ReqwestClientBuilder;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use crate::models::device::DeviceType;
+
 
 /// An asynchronous `Client` to make Requests with.
 #[derive(Debug, Clone)]
@@ -29,24 +32,36 @@ pub struct Client {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct GetAuthInfoResponse {
-    pub data: GetAuthInfoResponseData,
+pub struct GetDeviceResponse {
+    pub data: GetDeviceResponseData
 }
+
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct GetAuthInfoResponseData {
-    pub email: String,
+pub struct GetDeviceResponseData {
+    pub status: String
 }
-
-
-use serde::{Deserialize};
 
 impl Client {
 
-    pub async fn get_auth_info(&self) -> Result<GetAuthInfoResponse> {
-        let text = self.get(&format!("{}/account/api/v1/auth/info", self.base_url)).await?;
-        Ok(text)
+    pub async fn get_device(&self, device_type: DeviceType) -> Result<GetDeviceResponse> {
+        let url = format!("{}/api/v1/devices?device_type={}", self.base_url, device_type.to_string());
+        self.get(&url).await
     }
+
+    // pub async fn create_batch(&self) -> Result<CreateBatchResponse> {
+    // }
+
+    // pub async fn cancel_batch(&self) -> Result<CancelBatchResponse> {
+    // }
+
+    // pub async fn get_batch(&self) -> Result<GetBatchResponse> {
+    // }
+
+    // pub async fn get_batch_results(&self) -> Result<GetBatchResultsResponse> {
+    // }
+
+    
 
     pub(crate) async fn get<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
         let resp = self

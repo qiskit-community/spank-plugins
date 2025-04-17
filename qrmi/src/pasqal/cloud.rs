@@ -12,12 +12,12 @@
 
 use crate::models::{Payload, Target, TaskResult, TaskStatus};
 use crate::QuantumResource;
-use anyhow::{Result};
+use anyhow::{Result, bail};
 // use retry_policies::policies::ExponentialBackoff;
 // use retry_policies::Jitter;
 // use serde_json::json;
 use pasqal_cloud_api::{
-    Client, ClientBuilder, GetAuthInfoResponse
+    Client, ClientBuilder, DeviceType
 };
 use std::collections::HashMap;
 use std::env;
@@ -64,12 +64,6 @@ impl PasqalCloud {
     #[pyo3(name = "is_accessible")]
     fn pyfunc_is_accessible(&mut self, id: &str) -> PyResult<bool> {
         Ok(self.is_accessible(id))
-    }
-
-    /// Python binding for testing
-    #[pyo3(name = "get_auth_info")]
-    fn pyfunc_get_auth_info(&mut self) -> PyResult<String> {
-        Ok(self._get_auth_info().unwrap().data.email)
     }
 
     /// Python binding of QRMI acquire() function.
@@ -154,30 +148,44 @@ impl PasqalCloud {
     /// Wrapper of async call for QRMI is_accessible() function.
     #[tokio::main]
     async fn _is_accessible(&mut self, id: &str) -> bool {
-        return true;
+        let fresnel = DeviceType::Fresnel.to_string();
+        if (*id != fresnel) {
+            let err = format!("Device {} is invalid. Only {} device can receive jobs.", id, fresnel);
+            panic!("{}", err);
+        };
+        match self.api_client.get_device(DeviceType::Fresnel).await {
+            Ok(device) => device.data.status == "UP",
+            Err(_err) => false,
+        }
     }
 
     /// Wrapper of async call for QRMI task_start() function.
     #[tokio::main]
     async fn _task_start(&mut self, payload: Payload) -> Result<String> {
+        // The payload is the sequence here, so let's use a batch of one job https://docs.pasqal.cloud/cloud/api/core/operations/create_batch_api_v1_batches_post/
+        // use batch and not jobs because:
+        // 
         return Ok("started".to_string());
     }
 
     /// Wrapper of async call for QRMI task_stop() function.
     #[tokio::main]
     async fn _task_stop(&mut self, task_id: &str) -> Result<()> {
+        // Use cancel https://docs.pasqal.cloud/cloud/api/core/operations/cancel_batch_api_v2_batches__batch__id__cancel_patch/
         return Ok(())
     }
 
     /// Wrapper of async call for QRMI task_status() function.
     #[tokio::main]
     async fn _task_status(&mut self, task_id: &str) -> Result<TaskStatus> {
+        // https://docs.pasqal.cloud/cloud/api/core/operations/get_batch_api_v2_batches__batch_id__get/
         return Ok(TaskStatus::Completed);
     }
 
     /// Wrapper of async call for QRMI task_result() function.
     #[tokio::main]
     async fn _task_result(&mut self, task_id: &str) -> Result<TaskResult> {
+        // https://docs.pasqal.cloud/cloud/api/core/operations/get_results_api_v1_batches__batch__id__results_get/
         return Ok(TaskResult {
             value: "works fine".to_string(),
         })
@@ -191,13 +199,6 @@ impl PasqalCloud {
         })
     }
 
-    #[tokio::main]
-    async fn _get_auth_info(&mut self) -> PyResult<GetAuthInfoResponse> {
-        match self.api_client.get_auth_info().await {
-            Ok(v) => Ok(v),
-            Err(v) => Err(v.into()),
-        }
-    }
 }
 
 impl QuantumResource for PasqalCloud {
@@ -206,11 +207,13 @@ impl QuantumResource for PasqalCloud {
     }
 
     fn acquire(&mut self, _id: &str) -> Result<String> {
+        // TBD on cloud side for POC
         // Pasqal Cloud does not support session concept, so simply returns dummy ID for now.
         Ok(Uuid::new_v4().to_string())
     }
 
     fn release(&mut self, _id: &str) -> Result<()> {
+        // TBD on cloud side for POC
         // Pasqal Cloud does not support session concept, so simply ignores
         Ok(())
     }

@@ -15,5 +15,7 @@
 //!
 
 mod client;
+mod models;
 
-pub use client::{Client, ClientBuilder, GetAuthInfoResponse};
+pub use client::{Client, ClientBuilder};
+pub use models::DeviceType;

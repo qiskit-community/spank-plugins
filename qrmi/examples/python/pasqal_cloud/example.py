@@ -23,4 +23,4 @@ args = parser.parse_args()
 qrmi = PasqalCloud()
 print(qrmi)
 
-print(qrmi.get_auth_info())
+print(qrmi.is_accessible("FRESNEL"))

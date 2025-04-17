@@ -69,7 +69,7 @@ impl PasqalCloud {
     /// Python binding for testing
     #[pyo3(name = "get_auth_info")]
     fn pyfunc_get_auth_info(&mut self) -> PyResult<String> {
-        self._get_auth_info()
+        Ok(self._get_auth_info().unwrap().data.email)
     }
 
     /// Python binding of QRMI acquire() function.
@@ -192,7 +192,7 @@ impl PasqalCloud {
     }
 
     #[tokio::main]
-    async fn _get_auth_info(&mut self) -> PyResult<String> {
+    async fn _get_auth_info(&mut self) -> PyResult<GetAuthInfoResponse> {
         match self.api_client.get_auth_info().await {
             Ok(v) => Ok(v),
             Err(v) => Err(v.into()),

@@ -26,13 +26,16 @@ pub struct Client {
     /// HTTP client to interact with Direct Access API service
     pub(crate) client: reqwest_middleware::ClientWithMiddleware,
     pub(crate) project_id: String,
-    pub(crate) token: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GetAuthInfoResponse {
-    // The IAM access token that can be used to invoke Direct Access API. Use this token with the prefix Bearer in the HTTP header Authorization for invocations of Direct Access API.
-    pub code: u64,
+    pub data: GetAuthInfoResponseData,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetAuthInfoResponseData {
+    pub email: String,
 }
 
 
@@ -40,25 +43,22 @@ use serde::{Deserialize};
 
 impl Client {
 
-    pub async fn get_auth_info(&self) -> Result<String> {
+    pub async fn get_auth_info(&self) -> Result<GetAuthInfoResponse> {
         let text = self.get(&format!("{}/account/api/v1/auth/info", self.base_url)).await?;
         Ok(text)
     }
 
-    pub(crate) async fn get(&self, url: &str) -> Result<String> {
+    pub(crate) async fn get<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
         let resp = self
             .client
             .get(url)
-            .header(
-                reqwest::header::AUTHORIZATION, 
-                format!("Bearer {}", self.token)
-            )
             .send()
             .await?;
         if resp.status().is_success() {
             let json_text = resp.text().await?;
             info!("{}", json_text);
-            Ok(json_text)
+            let val = serde_json::from_str(&json_text)?;
+            Ok(val)
         } else {
             let json_text = resp.text().await?;
             bail!("Fail {}", json_text);
@@ -119,7 +119,6 @@ impl ClientBuilder {
             base_url: self.base_url.clone(),
             client: reqwest_builder.build(),
             project_id: self.project_id.clone(),
-            token: self.token.clone(),
         })
     }
 }

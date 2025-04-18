@@ -20,7 +20,7 @@ from qiskit_ibm_runtime.utils.result_decoder import ResultDecoder
 from qiskit.primitives import BasePrimitiveJob, PrimitiveResult
 from qiskit.providers import JobStatus
 from qiskit.providers.jobstatus import JOB_FINAL_STATES
-from qrmi import IBMDirectAccess, TaskStatus
+from qrmi import IBMDirectAccess, IBMQiskitRuntimeService, TaskStatus
 
 STATUS_MAP = {
     TaskStatus.Queued: JobStatus.QUEUED,
@@ -35,14 +35,18 @@ class RuntimeJobV2(BasePrimitiveJob[PrimitiveResult, TaskStatus]):
     """Representation of a runtime V2 primitive exeuction."""
 
     def __init__(
-        self, qrmi: Union[IBMDirectAccess], job_id: str, *, delete_job: bool = False
+        self,
+        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
+        job_id: str,
+        *,
+        delete_job: bool = False
     ) -> None:
         """RuntimeJob constructor.
 
         Args:
-            qrmi: QRMI object for IBM Direct Access.
+            qrmi: QRMI object.
             job_id: Job ID.
-            delete_job: True if you want delete Direct Access job in the destructor.
+            delete_job: True if you want delete the job in the destructor.
         """
         super().__init__(job_id)
         self._qrmi = qrmi

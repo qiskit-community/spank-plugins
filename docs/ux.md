@@ -185,8 +185,12 @@ Specifically, this includes:
 Access credentials should not visible to HPC users or other non-privileged users on the system.
 Therefore, sensitive data can be put in separate files which can be access protected accordingly.
 
-Note that all users share the same access and hence need appropriate user vetting before getting access to quantum resources.
-(This also implies that the capacity and priority of the QPU usage is solely managed through slurm; there is not other scheduling of users involved outside of slurm).
+Note that slurm has got full access to the backend.
+This has several implications:
+
+* the slurm plugin is responsible for multi-tenancy (ensuring that users don't see results of other users' jobs)
+* vetting of users (who is allowed to access the QPU) and ensuring according access is up to the HPC cluster side
+* the capacity and priority of the QPU usage is solely managed through slurm; there is not other scheduling of users involved outside of slurm
 
 ##### HPC user scope
 Execution lanes are not exposed to the HPC administrator or user directly.

@@ -23,7 +23,7 @@ See [Overview](./overview.md) for a glossary of terms.
 
 Slurm QPU resource definitions determine what physical resources can be used by slurm jobs.
 User source code should be agnostic to specific backend instances and even backend types as far as possible.
-This keeps source code portable while the QPU seletion criteria are part of the resource definition (which is considered configuration as opposed to source code).
+This keeps source code portable while the QPU selection criteria are part of the resource definition (which is considered configuration as opposed to source code).
 The source code does not have to take care resp. is not involved in resource reservation handling (that is done when slurm jobs are assigned QPU resources and start running, if applicable on the backend) or execution modes like sessions (these are automatically in place while the job is running, if applicable on the backend).
 This makes the source code more portable between similar QPU resource types through different backend access methods (such as IBM's Direct Access API and IBM's Qiskit Runtime service through IBM Quantum Platform).
 All backend types (such as IBM's Direct Access API, IBM's Qiskit Runtime service, or Pasqal's backends) follow these principles.
@@ -35,10 +35,13 @@ Note the exact syntax is subject to change -- this is a sketch of the UX at this
 ### HPC admin scope
 
 HPC administrators configure, what physical resources can be provided to slurm jobs.
-Note sensitivethe config could contain sensitive information and m
+The config could contain sensitive information such as credentials.
+Moving such items into files and referencing these can make it easier to protect the information and rotate credentials, if HPC admins prefer to not add credentials right in the configuration file.
+
+Here is an example configuration (the format aligns to the typical content of gres.conf -- one line per resource):
 
 ```
-# slurm quauntum plugin configuration
+# slurm quantum plugin configuration
 
 # DA backend
 name=da-local-backend                                                    \
@@ -70,21 +73,44 @@ NodeName=node[1-5000] Gres=qpu,name:ibm_fez
 
 HPC users submit jobs using QPU resources that are tied to slurm QPU resources.
 The name attribute references what the HPC administrator has defined.
-Mid-term, backend selection can be based on criteria other than a predefined name which refers to a spefific backend (e.g. by capacity and error rate qualifiers which help downselect between the defined set of backends)
+Mid-term, backend selection can be based on criteria other than a predefined name which refers to a spefific backend (e.g. by capacity and error rate qualifiers which help downselect between the defined set of backends).
 
-Slurm qpu resources given an identifier (in this example: *my_qpu_resource*) that can be referenced by applications e.g. to distinguish between several assigned resources.
+There might be additional environment variables required, depending on the backend type.
+
+#### Single QPU resources
+
+When a single QPU resource is used, SBATCH parameters will point to the QPU resource assigned to the application.
+Environment variables provided through the plugin can provide more details to the application (e.g. `SLURM_QPU_NAME` indicating which QPU resource is used eventually).
 
 ```shell
 #SBATCH --time=100
 #SBATCH --output=<LOGS_PATH>
-#SBATCH --qpu=my_qpu_resource
-#SBATCH --qpu-name=ibm_fez
+#SBATCH --qpu=ibm_fez
 #SBATCH --... # other options
 
 srun ...
 ```
 
-There might be additional environment variables required, depending on the backend type.
+#### Multiple QPU resources
+
+Slurm qpu resources are given an identifier (in this example: *my_qpu_resource*) that can be referenced by applications e.g. to distinguish between several assigned resources.
+
+In this example, *my_qpu_resource* is the reference for usage of the quantum resource in the application.
+If the resource changes (e.g. from *ibm_fez* to *ibm_marrakesh*), the application code does not have to change -- but the SBATCH parameters will have to change.
+
+```shell
+#SBATCH --time=100
+#SBATCH --output=<LOGS_PATH>
+#SBATCH --qpu=my_qpu_resource1
+#SBATCH --qpu-name=my_local_qpu
+#SBATCH --qpu=my_qpu_resource2
+#SBATCH --qpu-name=ibm_fez
+#SBATCH --qpu=my_qpu_resource3
+#SBATCH --qpu-name=ibm_marrakesh
+#SBATCH --... # other options
+
+srun ...
+```
 
 ### HPC application scope
 
@@ -92,21 +118,58 @@ HPC applications refer to the slurm QPU resources assigned to the slurm job.
 
 (Please check whether this flow clicks. We want to reference the slurm resource name, in case several resources are defined; also we ideally avoid specifying whether it's a DirectAccess or QiskitRuntimeService (Pasqal code is probably not very portable to other types at this time); also it seems we wanted to avoid a backend object and go with target instead)
 
+#### Single QPU resources
+
+For single QPU scenarios, the QPU will be identified and used automatically.
+
 ```python
 from qrmi import IBMDirectAccessSamplerV2 as SamplerV2
 
 # Generate transpiler target from backend configuration & properties
-target = get_target(slurm_resource_name=“my_qpu_resource”)
-
-# The circuit and observable need to be transformed to only use instructions
-# supported by the QPU (referred to as instruction set architecture (ISA) circuits).
-# We'll use the transpiler to do this.
+target = get_target()
 pm = generate_preset_pass_manager(
     optimization_level=1,
     target=target,
 )
 
+
 sampler = SamplerV2(target=target)
+```
+
+#### Multiple QPU resources
+
+A named identifier represents the QPU resource and can be used in the source code.
+
+```python
+from qrmi import IBMDirectAccessSamplerV2
+from qrmi import IBMQiskitRuntimeServiceSamplerV2
+
+# Generate transpiler target from backend configuration & properties
+target1 = get_target(slurm_resource_name=“my_qpu_resource1”)
+target2 = get_target(slurm_resource_name=“my_qpu_resource2”)
+target2 = get_target(slurm_resource_name=“my_qpu_resource3”)
+
+# The circuit and observable need to be transformed to only use instructions
+# supported by the QPU (referred to as instruction set architecture (ISA) circuits).
+# We'll use the transpiler to do this.
+pm1 = generate_preset_pass_manager(
+    optimization_level=1,
+    target=target1,
+)
+
+pm2 = generate_preset_pass_manager(
+    optimization_level=1,
+    target=target2,
+)
+
+pm3 = generate_preset_pass_manager(
+    optimization_level=1,
+    target=target3,
+)
+
+sampler1 = IBMDirectAccessSamplerV2(target=target1)
+sampler2 = IBMQiskitRuntimeServiceSamplerV2(target=target2)
+sampler3 = IBMQiskitRuntimeServiceSamplerV2(target=target3)
 ```
 
 ### Backend specifics
@@ -120,9 +183,10 @@ Specifically, this includes:
 * S3 bucket and access details
 
 Access credentials should not visible to HPC users or other non-privileged users on the system.
-Therefore, sensitive data is put in separate files which can be access protected accordingly.
+Therefore, sensitive data can be put in separate files which can be access protected accordingly.
 
 Note that all users share the same access and hence need appropriate user vetting before getting access to quantum resources.
+(This also implies that the capacity and priority of the QPU usage is solely managed through slurm; there is not other scheduling of users involved outside of slurm).
 
 ##### HPC user scope
 Execution lanes are not exposed to the HPC administrator or user directly.

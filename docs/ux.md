@@ -45,6 +45,7 @@ Here is an example configuration (the format aligns to the typical content of gr
 
 # DA backend
 name=da-local-backend                                                    \
+type=direct-access-api                                                   \
 url=https://da-endpoint.my-local.domain/                                 \
 da_crn=crn:v1:bluemix:public:quantum-computing:us-east:a/43aac17...      \
 da_apikey_file=/root/da_apikey                                           \
@@ -77,10 +78,8 @@ Mid-term, backend selection can be based on criteria other than a predefined nam
 
 There might be additional environment variables required, depending on the backend type.
 
-#### Single QPU resources
-
-When a single QPU resource is used, SBATCH parameters will point to the QPU resource assigned to the application.
-Environment variables provided through the plugin can provide more details to the application (e.g. `SLURM_QPU_NAME` indicating which QPU resource is used eventually).
+SBATCH parameters will point to one or more QPU resource assigned to the application.
+Environment variables provided through the plugin will provide the necessary information to the application (see the [HPC application scope](#hpc-application-scope) section for details).
 
 ```shell
 #SBATCH --time=100
@@ -91,39 +90,27 @@ Environment variables provided through the plugin can provide more details to th
 srun ...
 ```
 
-#### Multiple QPU resources
-
-Slurm qpu resources are given an identifier (in this example: *my_qpu_resource*) that can be referenced by applications e.g. to distinguish between several assigned resources.
-
-In this example, *my_qpu_resource* is the reference for usage of the quantum resource in the application.
-If the resource changes (e.g. from *ibm_fez* to *ibm_marrakesh*), the application code does not have to change -- but the SBATCH parameters will have to change.
+To use more QPU resources, simply add more SBATCH lines:
 
 ```shell
-#SBATCH --time=100
-#SBATCH --output=<LOGS_PATH>
-#SBATCH --qpu=my_qpu_resource1
-#SBATCH --qpu-name=my_local_qpu
-#SBATCH --qpu=my_qpu_resource2
-#SBATCH --qpu-name=ibm_fez
-#SBATCH --qpu=my_qpu_resource3
-#SBATCH --qpu-name=ibm_marrakesh
-#SBATCH --... # other options
-
-srun ...
+#SBATCH --qpu=my_local_qpu
+#SBATCH --qpu=ibm_marrakesh
 ```
 
 ### HPC application scope
 
-HPC applications refer to the slurm QPU resources assigned to the slurm job.
+HPC applications use the slurm QPU resources assigned to the slurm job.
 
-(Please check whether this flow clicks. We want to reference the slurm resource name, in case several resources are defined; also we ideally avoid specifying whether it's a DirectAccess or QiskitRuntimeService (Pasqal code is probably not very portable to other types at this time); also it seems we wanted to avoid a backend object and go with target instead)
+Environment variables provide more details for use by the appliction:
 
-#### Single QPU resources
+* `SLURM_QPU_COUNT` will provide the number of QPU resources accessible to the application
+* `SLURM_QPU_NAMES` will provide a colon-separated list of QPU names (element count is *SLURM_QPU_COUNT*)
 
-For single QPU scenarios, the QPU will be identified and used automatically.
+For single QPU use cases, the use of these variables is not needed:
 
 ```python
-from qrmi import IBMDirectAccessSamplerV2 as SamplerV2
+from qrmi import IBMQiskitRuntimeServiceSamplerV2 as SamplerV2
+# or import other Sampler classes like IBMDirectAccessSamplerV2 as needed
 
 # Generate transpiler target from backend configuration & properties
 target = get_target()
@@ -132,45 +119,30 @@ pm = generate_preset_pass_manager(
     target=target,
 )
 
-
 sampler = SamplerV2(target=target)
 ```
 
-#### Multiple QPU resources
-
-A named identifier represents the QPU resource and can be used in the source code.
+However, applications expecting several QPUs might want to use the environment variables, e.g. as follows:
 
 ```python
-from qrmi import IBMDirectAccessSamplerV2
-from qrmi import IBMQiskitRuntimeServiceSamplerV2
+# ...
 
-# Generate transpiler target from backend configuration & properties
-target1 = get_target(slurm_resource_name=“my_qpu_resource1”)
-target2 = get_target(slurm_resource_name=“my_qpu_resource2”)
-target2 = get_target(slurm_resource_name=“my_qpu_resource3”)
+num_targets = os.environ["SLURM_QPU_COUNT"]
+targets = [get_target(index=i) for i in range(num_targets)]
 
-# The circuit and observable need to be transformed to only use instructions
-# supported by the QPU (referred to as instruction set architecture (ISA) circuits).
-# We'll use the transpiler to do this.
-pm1 = generate_preset_pass_manager(
-    optimization_level=1,
-    target=target1,
-)
-
-pm2 = generate_preset_pass_manager(
-    optimization_level=1,
-    target=target2,
-)
-
-pm3 = generate_preset_pass_manager(
-    optimization_level=1,
-    target=target3,
-)
-
-sampler1 = IBMDirectAccessSamplerV2(target=target1)
-sampler2 = IBMQiskitRuntimeServiceSamplerV2(target=target2)
-sampler3 = IBMQiskitRuntimeServiceSamplerV2(target=target3)
+# ...
 ```
+
+(where *get_target* is provided like this:
+
+```python
+def get_target(index: int = 0) -> Target:
+    target_names = os.environ["SLURM_QPU_NAMES"].split(":")
+    target_name = target_names[index]
+    # assemble target with the necessary properties
+    return target
+```
+)
 
 ### Backend specifics
 #### IBM Direct Access API

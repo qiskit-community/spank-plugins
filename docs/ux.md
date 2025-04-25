@@ -78,23 +78,31 @@ Mid-term, backend selection can be based on criteria other than a predefined nam
 
 There might be additional environment variables required, depending on the backend type.
 
-SBATCH parameters will point to one or more QPU resource assigned to the application.
+SBATCH parameters will point to one or more QPU resource assigned to the application as generic resources.
 Environment variables provided through the plugin will provide the necessary information to the application (see the [HPC application scope](#hpc-application-scope) section for details).
 
 ```shell
 #SBATCH --time=100
 #SBATCH --output=<LOGS_PATH>
+#SBATCH --gres=qpu:1
 #SBATCH --qpu=ibm_fez
 #SBATCH --... # other options
 
 srun ...
 ```
 
-To use more QPU resources, simply add more SBATCH lines:
+To use more QPU resources, simply add more SBATCH lines (and modify the gres line):
 
 ```shell
+#SBATCH --time=100
+#SBATCH --output=<LOGS_PATH>
+#SBATCH --gres=qpu:3
 #SBATCH --qpu=my_local_qpu
+#SBATCH --qpu=ibm_fez
 #SBATCH --qpu=ibm_marrakesh
+#SBATCH --... # other options
+
+srun ...
 ```
 
 ### HPC application scope

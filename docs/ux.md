@@ -182,7 +182,7 @@ Specifically, this includes:
 * endpoint of Direct Access API
 * S3 bucket and access details
 
-Access credentials should not visible to HPC users or other non-privileged users on the system.
+Access credentials should not be visible to HPC users or other non-privileged users on the system.
 Therefore, sensitive data can be put in separate files which can be access protected accordingly.
 
 Note that slurm has got full access to the backend.

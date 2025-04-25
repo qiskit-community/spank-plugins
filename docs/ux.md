@@ -73,7 +73,7 @@ NodeName=node[1-5000] Gres=qpu,name:ibm_fez
 
 HPC users submit jobs using QPU resources that are tied to slurm QPU resources.
 The name attribute references what the HPC administrator has defined.
-Mid-term, backend selection can be based on criteria other than a predefined name which refers to a spefific backend (e.g. by capacity and error rate qualifiers which help downselect between the defined set of backends).
+Mid-term, backend selection can be based on criteria other than a predefined name which refers to a specific backend (e.g. by capacity and error rate qualifiers which help downselect between the defined set of backends).
 
 There might be additional environment variables required, depending on the backend type.
 

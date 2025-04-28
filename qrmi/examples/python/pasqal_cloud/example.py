@@ -20,7 +20,25 @@ from qrmi import PasqalCloud
 parser = argparse.ArgumentParser(description="An example of Pasqal Cloud QRMI")
 args = parser.parse_args()
 
-qrmi = PasqalCloud()
-print(qrmi)
+# load env
 
-print(qrmi.is_accessible("FRESNEL"))
+# instantiate a QRMI
+qrmi = PasqalCloud()
+
+# Check if it's available
+
+# Get the device specs for fresnel
+
+# Send a task
+
+# Get its status
+
+# If not done by that time cancel it
+
+# Get status
+
+# Send send another task
+
+# Wait for completion
+
+# Get the results

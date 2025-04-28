@@ -32,20 +32,24 @@ pub struct Client {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct GetDeviceResponse {
-    pub data: GetDeviceResponseData
+pub struct GetResponse<T> {
+    pub data: T
 }
-
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GetDeviceResponseData {
     pub status: String
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetDeviceSpecsResponseData {
+    pub specs: String
+}
+
 impl Client {
 
-    pub async fn get_device(&self, device_type: DeviceType) -> Result<GetDeviceResponse> {
-        let url = format!("{}/api/v1/devices?device_type={}", self.base_url, device_type.to_string());
+    pub async fn get_device(&self, device_type: DeviceType) -> Result<GetResponse<GetDeviceResponseData>> {
+        let url = format!("{}/core-fast/api/v1/devices?device_type={}", self.base_url, device_type.to_string());
         self.get(&url).await
     }
 
@@ -61,6 +65,11 @@ impl Client {
     // pub async fn get_batch_results(&self) -> Result<GetBatchResultsResponse> {
     // }
 
+    pub async fn get_device_specs(&self, device_type: DeviceType) -> Result<GetResponse<GetDeviceSpecsResponseData>> {
+        let url = format!("{}/core-fast/api/v1/devices/specs/{}", self.base_url, device_type.to_string());
+        self.get(&url).await
+    }
+
     
 
     pub(crate) async fn get<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
@@ -75,8 +84,9 @@ impl Client {
             let val = serde_json::from_str(&json_text)?;
             Ok(val)
         } else {
+            let status = resp.status();
             let json_text = resp.text().await?;
-            bail!("Fail {}", json_text);
+            bail!("Status: {}, Fail {}", status, json_text);
         }
     }
 }

@@ -15,19 +15,24 @@
 """An example of Pasqal Cloud QRMI python-bindings"""
 
 import argparse
+import json
 from qrmi import PasqalCloud
 
 parser = argparse.ArgumentParser(description="An example of Pasqal Cloud QRMI")
 args = parser.parse_args()
 
-# load env
+QR_ID = "FRESNEL"
 
 # instantiate a QRMI
 qrmi = PasqalCloud()
 
-# Check if it's available
+# Check if QR it's accessible
+is_avail = qrmi.is_accessible(QR_ID)
+print('Pascal Cloud QR is %s accessible' % "not" if not is_avail else "")
 
-# Get the device specs for fresnel
+# Get target
+target = qrmi.target(QR_ID)
+print("QR Target %s" % target.value)
 
 # Send a task
 

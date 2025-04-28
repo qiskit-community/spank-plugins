@@ -194,9 +194,15 @@ impl PasqalCloud {
     /// Wrapper of async call for QRMI target() function.
     #[tokio::main]
     async fn _target(&mut self, id: &str) -> Result<Target> {
-        return Ok(Target {
-            value: "target".to_string(),
-        })
+        let fresnel = DeviceType::Fresnel.to_string();
+        if (*id != fresnel) {
+            let err = format!("Device {} is invalid. Only {} device can receive jobs.", id, fresnel);
+            panic!("{}", err);
+        };
+        match self.api_client.get_device_specs(DeviceType::Fresnel).await {
+            Ok(resp) => Ok(Target{value: resp.data.specs}),
+            Err(_err) => Err(_err.into()),
+        }
     }
 
 }

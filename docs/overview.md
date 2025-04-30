@@ -11,20 +11,17 @@ Spank plugins for Slurm to support quantum resources
   - [Spank quantum plugin](#spank-quantum-plugin)
   - [Qiskit primitives (Sampler and Estimator)](#qiskit-primitives-sampler-and-estimator)
 - [Vendor-Specific Context: IBM](#vendor-specific-context-ibm)
-- [Vendor-Specific Definitions: IBM](#vendor-specific-definitions-ibm
+- [Vendor-Specific Definitions: IBM](#vendor-specific-definitions-ibm)
   - [IBM Quantum Platform](#ibm-quantum-platform)
   - [Direct Access API](#direct-access-api) 
 - [High Level Structure](#high-level-structure) 
 - [Quantum resource for workload management systems](#quantum-resource-for-workload-management-system)
 - [Quantum resource API](#quantum-resource-api)
-- [UX](#ux)
-  - [Backend selection as part of the configuration](#backend-selection-as-part-of-the-configuration)
-  - [Running primitive jobs](#running-primitive-jobs)
-  - [Running hybrid quantum-classical job with multiple resources](#running-quantum-classical-job-with-multiple-resoures)
-  - [Running complex workflows](#running-complex-workflows)
 - [Integration Flow](#integration-flow)
 - [General architecture](#general-architecture-of-plugin)
 - [Architectural Tenets](#architectural-tenents)
+
+See [UX](./ux.md) for HPC user experience, HPC developer experience and usage patterns.
 
 ## Context
 
@@ -93,114 +90,6 @@ The QPU resource definition does not expose individual parallelism abstracts. Ea
 Any type of resource should implement resource control interface. Flow of working with resource following pattern: `acquire resource` → `execute` → `release resource`. Implementation of this interface might vary from platform to platform.
 
 ![resource control api](./images/resource_control_api.png)
-
-## UX
-
-### Backend selection as part of the configuration
-
-Quantum resources are defined through slurm level resources, and so the backend selection is a part of the configuration and slurm-level resource definition, rather than source code.
-
-Accordingly, this would identify the backend used in the slurm resource definition (which feels like configuration)
-
-```shell
-#SBATCH --gres=qpu:my_qpu_resource
-#SBATCH --qpu_backend=ibm_fez
-```
-
-and then be bound in the actual source code with something like this:
-
-```python
-backend=slurm_provider(name="my_qpu_resource")
-```
-
-Note exact syntax (and example) is not the point here and needs refinement, but the conceptual separation of resource definition (which includes backend selection/selection policy) and binding to the resource when using it. In that spirit, slurm provides access to the backends it is configured with.
-
-As transpilation needs the backend information, this eventually can be a two step process, which only locks the backend when it's used, but offers binding in source for transpilation before acquiring the lock. In an initial implementation, transpilation can be done while holding the lock, not impacting machine utilization dramatically in practice for large workloads.
-
-### Running primitive jobs
-
-Slurm require executable for any of it's scommands. Therefore for running primitive tasks (sample and estimate) one might want to have cli interface like `qrun`.
-
-```shell
-#SBATCH --time=100
-#SBATCH --output=<LOGS_PATH>
-#SBATCH --gres=qpu:1
-#SBATCH --q_backend=ibm_fez
-#SBATCH --partition=quantum
-#SBATCH --... # other options
-
-srun qrun/sample/estimate <payload_path> <output_path>
-```
-
-### Running quantum-classical job with multiple resoures
-
-For more traditional user experience working with Slurm and Qiskit one might use quantum-classical program as executable for slurm commands.
-
-```shell
-#SBATCH --time=100
-#SBATCH --output=<LOGS_PATH>
-#SBATCH --gres=qpu:1
-#SBATCH --q_backend=ibm_fez
-#SBATCH --partition=quantum
-#SBATCH --... # other options
-
-srun my_hybrid_quantum_classical_program.py
-```
-
-where `my_hybrid_quantum_classical_program.py` will be something like
-
-```python
-from qiskit_slurm_provider import Sampler
-
-...
-
-sampler = Sampler()
-while ...:
-    do_classical()
-    ...
-    isa_circuit = ...
-    result = sampler.run([isa_circuit], ...).result()
-    ...
-    do_classical()
-
-...
-```
-
-Since slurm resources have an identity, they can be distinguished in in the qiskit-level code.
-
-### Running complex workflows
-
-In cases where one do not need fast interchange between quantum and classical resources it is benificial to separate program logic into separate jobs. For example preprocessing, quantum execution and postprocessing.
-
-Preprocess classically and prepare quantum payload.
-```shell
-#SBATCH --partition=classical
-#SBATCH --... # other options
-
-srun preprocessing.py <payload_path>
-```
-
-Execute quantum payload.
-```shell
-#SBATCH --time=100
-#SBATCH --output=<LOGS_PATH>
-#SBATCH --gres=qpu:1
-#SBATCH --q_backend=ibm_fez
-#SBATCH --partition=quantum
-#SBATCH --... # other options
-
-srun qrun/sample/estimate <payload_path> <output_path>
-```
-
-Postprocess classically quantum results.
-```shell
-#SBATCH --partition=classical
-#SBATCH --... # other options
-
-srun postprocessing.py <output_path>
-```
-
-One can use any workflow management tool to chain this jobs into large workflow.
 
 ## Integration Flow
 

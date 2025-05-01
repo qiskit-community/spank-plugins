@@ -13,11 +13,12 @@
 use crate::models::{Payload, Target, TaskResult, TaskStatus};
 use crate::QuantumResource;
 use anyhow::{Result, bail};
+use ffi_helpers::Task;
 // use retry_policies::policies::ExponentialBackoff;
 // use retry_policies::Jitter;
 // use serde_json::json;
 use pasqal_cloud_api::{
-    Client, ClientBuilder, DeviceType
+    Client, ClientBuilder, DeviceType, BatchStatus
 };
 use std::collections::HashMap;
 use std::env;
@@ -149,7 +150,7 @@ impl PasqalCloud {
     #[tokio::main]
     async fn _is_accessible(&mut self, id: &str) -> bool {
         let fresnel = DeviceType::Fresnel.to_string();
-        if (*id != fresnel) {
+        if *id != fresnel {
             let err = format!("Device {} is invalid. Only {} device can receive jobs.", id, fresnel);
             panic!("{}", err);
         };
@@ -162,33 +163,54 @@ impl PasqalCloud {
     /// Wrapper of async call for QRMI task_start() function.
     #[tokio::main]
     async fn _task_start(&mut self, payload: Payload) -> Result<String> {
-        // The payload is the sequence here, so let's use a batch of one job https://docs.pasqal.cloud/cloud/api/core/operations/create_batch_api_v1_batches_post/
-        // use batch and not jobs because:
-        // 
-        return Ok("started".to_string());
+        if let Payload::PasqalCloud { sequence, job_runs } = payload {
+            // TODO: Change for Fresnel after testing
+            match self.api_client.create_batch(sequence, job_runs, DeviceType::Emu_mps).await {
+                Ok(batch) => Ok(batch.data.id),
+                Err(err) => Err(err.into())
+            }
+        } else {
+            bail!(format!("Payload type is not supported. {:?}", payload))
+        }
     }
 
     /// Wrapper of async call for QRMI task_stop() function.
     #[tokio::main]
     async fn _task_stop(&mut self, task_id: &str) -> Result<()> {
-        // Use cancel https://docs.pasqal.cloud/cloud/api/core/operations/cancel_batch_api_v2_batches__batch__id__cancel_patch/
-        return Ok(())
+        match self.api_client.cancel_batch(task_id).await {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.into())
+        }
     }
 
     /// Wrapper of async call for QRMI task_status() function.
     #[tokio::main]
     async fn _task_status(&mut self, task_id: &str) -> Result<TaskStatus> {
-        // https://docs.pasqal.cloud/cloud/api/core/operations/get_batch_api_v2_batches__batch_id__get/
-        return Ok(TaskStatus::Completed);
+        // TODO: Change for Fresnel after testing
+        match self.api_client.get_batch(task_id).await {
+            Ok(batch) => {
+                let status = match batch.data.status {
+                    BatchStatus::Pending => TaskStatus::Queued,
+                    BatchStatus::Running => TaskStatus::Running,
+                    BatchStatus::Done => TaskStatus::Completed,
+                    BatchStatus::Canceled => TaskStatus::Cancelled,
+                    BatchStatus::TimedOut => TaskStatus::Failed,
+                    BatchStatus::Error => TaskStatus::Failed,
+                    BatchStatus::Paused => TaskStatus::Queued,
+                };
+                return Ok(status);
+            },
+            Err(err) => Err(err.into())
+        }
     }
 
     /// Wrapper of async call for QRMI task_result() function.
     #[tokio::main]
     async fn _task_result(&mut self, task_id: &str) -> Result<TaskResult> {
-        // https://docs.pasqal.cloud/cloud/api/core/operations/get_results_api_v1_batches__batch__id__results_get/
-        return Ok(TaskResult {
-            value: "works fine".to_string(),
-        })
+        match self.api_client.get_batch_results(task_id).await {
+            Ok(resp) => Ok(TaskResult{ value: resp }),
+            Err(_err) => Err(_err.into()),
+        }
     }
 
     /// Wrapper of async call for QRMI target() function.

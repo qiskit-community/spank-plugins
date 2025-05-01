@@ -13,12 +13,14 @@
 
 use anyhow::{bail, Result};
 
+use std::collections::HashMap;
 use log::{debug, info};
-use reqwest::header;
+use reqwest::{header, Body};
 use reqwest_middleware::ClientBuilder as ReqwestClientBuilder;
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use crate::models::device::DeviceType;
+use crate::models::batch::{self, BatchStatus};
 
 
 /// An asynchronous `Client` to make Requests with.
@@ -32,7 +34,7 @@ pub struct Client {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct GetResponse<T> {
+pub struct Response<T> {
     pub data: T
 }
 
@@ -46,31 +48,100 @@ pub struct GetDeviceSpecsResponseData {
     pub specs: String
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateBatchResponseData {
+    pub id: String
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetBatchResponseData {
+    pub status: BatchStatus
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CancelBatchResponseData {}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetBatchResultLinksResponseData {
+    pub results_links: HashMap<String, String>
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Job {
+    pub runs: i32
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Batch {
+    pub sequence_builder: String,
+    pub jobs: Vec<Job>,
+    pub device_type: DeviceType,
+    pub project_id: String
+}
+
 impl Client {
 
-    pub async fn get_device(&self, device_type: DeviceType) -> Result<GetResponse<GetDeviceResponseData>> {
+    pub async fn get_device(&self, device_type: DeviceType) -> Result<Response<GetDeviceResponseData>> {
         let url = format!("{}/core-fast/api/v1/devices?device_type={}", self.base_url, device_type.to_string());
         self.get(&url).await
     }
 
-    // pub async fn create_batch(&self) -> Result<CreateBatchResponse> {
-    // }
+    pub async fn create_batch(&self, sequence: String, job_runs: i32, device_type: DeviceType) -> Result<Response<CreateBatchResponseData>> {
+        let url = format!("{}/core-fast/api/v1/batches", self.base_url);
+        let batch = Batch{
+            sequence_builder: sequence,
+            jobs: Vec::from([Job{runs: job_runs}]),
+            device_type: device_type,
+            project_id: self.project_id.clone(),
+        };
+        self.post(&url, batch).await
+    }
 
-    // pub async fn cancel_batch(&self) -> Result<CancelBatchResponse> {
-    // }
+    pub async fn cancel_batch(&self, batch_id: &str) -> Result<Response<CancelBatchResponseData>> {
+        let url = format!("{}/core-fast/api/v2/batches/{}/cancel", self.base_url, batch_id);
+        self.patch(&url).await
+    }
 
-    // pub async fn get_batch(&self) -> Result<GetBatchResponse> {
-    // }
-
-    // pub async fn get_batch_results(&self) -> Result<GetBatchResultsResponse> {
-    // }
-
-    pub async fn get_device_specs(&self, device_type: DeviceType) -> Result<GetResponse<GetDeviceSpecsResponseData>> {
-        let url = format!("{}/core-fast/api/v1/devices/specs/{}", self.base_url, device_type.to_string());
+    pub async fn get_batch(&self, batch_id: &str) -> Result<Response<GetBatchResponseData>> {
+        let url = format!("{}/core-fast/api/v2/batches/{}", self.base_url, batch_id);
         self.get(&url).await
     }
 
-    
+    pub async fn get_batch_results(&self, batch_id: &str ) -> Result<String> {
+        match self.get_batch_result_links(batch_id).await {
+            Ok(resp) => {
+                let results_links = resp.data.results_links;
+                // by design only one job
+                let mut i = 0;
+                let mut results: String = "".to_string();
+                for (job_id, result_link) in results_links.iter() {
+                    if i > 0 {
+                        bail!(format!("Unexpected multiple jobs in one Pasqal cloud batch"));
+                    };
+                    results = reqwest::get(result_link)
+                    .await?
+                    .text()
+                    .await?;
+                    i += 1;
+                }
+                if results == "".to_string() {
+                    bail!(format!("No results found"));
+                }
+                return Ok(results);
+            },
+            Err(_err) => Err(_err.into()),
+        }
+    }
+
+    async fn get_batch_result_links(&self, batch_id: &str) -> Result<Response<GetBatchResultLinksResponseData>> {
+        let url = format!("{}/core-fast/api/v1/batches/{}/results_link", self.base_url, batch_id);
+        self.get(&url).await
+    }
+
+    pub async fn get_device_specs(&self, device_type: DeviceType) -> Result<Response<GetDeviceSpecsResponseData>> {
+        let url = format!("{}/core-fast/api/v1/devices/specs/{}", self.base_url, device_type.to_string());
+        self.get(&url).await
+    }
 
     pub(crate) async fn get<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
         let resp = self
@@ -78,6 +149,29 @@ impl Client {
             .get(url)
             .send()
             .await?;
+        self.handle_request(resp).await
+    }
+
+    pub(crate) async fn patch<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
+        let resp = self
+            .client
+            .patch(url)
+            .send()
+            .await?;
+        self.handle_request(resp).await
+    }
+
+    pub(crate) async fn post<T: DeserializeOwned, U: Serialize>(&self, url: &str, body: U) -> Result<T> {
+        let resp = self
+            .client
+            .post(url)
+            .json(&body)
+            .send()
+            .await?;
+        self.handle_request(resp).await
+    }
+
+    async fn handle_request<T: DeserializeOwned>(&self, resp: reqwest::Response) -> Result<T> {
         if resp.status().is_success() {
             let json_text = resp.text().await?;
             info!("{}", json_text);
@@ -89,6 +183,7 @@ impl Client {
             bail!("Status: {}, Fail {}", status, json_text);
         }
     }
+
 }
 
 /// A [`ClientBuilder`] can be used to create a [`Client`] with custom configuration.

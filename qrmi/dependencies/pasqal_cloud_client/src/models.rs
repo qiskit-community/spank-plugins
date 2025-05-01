@@ -10,5 +10,7 @@
 // that they have been altered from the originals.
 
 pub mod device;
+pub mod batch;
 
 pub use self::device::DeviceType;
+pub use self::batch::BatchStatus;

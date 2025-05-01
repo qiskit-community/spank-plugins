@@ -15,8 +15,9 @@
 """An example of Pasqal Cloud QRMI python-bindings"""
 
 import argparse
-import json
-from qrmi import PasqalCloud
+import time
+from qrmi import PasqalCloud, Payload, TaskStatus
+# pulser will be probably replaced by eduardo qiskit analog gate
 
 parser = argparse.ArgumentParser(description="An example of Pasqal Cloud QRMI")
 args = parser.parse_args()
@@ -35,15 +36,45 @@ target = qrmi.target(QR_ID)
 print("QR Target %s" % target.value)
 
 # Send a task
+from pulser import Pulse, Register, Sequence
+from pulser.devices import DigitalAnalogDevice
+
+register = Register.square(2, spacing=5, prefix="q")
+sequence = Sequence(register, DigitalAnalogDevice)
+sequence.declare_channel("rydberg", "rydberg_global")
+pulse = Pulse.ConstantPulse(100, 2.0, 2, 0.0)
+sequence.add(pulse, "rydberg")
+serialized_sequence = sequence.to_abstract_repr()
+
+# nit:start_task would be nicer probably
+task_id = qrmi.task_start(Payload.PasqalCloud(sequence=serialized_sequence, job_runs=1000))
+print('Task ID: %s' % task_id)
 
 # Get its status
+print('Status after creation %s' % qrmi.task_status(task_id))
 
-# If not done by that time cancel it
+# Quickly stop it
+qrmi.task_stop(task_id)
 
-# Get status
+# Get status, it should be stopped
+print('Status after cancelation %s' % qrmi.task_status(task_id))
 
 # Send send another task
+new_task_id = qrmi.task_start(Payload.PasqalCloud(sequence=serialized_sequence, job_runs=100))
+print('New Task ID: %s' % task_id)
 
 # Wait for completion
+while True:
+    status = qrmi.task_status(new_task_id)
+    if status == TaskStatus.Completed:
+        print('Task completed')
+        break
+    elif status == TaskStatus.Failed:
+        print('Task failed')
+        break
+    else:
+        print('Task status %s, waiting 1s' % status)
+        time.sleep(1)
 
 # Get the results
+print('Results: %s' % qrmi.task_result(new_task_id).value)

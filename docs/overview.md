@@ -104,7 +104,8 @@ Having this logic of sending data towards the Quantum Computer in qiskit level c
 
 ## High Level Flow of Quantum Plugin
 
-This is the high level flow from when jobs are started to how requests find their way to a Quantum Computer.
+This is the high level flow from when slurm jobs are started to how requests find their way to a Quantum Computer.
+Requests refer to any interaction between appliction and Quantum Computer (e.g. including getting configuration information that is needed for transpilation).
 
 ![High Level Flow -- png editable with draw.io, please keep it that way](./images/high-level-plugin-flow.png)
 

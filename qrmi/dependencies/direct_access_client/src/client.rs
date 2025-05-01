@@ -15,6 +15,8 @@ use anyhow::{bail, Result};
 #[cfg(feature = "api_version")]
 use chrono::Utc;
 use retry_policies::policies::ExponentialBackoff;
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::time::Duration;
 
 #[allow(unused_imports)]
@@ -121,6 +123,8 @@ pub struct ClientBuilder {
     s3_config: Option<aws_sdk_s3::Config>,
     /// The name of S3 Bucket used by this [`Client`]
     s3_bucket: Option<String>,
+    /// User-specified HTTP headers
+    custom_headers: HashMap<String, String>,
 }
 
 impl ClientBuilder {
@@ -147,6 +151,7 @@ impl ClientBuilder {
             retry_policy: None,
             s3_config: None,
             s3_bucket: None,
+            custom_headers: HashMap::new(),
         }
     }
 
@@ -298,6 +303,22 @@ impl ClientBuilder {
         self
     }
 
+    /// Inserts a key-value pair into the HTTP headers map.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use direct_access_api::ClientBuilder;
+    ///
+    /// let _builder = ClientBuilder::new("http://localhost:8280")
+    ///     .with_http_header("YOUR-CUSTOM-HEADER", "your_value");
+    /// ```
+    pub fn with_http_header(&mut self, key: &str, value: &str) -> &mut Self {
+        self.custom_headers
+            .insert(key.to_string(), value.to_string());
+        self
+    }
+
     /// Returns a [`Client`] that uses this [`ClientBuilder`] configuration.
     ///
     /// # Example
@@ -332,7 +353,7 @@ impl ClientBuilder {
         }
 
         #[allow(unused_mut)]
-        let mut headers = header::HeaderMap::new();
+        let mut headers: header::HeaderMap = (&self.custom_headers).try_into()?;
         #[cfg(feature = "api_version")]
         {
             let api_ver_value = header::HeaderValue::from_str(self.api_version.as_str())?;
@@ -355,6 +376,7 @@ impl ClientBuilder {
             headers.insert("Service-CRN", service_crn_value);
         }
 
+        debug!("default headers: {:#?}", headers);
         reqwest_client_builder = reqwest_client_builder.default_headers(headers);
         let mut reqwest_builder = ReqwestClientBuilder::new(reqwest_client_builder.build()?);
 

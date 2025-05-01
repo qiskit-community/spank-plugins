@@ -120,6 +120,11 @@ impl IBMDirectAccess {
             info!("No authentication configured.");
         }
 
+        if let Ok(rp_token) = env::var("QRMI_RP_TOKEN") {
+            // set token header to access QRMI reverse proxy
+            builder.with_http_header("x-qrmi-rp-token", &rp_token);
+        }
+
         Self { api_client: builder.build().unwrap() }
     }
 

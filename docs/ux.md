@@ -91,15 +91,13 @@ Environment variables provided through the plugin will provide the necessary inf
 srun ...
 ```
 
-To use more QPU resources, simply add more SBATCH lines (and modify the gres line):
+To use more QPU resources, add more QPUs to the `--qpu` parameter:
 
 ```shell
 #SBATCH --time=100
 #SBATCH --output=<LOGS_PATH>
 #SBATCH --gres=qpu:3
-#SBATCH --qpu=my_local_qpu
-#SBATCH --qpu=ibm_fez
-#SBATCH --qpu=ibm_marrakesh
+#SBATCH --qpu=my_local_qpu,ibm_fez,ibm_marrakesh
 #SBATCH --... # other options
 
 srun ...

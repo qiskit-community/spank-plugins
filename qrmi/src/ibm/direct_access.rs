@@ -231,7 +231,7 @@ impl IBMDirectAccess {
     /// Wrapper of async call for QRMI task_start() function.
     #[tokio::main]
     async fn _task_start(&mut self, payload: Payload) -> Result<String> {
-        let timeout = match env::var("QRMI_JOB_TIMEOUT_SECONDS") {
+        let timeout = match env::var(format!("{0}_QRMI_JOB_TIMEOUT_SECONDS", self.backend_name)) {
             Ok(val) => val,
             Err(err) => {
                 bail!(format!("QRMI_JOB_TIMEOUT_SECONDS is not set: {}", &err));

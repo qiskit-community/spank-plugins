@@ -1,0 +1,52 @@
+{
+  "resources": [
+    {
+      "name": "test_heron",
+      "type": "direct-access",
+      "environment": {
+        "QRMI_IBM_DA_ENDPOINT": "http://localhost:8080",
+        "QRMI_IBM_DA_IAM_ENDPOINT": "https://iam.test.cloud.ibm.com",
+        "QRMI_IBM_DA_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
+        "QRMI_IBM_DA_SERVICE_CRN": "<YOUR DIRECT ACCESS INSTANCE CRN>",
+        "QRMI_IBM_DA_AWS_ACCESS_KEY_ID": "<YOUR AWS ACCESS KEY TO ACCESS S3 BUCKET>",
+        "QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY": "<YOUR AWS SECRET ACCESS KEY TO ACCESS S3 BUCKET>",
+        "QRMI_IBM_DA_S3_ENDPOINT": "https://s3.us-east.cloud-object-storage.appdomain.cloud",
+        "QRMI_IBM_DA_S3_BUCKET": "<YOUR S3 BUCKET NAME>",
+        "QRMI_IBM_DA_S3_REGION": "us-east"
+      }
+    },
+    {
+      "name": "test_eagle",
+      "type": "direct-access",
+      "environment": {
+        "QRMI_IBM_DA_ENDPOINT": "http://localhost:8080",
+        "QRMI_IBM_DA_IAM_ENDPOINT": "https://iam.test.cloud.ibm.com",
+        "QRMI_IBM_DA_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
+        "QRMI_IBM_DA_SERVICE_CRN": "<YOUR DIRECT ACCESS INSTANCE CRN>",
+        "QRMI_IBM_DA_AWS_ACCESS_KEY_ID": "<YOUR AWS ACCESS KEY TO ACCESS S3 BUCKET>",
+        "QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY": "<YOUR AWS SECRET ACCESS KEY TO ACCESS S3 BUCKET>",
+        "QRMI_IBM_DA_S3_ENDPOINT": "https://s3.us-east.cloud-object-storage.appdomain.cloud",
+        "QRMI_IBM_DA_S3_BUCKET": "<YOUR S3 BUCKET NAME>",
+        "QRMI_IBM_DA_S3_REGION": "us-east"
+      }
+    },
+    {
+      "name": "alt_marrakesh",
+      "type": "qiskit-runtime-service",
+      "environment": {
+        "QRMI_IBM_QRS_ENDPOINT": "https://quantum.cloud.ibm.com/api/v1",
+        "QRMI_IBM_QRS_IAM_ENDPOINT": "https://iam.cloud.ibm.com",
+        "QRMI_IBM_QRS_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
+        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>",
+        "QRMI_IBM_QRS_TIMEOUT_SECONDS": "86400"
+      }
+    },
+    {
+      "name": "pasqal",
+      "type": "pasqal-cloud",
+      "environment": {
+        "QRMI_PASQAL_CLOUD_ENDPOINT": "http://"
+      }
+    }
+  ]
+}

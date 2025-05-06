@@ -46,7 +46,7 @@ popd
 #### 4. Applying a patch to slurm-docker-cluster
 
 ```bash
-patch -p1 < ./shared/spank-plugins/demo/qrun/slurm-docker-cluster/file.patch
+patch -p1 < ./shared/spank-plugins/demo/qrmi/slurm-docker-cluster/file.patch
 ```
 
 #### 5. Building containers

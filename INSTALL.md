@@ -198,23 +198,11 @@ Slurm Cluster is now set up as shown.
 [root@slurmctld /]# make
 ```
 
-
-3. Building SPANK Plugin - [spank_ibm_qrun](./plugins/spank_ibm_qrun/README.md)
-
-```bash
-[root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_ibm_qrun
-[root@slurmctld /]# mkdir build
-[root@slurmctld /]# pushd build
-[root@slurmctld /]# cmake ..
-[root@slurmctld /]# make
-[root@slurmctld /]# popd
-```
-
-4. Creating qrmi_config.json
+6. Creating qrmi_config.json
 
 Refer [this example](./plugins/spank_qrmi/qrmi_config.json.example) and describe your environment. Then, create a file under /etc/slurm or other where slurm daemons can access.
 
-5. Installing SPANK Plugins
+7. Installing SPANK Plugins
 
 > [!NOTE]
 > The plugstack.conf file and the plugin library must be available on the node where the user executes the `sbatch` command and on the compute node where the QRUN command is executed.
@@ -228,7 +216,7 @@ optional /shared/spank-plugins/plugins/spank_qrmi_supp/build/libspank_qrmi_supp.
 
 Above example assumes you create qrmi_config.json under /etc/slurm directory.
 
-5. Checking SPANK Plugins installation
+8. Checking SPANK Plugins installation
 
 If you complete above step, you must see additional options of `sbatch` like below.
 
@@ -247,7 +235,7 @@ Options provided by plugins:
 % docker exec -it slurmctld bash
 ```
 
-3. Running Sampler job
+2. Running Sampler job
 
 run_sampler.sh
 ```bash
@@ -287,7 +275,7 @@ srun python /shared/spank-plugins/primitives/python/examples/ibm/estimator.py
 [root@slurmctld /]# sbatch run_estimator.sh
 ```
  
-5. Checking primitive results
+4. Checking primitive results
 
 Once above scripts are completed, you must find `slurm-{job_id}.out` in the current directory.
 

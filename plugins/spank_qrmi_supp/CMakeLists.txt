@@ -28,6 +28,6 @@ else (NOT SLURM_FOUND)
 endif (NOT SLURM_FOUND)
 mark_as_advanced (SLURM_LIBRARIES SLURM_INCLUDE_DIRS)
 
-add_library (spank_qrmi_ibmda MODULE spank_qrmi_supp.c)
+add_library (spank_qrmi_supp MODULE spank_qrmi_supp.c)
 include_directories (BEFORE ${SLURM_INCLUDE_DIRS})
 set_target_properties (spank_qrmi_supp PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "libspank_qrmi_supp.so")

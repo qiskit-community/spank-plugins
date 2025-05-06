@@ -243,7 +243,8 @@ unsafe impl Plugin for SpankQrmi {
                             let _ = instance.release(token);
                         }
                         ResourceType::QiskitRuntimeService => {
-                            let mut _instance = IBMQiskitRuntimeService::new(name);
+                            let mut instance = IBMQiskitRuntimeService::new(name);
+                            let _ = instance.release(token);
                         }
                         _ => {
                             // skip unsupported type

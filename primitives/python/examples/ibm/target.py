@@ -32,7 +32,7 @@ def get_target(qrmi: Union[IBMDirectAccess]) -> Target:
     Returns:
         qiskit.transpiler.target.Target: Qiskit Transpiler target
     """
-    target = qrmi.target(os.environ["QRMI_RESOURCE_ID"])
+    target = qrmi.target()
     target = json.loads(target.value)
     backend_config = BackendConfiguration.from_dict(target["configuration"])
     backend_props = BackendProperties.from_dict(target["properties"])

@@ -10,17 +10,18 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""SamplerV2 Primitive implementation with IBM Direct Access QRMI"""
-from qrmi import IBMDirectAccess
+"""SamplerV2 Primitive implementation with IBM QRMI"""
+from typing import Union
+from qrmi import IBMDirectAccess, IBMQiskitRuntimeService
 from .base_sampler import QRMIBaseSamplerV2
 
-
-class IBMDirectAccessSamplerV2(QRMIBaseSamplerV2):
-    """SamplerV2 for IBMDirectAccess QRMI"""
+class SamplerV2(QRMIBaseSamplerV2):
+    """SamplerV2 for QRMI"""
 
     def __init__(
         self,
+        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
         *,
         options: dict | None = None,
     ) -> None:
-        super().__init__(IBMDirectAccess(), options=options)
+        super().__init__(qrmi, options=options)

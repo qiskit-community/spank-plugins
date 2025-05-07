@@ -10,23 +10,30 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""EstimatorV2 example with IBM Direct Access QRMI
-Code is based on "Get started with Estimator" tutorial (https://docs.quantum.ibm.com/guides/get-started-with-primitives#get-started-with-estimator).
-"""
+"""EstimatorV2 example with IBM Direct Access QRMI"""
 
 # pylint: disable=invalid-name
+import random
 from dotenv import load_dotenv
 from qiskit.circuit.library import QAOAAnsatz
 from qiskit.transpiler import generate_preset_pass_manager
 from qiskit.quantum_info import SparsePauliOp
-from qrmi_primitives.ibm import IBMDirectAccessEstimatorV2
-from qrmi import IBMDirectAccess
+from qrmi_primitives import QRMIService
+from qrmi_primitives.ibm import EstimatorV2
 
 from target import get_target
 
 # Create QRMI
 load_dotenv()
-qrmi = IBMDirectAccess()
+service = QRMIService()
+
+resources = service.resources()
+if len(resources) == 0:
+    raise ValueError("No quantum resource is available.")
+
+# Randomly select QR
+qrmi = resources[random.randrange(len(resources))]
+print(qrmi.metadata())
 
 # Generate transpiler target from backend configuration & properties
 target = get_target(qrmi)
@@ -56,14 +63,8 @@ isa_observable = observable.apply_layout(isa_circuit.layout)
 print(f">>> Circuit ops (ISA): {isa_circuit.count_ops()}")
 
 # Initialize QRMI Estimator
-options = {
-    "run_options": {
-        "experimental": {
-            "execution_path": "gen3-turbo",
-        }
-    }
-}
-estimator = IBMDirectAccessEstimatorV2(options=options)
+options = {}
+estimator = EstimatorV2(qrmi, options=options)
 
 # Invoke the Estimator and get results
 # Next, invoke the run() method to calculate expectation values for the input circuits

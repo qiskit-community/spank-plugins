@@ -10,17 +10,18 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""EstimatorV2 Primitive implementation with IBM Direct Access QRMI"""
-from qrmi import IBMDirectAccess
+"""EstimatorV2 Primitive implementation with IBM QRMI"""
+from typing import Union
+from qrmi import IBMDirectAccess, IBMQiskitRuntimeService
 from .base_estimator import QRMIBaseEstimatorV2
 
-
-class IBMDirectAccessEstimatorV2(QRMIBaseEstimatorV2):
-    """EstimatorV2 for IBMDirectAccess QRMI"""
+class EstimatorV2(QRMIBaseEstimatorV2):
+    """EstimatorV2 for QRMI"""
 
     def __init__(
         self,
+        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
         *,
         options: dict | None = None,
     ) -> None:
-        super().__init__(IBMDirectAccess(), options=options)
+        super().__init__(qrmi, options=options)

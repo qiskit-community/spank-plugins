@@ -10,23 +10,30 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""SamplerV2 example with IBM Qiskit Runtime Service QRMI
-Code is based on "Get started with Sampler" tutorial (https://docs.quantum.ibm.com/guides/get-started-with-primitives#get-started-with-sampler).
-"""
+"""SamplerV2 example with IBM Direct Access QRMI"""
 
 # pylint: disable=invalid-name
+import random
 import numpy as np
 from dotenv import load_dotenv
 from qiskit.circuit.library import EfficientSU2
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from qrmi_primitives.ibm import IBMQiskitRuntimeServiceSamplerV2
-from qrmi import IBMQiskitRuntimeService
+from qrmi_primitives import QRMIService
+from qrmi_primitives.ibm import SamplerV2
 
 from target import get_target
 
 # Create QRMI
 load_dotenv()
-qrmi = IBMQiskitRuntimeService()
+service = QRMIService()
+
+resources = service.resources()
+if len(resources) == 0:
+    raise ValueError("No quantum resource is available.")
+
+# Randomly select QR
+qrmi = resources[random.randrange(len(resources))]
+print(qrmi.metadata())
 
 # Generate transpiler target from backend configuration & properties
 target = get_target(qrmi)
@@ -50,13 +57,8 @@ print(f">>> Circuit ops (ISA): {isa_circuit.count_ops()}")
 # Initialize QRMI Sampler
 options = {
     "default_shots": 10000,
-    "run_options": {
-        "experimental": {
-            "execution_path": "gen3-turbo",
-        }
-    }
 }
-sampler = IBMQiskitRuntimeServiceSamplerV2(options=options)
+sampler = SamplerV2(qrmi, options=options)
 
 # Next, invoke the run() method to generate the output. The circuit and optional
 # parameter value sets are input as primitive unified bloc (PUB) tuples.

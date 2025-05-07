@@ -18,6 +18,7 @@ Spank plugins for Slurm to support quantum resources
 - [Quantum resource for workload management systems](#quantum-resource-for-workload-management-system)
 - [Quantum resource API](#quantum-resource-api)
 - [Integration Flow](#integration-flow)
+- [High Level Flow of Quantum Plugin](#high-level-flow-of-quantum-plugin)
 - [General architecture](#general-architecture-of-plugin)
 - [Architectural Tenets](#architectural-tenents)
 
@@ -100,6 +101,13 @@ Primitive calls will manage the data and call towards the Quantum Computer (for 
 
 This avoids drawbacks of other options, e.g. when the user application's primitive call will create other slurm jobs that send primitive data towards the Quantum Computer.
 Having this logic of sending data towards the Quantum Computer in qiskit level code reduces complexity and latency, and avoids complexity in error handling.
+
+## High Level Flow of Quantum Plugin
+
+This is the high level flow from when slurm jobs are started to how requests find their way to a Quantum Computer.
+Requests refer to any interaction between appliction and Quantum Computer (e.g. including getting configuration information that is needed for transpilation).
+
+![High Level Flow -- png editable with draw.io, please keep it that way](./images/high-level-plugin-flow.png)
 
 ## General architecture of plugin
 

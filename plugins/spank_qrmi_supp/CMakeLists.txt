@@ -1,18 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_C_STANDARD 17)
-project (spank_ibm_qrun C)
+project (spank_qrmi_supp C)
 
 #
 # For finding packages:
 #
 include(CheckIncludeFiles)
 include(FindPackageHandleStandardArgs)
-
-set(TARGET_NAME spank_ibm_qrun)
-set(DAAPI_C_LIB
-  -L${CMAKE_CURRENT_SOURCE_DIR}/../../commands/qrun/target/release
-  -ldirect_access_capi
-)
 
 find_path(SLURM_INCLUDE_DIR NAMES slurm/slurm.h)
 find_library(SLURM_LIBRARY NAMES libslurm.so)
@@ -34,13 +28,6 @@ else (NOT SLURM_FOUND)
 endif (NOT SLURM_FOUND)
 mark_as_advanced (SLURM_LIBRARIES SLURM_INCLUDE_DIRS)
 
-add_library (${TARGET_NAME} MODULE spank_ibm_qrun.c)
+add_library (spank_qrmi_supp MODULE spank_qrmi_supp.c)
 include_directories (BEFORE ${SLURM_INCLUDE_DIRS})
-target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../commands/qrun/daapi_c/)
-target_link_libraries(${TARGET_NAME} PRIVATE ${DAAPI_C_LIB})
-target_link_libraries(${TARGET_NAME} PUBLIC "-lssl")
-target_link_libraries(${TARGET_NAME} PUBLIC "-lcrypto")
-target_link_libraries(${TARGET_NAME} PUBLIC "-ldl")
-target_link_libraries(${TARGET_NAME} PUBLIC "-lm")
-target_link_libraries(${TARGET_NAME} PUBLIC "-lpthread")
-set_target_properties (${TARGET_NAME} PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_ibm_qrun.so")
+set_target_properties (spank_qrmi_supp PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "libspank_qrmi_supp.so")

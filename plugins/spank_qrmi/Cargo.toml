@@ -1,0 +1,16 @@
+[package]
+name = "spank-qrmi"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+eyre = "0.6.8"
+libc = "0.2.172"
+slurm-spank = "0.4"
+tracing = "0.1.37"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+qrmi = { path = "../../qrmi" }

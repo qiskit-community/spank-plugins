@@ -34,33 +34,10 @@ Note the exact syntax is subject to change -- this is a sketch of the UX at this
 
 ### HPC admin scope
 
-HPC administrators configure, what physical resources can be provided to slurm jobs.
-The config could contain sensitive information such as credentials.
-Moving such items into files and referencing these can make it easier to protect the information and rotate credentials, if HPC admins prefer to not add credentials right in the configuration file.
+HPC administrators configure the SPANK plugin, what physical resources can be provided to slurm jobs.
+This configuration contains all the information needed to have slurm jobs access the physical resources, such as endpoints, and access credentials -- note some parts of the configuration such as credentials can be sensitive information.
 
-Here is an example configuration (the format aligns to the typical content of gres.conf -- one line per resource):
-
-```
-# slurm quantum plugin configuration
-
-# DA backend
-name=da-local-backend                                                    \
-type=direct-access-api                                                   \
-url=https://da-endpoint.my-local.domain/                                 \
-da_crn=crn:v1:bluemix:public:quantum-computing:us-east:a/43aac17...      \
-da_apikey_file=/root/da_apikey                                           \
-s3_url=https://s3.my-local.domain/...                                    \
-s3_accesstoken_file=/root/s3_accesstoken
-
-# QRS backends
-name=ibm_fez                                                             \
-type=qiskit-runtime-service-ibmcloud
-
-name=ibm_marrakesh                                                       \
-type=qiskit-runtime-service-ibmcloud
-```
-
-See the specific sections of the backend type for details on the parameters.
+See the file [qrmi_config.json.example](../plugins/spank_ibm/qrmi_config.json.example) for a comprehensive example showing.
 
 In `slurm.conf`, qpu generic resources can be assigned to some or all nodes for usage:
 ```
@@ -107,48 +84,52 @@ srun ...
 
 HPC applications use the slurm QPU resources assigned to the slurm job.
 
-Environment variables provide more details for use by the appliction:
-
-* `SLURM_QPU_COUNT` will provide the number of QPU resources accessible to the application
-* `SLURM_QPU_NAMES` will provide a colon-separated list of QPU names (element count is *SLURM_QPU_COUNT*)
-
-For single QPU use cases, the use of these variables is not needed:
+Environment variables provide more details for use by the appliction, e.g. `SLURM_JOB_QPU_RESOURCES` listing the quantum resource names (comma separated if there are several provided).
+These variables will be used by QRMI.
+See the README files in the various QRMI flavor directories ([Direct Access](../primitives/python/examples/direct_access/README.md), [Qiskit Runtime Service](../primitives/python/examples/qiskit_runtime_service/README.md)) for details.
 
 ```python
-from qrmi import IBMQiskitRuntimeServiceSamplerV2 as SamplerV2
-# or import other Sampler classes like IBMDirectAccessSamplerV2 as needed
+from qiskit import QuantumCircuit
+from qrmi_primitives import QRMIService
+# using an IBM QRMI flavor:
+from qrmi_primitives.ibm import SamplerV2
 
-# Generate transpiler target from backend configuration & properties
-target = get_target()
+# define circuit
+
+circuit = QuantumCircuit(2)
+circuit.h(0)
+circuit.cx(0, 1)
+circuit.measure_all()
+
+# instantiate QRMI service and get quantum resource (we'll take the first one should there be serveral of them)
+# inject credentials needed for accessing the service at this point
+load_dotenv()
+service = QRMIService()
+
+resources = service.resources()
+qrmi = resources[0]
+
+# Generate transpiler target from backend configuration & properties and transpile
+target = get_target(qrmi)
 pm = generate_preset_pass_manager(
     optimization_level=1,
     target=target,
 )
 
-sampler = SamplerV2(target=target)
+isa_circuit = pm.run(circuit)
+
+# run the circuit
+options = {}
+sampler = SamplerV2(qrmi, options=options)
+
+job = sampler.run([(isa_circuit, isa_observable, param_values)])
+print(f">>> Job ID: {job.job_id()}")
+
+result = job.result()
+print(f">>> {result}")
 ```
 
-However, applications expecting several QPUs might want to use the environment variables, e.g. as follows:
-
-```python
-# ...
-
-num_targets = os.environ["SLURM_QPU_COUNT"]
-targets = [get_target(index=i) for i in range(num_targets)]
-
-# ...
-```
-
-(where *get_target* is provided like this:
-
-```python
-def get_target(index: int = 0) -> Target:
-    target_names = os.environ["SLURM_QPU_NAMES"].split(":")
-    target_name = target_names[index]
-    # assemble target with the necessary properties
-    return target
-```
-)
+See [examples directory](../primitives/python/examples/) for example files.
 
 ### Backend specifics
 #### IBM Direct Access API

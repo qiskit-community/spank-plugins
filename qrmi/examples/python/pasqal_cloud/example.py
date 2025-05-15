@@ -16,28 +16,14 @@
 
 import argparse
 import time
-from qrmi import PasqalCloud, Payload, TaskStatus
-# pulser will be probably replaced by eduardo qiskit analog gate
 
-parser = argparse.ArgumentParser(description="An example of Pasqal Cloud QRMI")
-args = parser.parse_args()
-
-QR_ID = "FRESNEL"
-
-# instantiate a QRMI
-qrmi = PasqalCloud()
-
-# Check if QR it's accessible
-is_avail = qrmi.is_accessible(QR_ID)
-print('Pascal Cloud QR is %s accessible' % "not" if not is_avail else "")
-
-# Get target
-target = qrmi.target(QR_ID)
-print("QR Target %s" % target.value)
-
-# Send a task
 from pulser import Pulse, Register, Sequence
 from pulser.devices import DigitalAnalogDevice
+
+from qrmi import PasqalCloud, Payload, TaskStatus
+
+# pulser will be probably replaced by eduardo qiskit analog gate
+
 
 register = Register.square(2, spacing=5, prefix="q")
 sequence = Sequence(register, DigitalAnalogDevice)
@@ -45,6 +31,24 @@ sequence.declare_channel("rydberg", "rydberg_global")
 pulse = Pulse.ConstantPulse(100, 2.0, 2, 0.0)
 sequence.add(pulse, "rydberg")
 serialized_sequence = sequence.to_abstract_repr()
+
+with open("pulser_seq.json", "w") as f:
+    f.write(serialized_sequence)
+
+parser = argparse.ArgumentParser(description="An example of Pasqal Cloud QRMI")
+parser.add_argument("backend", help="backend name, FRESNEL") # Can consider making this FRESNEL or EMU
+args = parser.parse_args()
+
+# instantiate a QRMI
+qrmi = PasqalCloud(args.backend)
+
+# Check if QR it's accessible
+is_avail = qrmi.is_accessible()
+print('Pasqal Cloud QR is %s accessible' % "not" if not is_avail else "")
+
+# Get target
+target = qrmi.target()
+print("QR Target %s" % target.value)
 
 # nit:start_task would be nicer probably
 task_id = qrmi.task_start(Payload.PasqalCloud(sequence=serialized_sequence, job_runs=1000))
@@ -61,13 +65,14 @@ print('Status after cancelation %s' % qrmi.task_status(task_id))
 
 # Send send another task
 new_task_id = qrmi.task_start(Payload.PasqalCloud(sequence=serialized_sequence, job_runs=100))
-print('New Task ID: %s' % task_id)
+print('New Task ID: %s' % new_task_id)
 
 # Wait for completion
 while True:
     status = qrmi.task_status(new_task_id)
     if status == TaskStatus.Completed:
         print('Task completed')
+        time.sleep(2)
         break
     elif status == TaskStatus.Failed:
         print('Task failed')

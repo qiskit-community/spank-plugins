@@ -18,14 +18,16 @@ use std::fmt;
 #[serde(rename_all(serialize = "UPPERCASE"))]
 pub enum DeviceType {
     Fresnel,
-    Emu_mps,
+    EmuMps,
+    EmuFree,
 }
 
 impl fmt::Display for DeviceType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let name = match self {
             DeviceType::Fresnel => "FRESNEL",
-            DeviceType::Emu_mps => "EMU_MPS"
+            DeviceType::EmuMps => "EMU_MPS",
+            DeviceType::EmuFree => "EMU_FREE",
         };
         write!(f, "{}", name)
     }

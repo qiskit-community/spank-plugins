@@ -32,18 +32,13 @@ usage: example.py [-h] input backend
 An example of Pasqal Cloud Python QRMI
 
 positional arguments:
-  input       primitive input file
   backend  'FRESNEL'
+  input       primitive input file
 
 options:
   -h, --help  show this help message and exit
 ```
 For example,
 ```shell-session
-$ python example.py sampler_input.json FRESNEL
+$ python example.py FRESNEL input.json
 ```
-
-
-export AUTH_URL=https://authenticate.pasqal.cloud/authorize
-
-curl --request POST --url $AUTH_URL --header 'content-type: application/x-www-form-urlencoded' --data grant_type=http://auth0.com/oauth/grant-type/password-realm --data realm=pcs-users --data client_id=$PASQAL_CLOUD_PROJECT_ID --data audience=https://apis.pasqal.cloud/account/api/v1 --data username=$PASQAL_CLOUD_USERNAME --data password=$PASQAL_CLOUD_PASSWORD

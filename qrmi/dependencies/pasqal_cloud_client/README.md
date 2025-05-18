@@ -1,7 +1,8 @@
 # Pasqal Cloud API Client for Rust
 
-Like [this](https://github.com/pasqal-io/pasqal-cloud), in Rust
+Like [this](https://github.com/pasqal-io/pasqal-cloud), in Rust.
 
+We refer to Pasqal's cloud API [documetation](https://docs.pasqal.com/cloud/api/core/#overview).
 
 ## Supported OS
 
@@ -48,15 +49,20 @@ You can find the detailed runtime logs for Rust client by specifying `RUST_LOG` 
 
 
 ```bash
-RUST_LOG=trace ./bin/list_jobs
+RUST_LOG=trace <your command>
 ```
 
 ## Programming Guide
 
 ### Building API client instance
 
-We'll see
+A ClientBuilder can be used to create a Client.
+Currently assumed that the user will authenticate in a different way and provide the API token directly.
 
+
+```rust
+let client = ClientBuilder::new("https://apis.pasqal.cloud", <API token>, <project id>)
+```
 
 ### Invoking C++ API
 
@@ -70,7 +76,7 @@ All API client related errors are delivered as Error in Result struct like other
 
 ## Contributing
 
-Regardless if you are part of the core team or an external contributor, welcome and thank you for contributing to Direct Access API Client for Rust!
+Regardless if you are part of the core team or an external contributor, welcome and thank you for contributing to Pasqal Cloud API Client for Rust!
 
 ### Solving linting/format issues
 

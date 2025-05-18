@@ -1,5 +1,5 @@
 //
-// (C) Copyright IBM 2024, 2025
+// (C) Copyright Pasqal SAS 2025
 //
 // This code is licensed under the Apache License, Version 2.0. You may
 // obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -27,7 +27,7 @@ use std::collections::HashMap;
 pub struct Client {
     /// The base URL this client sends requests to
     pub(crate) base_url: String,
-    /// HTTP client to interact with Direct Access API service
+    /// HTTP client to interact with Pasqal Cloud service
     pub(crate) client: reqwest_middleware::ClientWithMiddleware,
     pub(crate) project_id: String,
 }
@@ -89,7 +89,9 @@ impl Client {
         );
         self.get(&url).await
     }
-
+    /// Pasqal Cloud works with batches of jobs rather than
+    /// individual jobs, see:
+    /// https://docs.pasqal.com/cloud/batches/
     pub async fn create_batch(
         &self,
         sequence: String,
@@ -213,7 +215,7 @@ impl ClientBuilder {
     /// # Example
     ///
     /// ```rust
-    /// use direct_access_api::ClientBuilder;
+    /// use pasqal_cloud_api::ClientBuilder;
     ///
     /// let _builder = ClientBuilder::new(token);
     /// ```

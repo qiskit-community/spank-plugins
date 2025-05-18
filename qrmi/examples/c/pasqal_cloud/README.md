@@ -9,10 +9,12 @@
 
 Because QRMI is an environment variable driven software library, all configuration parameters must be specified in environment variables. The required environment variables are listed below. This example assumes that a `.env` file is available under the current directory.
 
+
 | Environment variables | Descriptions |
 | ---- | ---- |
-| QRMI_IBM_QRS_ENDPOINT | Qiskit Runtime Service endpoint URL(e.g. `https://quantum.cloud.ibm.com/api`) |
-| QRMI_IBM_QRS_IAM_ENDPOINT | IBM Cloud IAM endpoint URL(e.g. `https://iam.cloud.ibm.com`) |
+
+| QRMI_PASQAL_CLOUD_PROJECT_ID` |  Pasqal Cloud Project ID to access the QPU
+| QRMI_PASQAL_CLOUD_AUTH_TOKEN | Pasqal Cloud Auth Token
 
 ## Create Pulser Sequence file as input
 
@@ -41,5 +43,5 @@ pasqal-cloud <backend_name> <input file>
 ```
 For example,
 ```shell-session
-$ ./build/pasqal-cloud FRESNEL sampler_input.json
+$ ./build/pasqal-cloud FRESNEL input.json
 ```

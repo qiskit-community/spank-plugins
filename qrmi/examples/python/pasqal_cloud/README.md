@@ -19,9 +19,20 @@ Because QRMI is an environment variable driven software library, all configurati
 
 | Environment variables | Descriptions |
 | ---- | ---- |
-| QRMI_RESOURCE_ID | Quantum backend name(e.g. `ibm_torino`) |
-| QRMI_IBM_DA_ENDPOINT | Direct Access endpoint URL |
 
+| QRMI_PASQAL_CLOUD_PROJECT_ID` |  Pasqal Cloud Project ID to access the QPU
+| QRMI_PASQAL_CLOUD_AUTH_TOKEN | Pasqal Cloud Auth Token
+
+## Create Pulser Sequence file as input
+
+Given a Pulser sequence `sequence`, we can convert it to a JSON string and write it to a file like this:
+
+```python
+serialized_sequence = sequence.to_abstract_repr()
+
+with open("pulser_seq.json", "w") as f:
+    f.write(serialized_sequence)
+```
 
 ## How to run
 
@@ -33,7 +44,7 @@ An example of Pasqal Cloud Python QRMI
 
 positional arguments:
   backend  'FRESNEL'
-  input       primitive input file
+  input       sequence input file
 
 options:
   -h, --help  show this help message and exit

@@ -11,12 +11,20 @@ Because QRMI is an environment variable driven software library, all configurati
 
 | Environment variables | Descriptions |
 | ---- | ---- |
-| QRMI_IBM_QRS_ENDPOINT | Qiskit Runtime Service endpoint URL(e.g. `https://quantum.cloud.ibm.com/api`) |
-| QRMI_IBM_QRS_IAM_ENDPOINT | IBM Cloud IAM endpoint URL(e.g. `https://iam.cloud.ibm.com`) |
 
-## Create Pulser Sequence input file as input
+| QRMI_PASQAL_CLOUD_PROJECT_ID` |  Pasqal Cloud Project ID to access the QPU
+| QRMI_PASQAL_CLOUD_AUTH_TOKEN | Pasqal Cloud Auth Token
 
+## Create Pulser Sequence file as input
 
+Given a Pulser sequence `sequence`, we can convert it to a JSON string and write it to a file like this:
+
+```python
+serialized_sequence = sequence.to_abstract_repr()
+
+with open("pulser_seq.json", "w") as f:
+    f.write(serialized_sequence)
+```
 
 ## How to build this example
 
@@ -34,7 +42,7 @@ Usage: qrmi-example-pasqal-cloud --backend <BACKEND> --input <INPUT>
 
 Options:
   -b, --backend <BACKEND>        backend name
-  -i, --input <INPUT>            primitive input file
+  -i, --input <INPUT>            sequence input file
   -h, --help                     Print help
   -V, --version                  Print version
 ```

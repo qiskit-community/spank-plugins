@@ -1,4 +1,4 @@
-diff -purN slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
+diff -Naru slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
 --- slurm-docker-cluster.orig/.env	2025-05-18 20:07:19
 +++ slurm-docker-cluster/.env	2025-05-18 20:12:37
 @@ -1,6 +1,6 @@
@@ -10,7 +10,7 @@ diff -purN slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
  # Slurm tag in semantic version form)
 -IMAGE_TAG=21.08.6
 +IMAGE_TAG=24.11.5.1-dev
-diff -purN slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
+diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
 --- slurm-docker-cluster.orig/Dockerfile	2025-05-18 20:07:19
 +++ slurm-docker-cluster/Dockerfile	2025-05-18 20:39:01
 @@ -1,4 +1,4 @@
@@ -19,7 +19,7 @@ diff -purN slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  
  LABEL org.opencontainers.image.source="https://github.com/giovtorres/slurm-docker-cluster" \
        org.opencontainers.image.title="slurm-docker-cluster" \
-@@ -10,7 +10,7 @@ RUN set -ex \
+@@ -10,7 +10,7 @@
      && yum makecache \
      && yum -y update \
      && yum -y install dnf-plugins-core \
@@ -28,7 +28,7 @@ diff -purN slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
      && yum -y install \
         wget \
         bzip2 \
-@@ -22,9 +22,8 @@ RUN set -ex \
+@@ -22,9 +22,8 @@
         make \
         munge \
         munge-devel \
@@ -40,7 +40,7 @@ diff -purN slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
         mariadb-server \
         mariadb-devel \
         psmisc \
-@@ -32,13 +31,20 @@ RUN set -ex \
+@@ -32,13 +31,20 @@
         vim-enhanced \
         http-parser-devel \
         json-c-devel \
@@ -63,7 +63,7 @@ diff -purN slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  ARG GOSU_VERSION=1.17
  
  RUN set -ex \
-@@ -88,9 +94,15 @@ COPY slurmdbd.conf /etc/slurm/slurmdbd.conf
+@@ -88,9 +94,15 @@
  
  COPY slurm.conf /etc/slurm/slurm.conf
  COPY slurmdbd.conf /etc/slurm/slurmdbd.conf
@@ -79,7 +79,7 @@ diff -purN slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  
  
  COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-diff -purN slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.conf
+diff -Naru slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.conf
 --- slurm-docker-cluster.orig/cgroup.conf	1970-01-01 09:00:00
 +++ slurm-docker-cluster/cgroup.conf	2025-05-18 20:08:52
 @@ -0,0 +1,20 @@
@@ -103,10 +103,10 @@ diff -purN slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.con
 +AllowedSwapSpace=0
 +AllowedRAMSpace=100
 +MemorySwappiness=0
-diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/docker-compose.yml
+diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/docker-compose.yml
 --- slurm-docker-cluster.orig/docker-compose.yml	2025-05-18 20:07:19
 +++ slurm-docker-cluster/docker-compose.yml	2025-05-18 20:08:52
-@@ -10,6 +10,7 @@ services:
+@@ -10,6 +10,7 @@
        MYSQL_PASSWORD: password
      volumes:
        - var_lib_mysql:/var/lib/mysql
@@ -114,7 +114,7 @@ diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      networks:
        - slurm-network
  
-@@ -25,7 +26,8 @@ services:
+@@ -25,7 +26,8 @@
      volumes:
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
@@ -124,7 +124,7 @@ diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6819"
      depends_on:
-@@ -42,7 +44,8 @@ services:
+@@ -42,7 +44,8 @@
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
@@ -134,7 +134,7 @@ diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6817"
      depends_on:
-@@ -59,7 +62,8 @@ services:
+@@ -59,7 +62,8 @@
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
@@ -144,7 +144,7 @@ diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6818"
      depends_on:
-@@ -76,7 +80,8 @@ services:
+@@ -76,7 +80,8 @@
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
@@ -154,7 +154,7 @@ diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6818"
      depends_on:
-@@ -84,12 +89,45 @@ services:
+@@ -84,12 +89,45 @@
      networks:
        - slurm-network
  
@@ -201,10 +201,10 @@ diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
  
  networks:
    slurm-network:
-diff -purN slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/docker-entrypoint.sh
+diff -Naru slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/docker-entrypoint.sh
 --- slurm-docker-cluster.orig/docker-entrypoint.sh	2025-05-18 20:07:19
 +++ slurm-docker-cluster/docker-entrypoint.sh	2025-05-18 20:08:52
-@@ -61,4 +61,13 @@ fi
+@@ -61,4 +61,13 @@
      exec /usr/sbin/slurmd -Dvvv
  fi
  
@@ -218,13 +218,13 @@ diff -purN slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/d
 +fi
 +
  exec "$@"
-diff -purN slurm-docker-cluster.orig/plugstack.conf.example slurm-docker-cluster/plugstack.conf.example
+diff -Naru slurm-docker-cluster.orig/plugstack.conf.example slurm-docker-cluster/plugstack.conf.example
 --- slurm-docker-cluster.orig/plugstack.conf.example	1970-01-01 09:00:00
 +++ slurm-docker-cluster/plugstack.conf.example	2025-05-18 20:38:50
 @@ -0,0 +1,2 @@
 +optional /shared/spank-plugins/plugins/spank_qrmi/target/release/libspank_qrmi.so /etc/slurm/qrmi_config.json
 +optional /shared/spank-plugins/plugins/spank_qrmi_supp/build/libspank_qrmi_supp.so
-diff -purN slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
+diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
 --- slurm-docker-cluster.orig/qrmi_config.json.example	1970-01-01 09:00:00
 +++ slurm-docker-cluster/qrmi_config.json.example	2025-05-18 20:39:53
 @@ -0,0 +1,36 @@
@@ -252,7 +252,7 @@ diff -purN slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-clust
 +        "QRMI_IBM_QRS_ENDPOINT": "https://quantum.cloud.ibm.com/api/v1",
 +        "QRMI_IBM_QRS_IAM_ENDPOINT": "https://iam.cloud.ibm.com",
 +        "QRMI_IBM_QRS_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
-+        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>",
++        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>"
 +      }
 +    },
 +    {
@@ -264,10 +264,10 @@ diff -purN slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-clust
 +    }
 +  ]
 +}
-diff -purN slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
+diff -Naru slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
 --- slurm-docker-cluster.orig/slurm.conf	2025-05-18 20:07:19
 +++ slurm-docker-cluster/slurm.conf	2025-05-18 20:09:14
-@@ -56,7 +56,7 @@ SchedulerType=sched/backfill
+@@ -56,7 +56,7 @@
  #SchedulerAuth=
  #SchedulerPort=
  #SchedulerRootFilter=
@@ -276,10 +276,10 @@ diff -purN slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
  SelectTypeParameters=CR_CPU_Memory
  FastSchedule=1
  #PriorityType=priority/multifactor
-diff -purN slurm-docker-cluster.orig/update_slurmfiles.sh slurm-docker-cluster/update_slurmfiles.sh
+diff -Naru slurm-docker-cluster.orig/update_slurmfiles.sh slurm-docker-cluster/update_slurmfiles.sh
 --- slurm-docker-cluster.orig/update_slurmfiles.sh	2025-05-18 20:07:19
 +++ slurm-docker-cluster/update_slurmfiles.sh	2025-05-18 20:08:52
-@@ -6,7 +6,7 @@ do
+@@ -6,7 +6,7 @@
  
  for var in "$@"
  do

@@ -157,6 +157,7 @@ bash-5.1# exit
 
 ```bash
 [root@slurmctld /]# python3.12 -m venv /shared/pyenv
+[root@slurmctld /]# pip install --upgrade pip
 ```
 
 3. Building [QRMI](./qrmi/README.md)

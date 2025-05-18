@@ -1,25 +1,25 @@
-diff -Naru slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
---- slurm-docker-cluster.orig/.env	2025-03-05 20:41:41
-+++ slurm-docker-cluster/.env	2025-03-05 21:10:27
+diff -purN slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
+--- slurm-docker-cluster.orig/.env	2025-05-18 20:07:19
++++ slurm-docker-cluster/.env	2025-05-18 20:12:37
 @@ -1,6 +1,6 @@
  # Slurm git repo tag. See https://github.com/SchedMD/slurm/tags
 -SLURM_TAG=slurm-21-08-6-1
-+SLURM_TAG=slurm-24-11-4-1
++SLURM_TAG=slurm-24-11-5-1
  
  # Image version used to tag the container at build time (Typically matches the
  # Slurm tag in semantic version form)
 -IMAGE_TAG=21.08.6
-+IMAGE_TAG=24.11.4.1-dev
-diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
---- slurm-docker-cluster.orig/Dockerfile	2025-03-05 20:41:41
-+++ slurm-docker-cluster/Dockerfile	2025-03-05 23:47:10
++IMAGE_TAG=24.11.5.1-dev
+diff -purN slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
+--- slurm-docker-cluster.orig/Dockerfile	2025-05-18 20:07:19
++++ slurm-docker-cluster/Dockerfile	2025-05-18 20:39:01
 @@ -1,4 +1,4 @@
 -FROM rockylinux:8
 +FROM rockylinux:9
  
  LABEL org.opencontainers.image.source="https://github.com/giovtorres/slurm-docker-cluster" \
        org.opencontainers.image.title="slurm-docker-cluster" \
-@@ -10,7 +10,7 @@
+@@ -10,7 +10,7 @@ RUN set -ex \
      && yum makecache \
      && yum -y update \
      && yum -y install dnf-plugins-core \
@@ -28,7 +28,7 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
      && yum -y install \
         wget \
         bzip2 \
-@@ -22,9 +22,8 @@
+@@ -22,9 +22,8 @@ RUN set -ex \
         make \
         munge \
         munge-devel \
@@ -40,7 +40,7 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
         mariadb-server \
         mariadb-devel \
         psmisc \
-@@ -32,13 +31,20 @@
+@@ -32,13 +31,20 @@ RUN set -ex \
         vim-enhanced \
         http-parser-devel \
         json-c-devel \
@@ -63,27 +63,14 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  ARG GOSU_VERSION=1.17
  
  RUN set -ex \
-@@ -73,6 +79,8 @@
-         /var/run/slurmdbd \
-         /var/lib/slurmd \
-         /var/log/slurm \
-+        /etc/slurm/prolog.d \
-+        /etc/slurm/epilog.d \
-         /data \
-     && touch /var/lib/slurmd/node_state \
-         /var/lib/slurmd/front_end_state \
-@@ -88,9 +96,19 @@
+@@ -88,9 +94,15 @@ COPY slurmdbd.conf /etc/slurm/slurmdbd.conf
  
  COPY slurm.conf /etc/slurm/slurm.conf
  COPY slurmdbd.conf /etc/slurm/slurmdbd.conf
 +COPY cgroup.conf /etc/slurm/cgroup.conf
-+COPY set_qrun_env.sh /etc/slurm/prolog.d/
++COPY plugstack.conf.example /etc/slurm/plugstack.conf.example
++COPY qrmi_config.json.example /etc/slurm/qrmi_config.json.example
  RUN set -x \
-+    && chmod 755 /etc/slurm/prolog.d/set_qrun_env.sh
-+COPY unset_qrun_env.sh /etc/slurm/epilog.d/
-+RUN set -x \
-+    && chmod 755 /etc/slurm/epilog.d/unset_qrun_env.sh
-+RUN set -x \
      && chown slurm:slurm /etc/slurm/slurmdbd.conf \
      && chmod 600 /etc/slurm/slurmdbd.conf
 +RUN python3.12 -m venv ~/venv \
@@ -92,9 +79,9 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  
  
  COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-diff -Naru slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.conf
+diff -purN slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.conf
 --- slurm-docker-cluster.orig/cgroup.conf	1970-01-01 09:00:00
-+++ slurm-docker-cluster/cgroup.conf	2025-03-05 22:21:00
++++ slurm-docker-cluster/cgroup.conf	2025-05-18 20:08:52
 @@ -0,0 +1,20 @@
 +###
 +#
@@ -116,10 +103,10 @@ diff -Naru slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.con
 +AllowedSwapSpace=0
 +AllowedRAMSpace=100
 +MemorySwappiness=0
-diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/docker-compose.yml
---- slurm-docker-cluster.orig/docker-compose.yml	2025-03-05 20:41:41
-+++ slurm-docker-cluster/docker-compose.yml	2025-03-05 23:39:03
-@@ -10,6 +10,7 @@
+diff -purN slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/docker-compose.yml
+--- slurm-docker-cluster.orig/docker-compose.yml	2025-05-18 20:07:19
++++ slurm-docker-cluster/docker-compose.yml	2025-05-18 20:08:52
+@@ -10,6 +10,7 @@ services:
        MYSQL_PASSWORD: password
      volumes:
        - var_lib_mysql:/var/lib/mysql
@@ -127,7 +114,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      networks:
        - slurm-network
  
-@@ -25,7 +26,8 @@
+@@ -25,7 +26,8 @@ services:
      volumes:
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
@@ -137,7 +124,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6819"
      depends_on:
-@@ -42,7 +44,8 @@
+@@ -42,7 +44,8 @@ services:
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
@@ -147,7 +134,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6817"
      depends_on:
-@@ -59,7 +62,8 @@
+@@ -59,7 +62,8 @@ services:
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
@@ -157,7 +144,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6818"
      depends_on:
-@@ -76,7 +80,8 @@
+@@ -76,7 +80,8 @@ services:
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
@@ -167,7 +154,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6818"
      depends_on:
-@@ -84,12 +89,45 @@
+@@ -84,12 +89,45 @@ services:
      networks:
        - slurm-network
  
@@ -214,10 +201,10 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
  
  networks:
    slurm-network:
-diff -Naru slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/docker-entrypoint.sh
---- slurm-docker-cluster.orig/docker-entrypoint.sh	2025-03-05 20:41:41
-+++ slurm-docker-cluster/docker-entrypoint.sh	2025-03-05 21:26:21
-@@ -61,4 +61,13 @@
+diff -purN slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/docker-entrypoint.sh
+--- slurm-docker-cluster.orig/docker-entrypoint.sh	2025-05-18 20:07:19
++++ slurm-docker-cluster/docker-entrypoint.sh	2025-05-18 20:08:52
+@@ -61,4 +61,13 @@ fi
      exec /usr/sbin/slurmd -Dvvv
  fi
  
@@ -231,41 +218,56 @@ diff -Naru slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/d
 +fi
 +
  exec "$@"
-diff -Naru slurm-docker-cluster.orig/plugstack.conf slurm-docker-cluster/plugstack.conf
---- slurm-docker-cluster.orig/plugstack.conf	1970-01-01 09:00:00
-+++ slurm-docker-cluster/plugstack.conf	2025-03-05 21:24:19
+diff -purN slurm-docker-cluster.orig/plugstack.conf.example slurm-docker-cluster/plugstack.conf.example
+--- slurm-docker-cluster.orig/plugstack.conf.example	1970-01-01 09:00:00
++++ slurm-docker-cluster/plugstack.conf.example	2025-05-18 20:38:50
 @@ -0,0 +1,2 @@
-+optional /usr/lib64/slurm/spank_ibm_qrun.so
-+optional /usr/lib64/slurm/spank_skeleton.so
-diff -Naru slurm-docker-cluster.orig/set_qrun_env.sh slurm-docker-cluster/set_qrun_env.sh
---- slurm-docker-cluster.orig/set_qrun_env.sh	1970-01-01 09:00:00
-+++ slurm-docker-cluster/set_qrun_env.sh	2025-03-05 21:20:42
-@@ -0,0 +1,12 @@
-+#!/bin/bash
-+# /etc/slurm/prolog.d/set_qrun_env.sh
-+
-+echo "export IBMQRUN_AWS_ACCESS_KEY_ID=minioadmin"
-+echo "export IBMQRUN_AWS_SECRET_ACCESS_KEY=minioadmin"
-+echo "export IBMQRUN_IAM_APIKEY=demoapikey1"
-+echo "export IBMQRUN_SERVICE_CRN=crn:v1:local:daa_sim"
-+echo "export IBMQRUN_IAM_ENDPOINT=http://daapi:8290"
-+echo "export IBMQRUN_DAAPI_ENDPOINT=http://daapi:8290"
-+echo "export IBMQRUN_S3_ENDPOINT=http://s3:9000"
-+echo "export IBMQRUN_S3_BUCKET=slurm-qrun"
-+echo "export IBMQRUN_S3_REGION=us-east"
-diff -Naru slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
---- slurm-docker-cluster.orig/slurm.conf	2025-03-05 20:41:41
-+++ slurm-docker-cluster/slurm.conf	2025-03-05 21:17:55
-@@ -35,7 +35,7 @@
- #Epilog=
- #SrunProlog=
- #SrunEpilog=
--#TaskProlog=
-+TaskProlog=/etc/slurm/prolog.d/set_qrun_env.sh
- #TaskEpilog=
- #TaskPlugin=
- #TrackWCKey=no
-@@ -56,7 +56,7 @@
++optional /shared/spank-plugins/plugins/spank_qrmi/target/release/libspank_qrmi.so /etc/slurm/qrmi_config.json
++optional /shared/spank-plugins/plugins/spank_qrmi_supp/build/libspank_qrmi_supp.so
+diff -purN slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
+--- slurm-docker-cluster.orig/qrmi_config.json.example	1970-01-01 09:00:00
++++ slurm-docker-cluster/qrmi_config.json.example	2025-05-18 20:39:53
+@@ -0,0 +1,36 @@
++{
++  "resources": [
++    {
++      "name": "test_eagle",
++      "type": "direct-access",
++      "environment": {
++        "QRMI_IBM_DA_ENDPOINT": "http://",
++        "QRMI_IBM_DA_IAM_ENDPOINT": "https://",
++        "QRMI_IBM_DA_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
++        "QRMI_IBM_DA_SERVICE_CRN": "<YOUR DIRECT ACCESS INSTANCE CRN>",
++        "QRMI_IBM_DA_AWS_ACCESS_KEY_ID": "<YOUR AWS ACCESS KEY TO ACCESS S3 BUCKET>",
++        "QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY": "<YOUR AWS SECRET ACCESS KEY TO ACCESS S3 BUCKET>",
++        "QRMI_IBM_DA_S3_ENDPOINT": "<YOUR S3 ENDPOINT>",
++        "QRMI_IBM_DA_S3_BUCKET": "<YOUR S3 BUCKET NAME>",
++        "QRMI_IBM_DA_S3_REGION": "<YOUR S3 BUCKET REGION>"
++      }
++    },
++    {
++      "name": "alt_marrakesh",
++      "type": "qiskit-runtime-service",
++      "environment": {
++        "QRMI_IBM_QRS_ENDPOINT": "https://quantum.cloud.ibm.com/api/v1",
++        "QRMI_IBM_QRS_IAM_ENDPOINT": "https://iam.cloud.ibm.com",
++        "QRMI_IBM_QRS_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
++        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>",
++      }
++    },
++    {
++      "name": "pasqal",
++      "type": "pasqal-cloud",
++      "environment": {
++        "QRMI_PASQAL_CLOUD_ENDPOINT": "http://"
++      }
++    }
++  ]
++}
+diff -purN slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
+--- slurm-docker-cluster.orig/slurm.conf	2025-05-18 20:07:19
++++ slurm-docker-cluster/slurm.conf	2025-05-18 20:09:14
+@@ -56,7 +56,7 @@ SchedulerType=sched/backfill
  #SchedulerAuth=
  #SchedulerPort=
  #SchedulerRootFilter=
@@ -274,16 +276,10 @@ diff -Naru slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
  SelectTypeParameters=CR_CPU_Memory
  FastSchedule=1
  #PriorityType=priority/multifactor
-diff -Naru slurm-docker-cluster.orig/unset_qrun_env.sh slurm-docker-cluster/unset_qrun_env.sh
---- slurm-docker-cluster.orig/unset_qrun_env.sh	1970-01-01 09:00:00
-+++ slurm-docker-cluster/unset_qrun_env.sh	2025-03-05 21:21:59
-@@ -0,0 +1,2 @@
-+#!/bin/bash
-+# /etc/slurm/epilog.d/unset_cloud_env.sh
-diff -Naru slurm-docker-cluster.orig/update_slurmfiles.sh slurm-docker-cluster/update_slurmfiles.sh
---- slurm-docker-cluster.orig/update_slurmfiles.sh	2025-03-05 20:41:41
-+++ slurm-docker-cluster/update_slurmfiles.sh	2025-03-05 21:23:28
-@@ -6,7 +6,7 @@
+diff -purN slurm-docker-cluster.orig/update_slurmfiles.sh slurm-docker-cluster/update_slurmfiles.sh
+--- slurm-docker-cluster.orig/update_slurmfiles.sh	2025-05-18 20:07:19
++++ slurm-docker-cluster/update_slurmfiles.sh	2025-05-18 20:08:52
+@@ -6,7 +6,7 @@ do
  
  for var in "$@"
  do

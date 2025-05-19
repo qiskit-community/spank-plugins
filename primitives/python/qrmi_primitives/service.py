@@ -26,10 +26,17 @@ class QRMIService:
     def __init__(self):
         qpus = os.environ["SLURM_JOB_QPU_RESOURCES"]
         logger.debug("qpus: %s", qpus)
-        qpus = qpus.split(",")
+        if len(qpus) == 0:
+            qpus = []
+        else:
+            qpus = qpus.split(",")
+
         qpu_types = os.environ["SLURM_JOB_QPU_TYPES"]
         logger.debug("qpu types: %s", qpu_types)
-        qpu_types = qpu_types.split(",")
+        if len(qpu_types) == 0:
+            qpu_types = []
+        else:
+            qpu_types = qpu_types.split(",")
 
         if len(qpus) != len(qpu_types):
             raise ValueError("Inconsistent specifications of QPU resources and types")

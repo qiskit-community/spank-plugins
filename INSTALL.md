@@ -67,6 +67,24 @@ mkdir minio
 docker compose up -d
 ```
 
+> [!NOTE]
+> Ensure that the following seven containers are running on the PC.
+>
+> - daapi ([Direct Access API Simulator](./daa_sim/README.md) node)
+> - c2 (Compute Node #2)
+> - c1 (Compute Node #1)
+> - slurmctld (Central Management Node)
+> - slurmdbd (Slurm DB Node)
+> - slurm-docker-cluster-minio-1 (S3 Bucket Node, used by Direct Access)
+> - mysql (Database node)
+
+Slurm Cluster is now set up as shown.
+
+<p align="center">
+  <img src="./docs/images/slurm-docker-cluster.png" width="640">
+</p>
+
+
 #### 8. Creating a S3 bucket for testing
 
 S3 Bucket creation can be done via a)Web Browser or b)CLI.
@@ -121,30 +139,6 @@ bash-5.1# mc mb local/slurm-qrun
 bash-5.1# exit
 ```
 
-#### 9. Starting Slurm Cluster
-
-```bash
-docker compose up -d
-```
-
-> [!NOTE]
-> Ensure that the following seven containers are running on the PC.
->
-> - daapi ([Direct Access API Simulator](./daa_sim/README.md) node)
-> - c2 (Compute Node #2)
-> - c1 (Compute Node #1)
-> - slurmctld (Central Management Node)
-> - slurmdbd (Slurm DB Node)
-> - slurm-docker-cluster-minio-1 (S3 Bucket Node, used by Direct Access)
-> - mysql (Database node)
-
-Slurm Cluster is now set up as shown.
-
-<p align="center">
-  <img src="./docs/images/slurm-docker-cluster.png" width="640">
-</p>
-
-
 ### Building and installing our SPANK Plugins
 
 
@@ -162,7 +156,8 @@ Slurm Cluster is now set up as shown.
 2. Creating python virtual env under shared volume
 
 ```bash
-[root@slurmctld /]# python3.11 -m venv /shared/pyenv
+[root@slurmctld /]# python3.12 -m venv /shared/pyenv
+[root@slurmctld /]# pip install --upgrade pip
 ```
 
 3. Building [QRMI](./qrmi/README.md)
@@ -191,7 +186,7 @@ Slurm Cluster is now set up as shown.
 ```bash
 [root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_qrmi
 [root@slurmctld /]# cargo build --release
-[root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_qrmi/supp
+[root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_qrmi_supp
 [root@slurmctld /]# mkdir build
 [root@slurmctld /]# cd build
 [root@slurmctld /]# cmake ..

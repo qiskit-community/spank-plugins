@@ -21,7 +21,7 @@ from qiskit import qasm3
 from qiskit.primitives.base import BaseEstimatorV2
 from qiskit.primitives.containers.estimator_pub import EstimatorPub, EstimatorPubLike
 
-from qrmi import IBMDirectAccess, IBMQiskitRuntimeService, Payload
+from qrmi import QuantumResource, Payload
 
 from .runtime_job_v2 import RuntimeJobV2
 
@@ -44,7 +44,7 @@ class QRMIBaseEstimatorV2(BaseEstimatorV2):
 
     def __init__(
         self,
-        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
+        qrmi: QuantumResource,
         *,
         options: dict | None = None,
     ) -> None:

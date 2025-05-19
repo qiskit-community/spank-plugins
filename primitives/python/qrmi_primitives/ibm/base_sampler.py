@@ -19,7 +19,7 @@ from qiskit import qasm3
 from qiskit.primitives.base import BaseSamplerV2
 from qiskit.primitives.containers.sampler_pub import SamplerPub, SamplerPubLike
 
-from qrmi import IBMDirectAccess, IBMQiskitRuntimeService, Payload
+from qrmi import QuantumResource, Payload
 
 from .runtime_job_v2 import RuntimeJobV2
 
@@ -43,7 +43,7 @@ class QRMIBaseSamplerV2(BaseSamplerV2):
 
     def __init__(
         self,
-        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
+        qrmi: QuantumResource,
         *,
         options: dict | None = None,
     ) -> None:

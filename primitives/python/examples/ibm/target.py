@@ -15,15 +15,13 @@
 """Qiskit Target creation"""
 
 # pylint: disable=invalid-name
-import os
 import json
-from typing import Union
 from qiskit.transpiler.target import Target
 from qiskit_ibm_runtime.utils.backend_converter import convert_to_target
 from qiskit_ibm_runtime.models import BackendProperties, BackendConfiguration
-from qrmi import IBMDirectAccess
+from qrmi import QuantumResource
 
-def get_target(qrmi: Union[IBMDirectAccess]) -> Target:
+def get_target(qrmi: QuantumResource) -> Target:
     """Returns Qiskit transpiler target
 
     Args:

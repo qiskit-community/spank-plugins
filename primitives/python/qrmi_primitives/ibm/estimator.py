@@ -12,7 +12,7 @@
 
 """EstimatorV2 Primitive implementation with IBM QRMI"""
 from typing import Union
-from qrmi import IBMDirectAccess, IBMQiskitRuntimeService
+from qrmi import QuantumResource
 from .base_estimator import QRMIBaseEstimatorV2
 
 class EstimatorV2(QRMIBaseEstimatorV2):
@@ -20,7 +20,7 @@ class EstimatorV2(QRMIBaseEstimatorV2):
 
     def __init__(
         self,
-        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
+        qrmi: QuantumResource,
         *,
         options: dict | None = None,
     ) -> None:

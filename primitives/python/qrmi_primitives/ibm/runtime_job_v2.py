@@ -20,7 +20,7 @@ from qiskit_ibm_runtime.utils.result_decoder import ResultDecoder
 from qiskit.primitives import BasePrimitiveJob, PrimitiveResult
 from qiskit.providers import JobStatus
 from qiskit.providers.jobstatus import JOB_FINAL_STATES
-from qrmi import IBMDirectAccess, IBMQiskitRuntimeService, TaskStatus
+from qrmi import QuantumResource, TaskStatus
 
 STATUS_MAP = {
     TaskStatus.Queued: JobStatus.QUEUED,
@@ -36,7 +36,7 @@ class RuntimeJobV2(BasePrimitiveJob[PrimitiveResult, TaskStatus]):
 
     def __init__(
         self,
-        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
+        qrmi: QuantumResource,
         job_id: str,
         *,
         delete_job: bool = False

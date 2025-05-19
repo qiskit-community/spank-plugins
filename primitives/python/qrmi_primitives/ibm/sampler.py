@@ -12,7 +12,7 @@
 
 """SamplerV2 Primitive implementation with IBM QRMI"""
 from typing import Union
-from qrmi import IBMDirectAccess, IBMQiskitRuntimeService
+from qrmi import QuantumResource
 from .base_sampler import QRMIBaseSamplerV2
 
 class SamplerV2(QRMIBaseSamplerV2):
@@ -20,7 +20,7 @@ class SamplerV2(QRMIBaseSamplerV2):
 
     def __init__(
         self,
-        qrmi: Union[IBMDirectAccess, IBMQiskitRuntimeService],
+        qrmi: QuantumResource,
         *,
         options: dict | None = None,
     ) -> None:

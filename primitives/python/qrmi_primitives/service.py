@@ -14,7 +14,8 @@
 
 import os
 from logging import getLogger
-from typing import Union, List
+from typing import List
+
 from qrmi import QuantumResource, ResourceType
 
 logger = getLogger("qrmi")
@@ -49,8 +50,8 @@ class QRMIService:
                 qrmi = QuantumResource(qpu, ResourceType.IBMDirectAccess)
             elif qpu_types[i] == "qiskit-runtime-service":
                 qrmi = QuantumResource(qpu, ResourceType.IBMQiskitRuntimeService)
-            # elif qpu_types[i] == "pasqal-cloud":
-            #   qrmi = QuantumResource(qpu, ResourceType.PasqalCloud)
+            elif qpu_types[i] == "pasqal-cloud":
+              qrmi = QuantumResource(qpu, ResourceType.PasqalCloud)
             else:
                 logger.warning(
                     "Unsupported resource type: %s specified for %s", qpu_types[i], qpu

@@ -182,9 +182,7 @@ unsafe impl Plugin for SpankQrmi {
                 }
 
                 let instance: Option<Box<dyn QuantumResource>> = match qrmi.r#type {
-                    ResourceType::IBMDirectAccess => {
-                        Some(Box::new(IBMDirectAccess::new(qpu_name)))
-                    }
+                    ResourceType::IBMDirectAccess => Some(Box::new(IBMDirectAccess::new(qpu_name))),
                     ResourceType::QiskitRuntimeService => {
                         Some(Box::new(IBMQiskitRuntimeService::new(qpu_name)))
                     }

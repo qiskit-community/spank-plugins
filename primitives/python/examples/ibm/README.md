@@ -78,7 +78,7 @@ System execution time is the amount of time that the system is dedicated to proc
 #### Example
 ```shell-session
 export SLURM_JOB_QPU_RESOURCES=ibm_torino,ibm_marrakesh
-export SLURM_JOB_QPU_TYPES=qiskit-runtime-service
+export SLURM_JOB_QPU_TYPES=qiskit-runtime-service,qiskit-runtime-service
 export ibm_torino_QRMI_IBM_QRS_ENDPOINT=https://quantum.cloud.ibm.com/api/v1
 export ibm_torino_QRMI_IBM_QRS_IAM_ENDPOINT=https://iam.cloud.ibm.com
 export ibm_torino_QRMI_IBM_QRS_IAM_APIKEY=your_apikey

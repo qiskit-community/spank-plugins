@@ -14,8 +14,9 @@
 
 import os
 from logging import getLogger
-from typing import Union, List
-from qrmi import IBMDirectAccess, IBMQiskitRuntimeService
+from typing import List, Union
+
+from qrmi import IBMDirectAccess, IBMQiskitRuntimeService, PasqalCloud
 
 logger = getLogger("qrmi")
 
@@ -42,8 +43,8 @@ class QRMIService:
                 qrmi = IBMDirectAccess(qpu)
             elif qpu_types[i] == "qiskit-runtime-service":
                 qrmi = IBMQiskitRuntimeService(qpu)
-            # elif qpu_types[i] == "pasqal-cloud":
-            #   qrmi = PasqalCloud(qpu)
+            elif qpu_types[i] == "pasqal-cloud":
+              qrmi = PasqalCloud(qpu)
             else:
                 logger.warning(
                     "Unsupported resource type: %s specified for %s", qpu_types[i], qpu
@@ -54,23 +55,23 @@ class QRMIService:
             else:
                 logger.debug("%s is not accessible now. ignored.", qpu)
 
-    def resources(self) -> List[Union[IBMDirectAccess, IBMQiskitRuntimeService]]:
+    def resources(self) -> List[Union[IBMDirectAccess, IBMQiskitRuntimeService, PasqalCloud]]:
         """Return all accessible QRMI resources.
 
         Returns:
-            List[Union[IBMDirectAccess, IBMQiskitRuntimeService]]: QRMI resources
+            List[Union[IBMDirectAccess, IBMQiskitRuntimeService, PasqalCloud]]: QRMI resources
         """
         return list(self._qrmi_resources.values())
 
     def resource(
         self, resource_id: str
-    ) -> Union[IBMDirectAccess, IBMQiskitRuntimeService]:
+    ) -> Union[IBMDirectAccess, IBMQiskitRuntimeService, PasqalCloud]:
         """Return a single backend matching the specified resource identifier.
 
         Args:
             resource_id: A resource identifier, i.e. backend name for IBM Quantum.
 
         Returns:
-            Union[IBMDirectAccess, IBMQiskitRuntimeService]: QRMI resource if found, otherwise None.
+            Union[IBMDirectAccess, IBMQiskitRuntimeService, PasqalCloud]: QRMI resource if found, otherwise None.
         """
         return self._qrmi_resources.get(resource_id)

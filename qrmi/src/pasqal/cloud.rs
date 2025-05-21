@@ -14,18 +14,9 @@ use crate::models::{Payload, Target, TaskResult, TaskStatus};
 use crate::QuantumResource;
 use anyhow::{bail, Result};
 use pasqal_cloud_api::{BatchStatus, Client, ClientBuilder, DeviceType};
-//use retry_policies::policies::ExponentialBackoff;
-//use retry_policies::Jitter;
-//use serde_json::json;
 use std::collections::HashMap;
 use std::env;
-// use std::str::FromStr;
-// use std::time::Duration;
 use uuid::Uuid;
-
-// python binding
-//use pyo3::exceptions::PyTypeError;
-use pyo3::prelude::*;
 
 // c binding
 use crate::consts::{QRMI_ERROR, QRMI_SUCCESS};
@@ -34,108 +25,30 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
 /// QRMI implementation for Pasqal Cloud
-#[pyclass]
 pub struct PasqalCloud {
     pub(crate) api_client: Client,
     pub(crate) backend_name: String,
 }
 
-#[pymethods]
 impl PasqalCloud {
     /// Constructs a QRMI to access Pasqal Cloud Service
     ///
     /// # Environment variables
     ///
-    /// * `QRMI_PASQAL_CLOUD_PROJECT_ID`: Pasqal Cloud Project ID to access the QPU
-    /// * `QRMI_PASQAL_CLOUD_AUTH_TOKEN`: Pasqal Cloud Auth Token
+    /// * `<backend_name>_QRMI_PASQAL_CLOUD_PROJECT_ID`: Pasqal Cloud Project ID to access the QPU
+    /// * `<backend_name>_QRMI_PASQAL_CLOUD_AUTH_TOKEN`: Pasqal Cloud Auth Token
+    ///
     /// Let's hardcode the rest for now
-    #[new]
-    pub fn new(resource_id: &str) -> Self {
+    pub fn new(backend_name: &str) -> Self {
         // Check to see if the environment variables required to run this program are set.
         let project_id =
-            env::var("QRMI_PASQAL_CLOUD_PROJECT_ID").expect("QRMI_PASQAL_CLOUD_PROJECT_ID");
+            env::var(format!("{backend_name}_QRMI_PASQAL_CLOUD_PROJECT_ID")).unwrap_or_else(|_| panic!("{backend_name}_QRMI_PASQAL_CLOUD_PROJECT_ID"));
         let auth_token =
-            env::var("QRMI_PASQAL_CLOUD_AUTH_TOKEN").expect("QRMI_PASQAL_CLOUD_AUTH_TOKEN");
+            env::var(format!("{backend_name}_QRMI_PASQAL_CLOUD_AUTH_TOKEN")).unwrap_or_else(|_| panic!("{backend_name}_QRMI_PASQAL_CLOUD_AUTH_TOKEN"));
         Self {
             api_client: ClientBuilder::new(auth_token, project_id).build().unwrap(),
-            backend_name: resource_id.to_string(),
+            backend_name: backend_name.to_string(),
         }
-    }
-
-    /// Python binding of QRMI is_accessible() function.
-    #[pyo3(name = "is_accessible")]
-    fn pyfunc_is_accessible(&mut self) -> PyResult<bool> {
-        Ok(self.is_accessible())
-    }
-
-    /// Python binding of QRMI acquire() function.
-    #[pyo3(name = "acquire")]
-    fn pyfunc_acquire(&mut self) -> PyResult<String> {
-        match self.acquire() {
-            Ok(v) => Ok(v),
-            Err(v) => Err(v.into()),
-        }
-    }
-
-    /// Python binding of QRMI release() function.
-    #[pyo3(name = "release")]
-    fn pyfunc_release(&mut self, id: &str) -> PyResult<()> {
-        match self.release(id) {
-            Ok(()) => Ok(()),
-            Err(v) => Err(v.into()),
-        }
-    }
-
-    /// Python binding of QRMI task_start() function.
-    #[pyo3(name = "task_start")]
-    fn pyfunc_task_start(&mut self, payload: Payload) -> PyResult<String> {
-        match self.task_start(payload) {
-            Ok(v) => Ok(v),
-            Err(v) => Err(v.into()),
-        }
-    }
-
-    /// Python binding of QRMI task_stop() function.
-    #[pyo3(name = "task_stop")]
-    fn pyfunc_task_stop(&mut self, task_id: &str) -> PyResult<()> {
-        match self.task_stop(task_id) {
-            Ok(()) => Ok(()),
-            Err(v) => Err(v.into()),
-        }
-    }
-
-    /// Python binding of QRMI task_status() function.
-    #[pyo3(name = "task_status")]
-    fn pyfunc_task_status(&mut self, task_id: &str) -> PyResult<TaskStatus> {
-        match self.task_status(task_id) {
-            Ok(v) => Ok(v),
-            Err(v) => Err(v.into()),
-        }
-    }
-
-    /// Python binding of QRMI task_result() function.
-    #[pyo3(name = "task_result")]
-    fn pyfunc_task_result(&mut self, task_id: &str) -> PyResult<TaskResult> {
-        match self.task_result(task_id) {
-            Ok(v) => Ok(v),
-            Err(v) => Err(v.into()),
-        }
-    }
-
-    /// Python binding of QRMI target() function.
-    #[pyo3(name = "target")]
-    fn pyfunc_target(&mut self) -> PyResult<Target> {
-        match self.target() {
-            Ok(v) => Ok(v),
-            Err(v) => Err(v.into()),
-        }
-    }
-
-    /// Python binding of QRMI metadata() function.
-    #[pyo3(name = "metadata")]
-    fn pyfunc_metadata(&mut self) -> PyResult<HashMap<String, String>> {
-        let metadata: HashMap<String, String> = HashMap::new();
-        Ok(metadata)
     }
 }
 

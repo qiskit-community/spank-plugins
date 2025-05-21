@@ -74,7 +74,7 @@ pub struct Job {
 pub struct Batch {
     pub sequence_builder: String,
     pub jobs: Vec<Job>,
-    pub device_type: DeviceType,
+    pub device_type: String,
     pub project_id: String,
 }
 
@@ -102,7 +102,7 @@ impl Client {
         let batch = Batch {
             sequence_builder: sequence,
             jobs: Vec::from([Job { runs: job_runs }]),
-            device_type,
+            device_type: device_type.to_string(),
             project_id: self.project_id.clone(),
         };
         self.post(&url, batch).await

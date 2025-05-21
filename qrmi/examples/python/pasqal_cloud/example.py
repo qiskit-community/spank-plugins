@@ -17,7 +17,7 @@
 import argparse
 import time
 
-from qrmi import PasqalCloud, Payload, TaskStatus
+from qrmi import Payload, QuantumResource, ResourceType, TaskStatus
 
 parser = argparse.ArgumentParser(description="An example of Pasqal Cloud QRMI")
 parser.add_argument(
@@ -30,7 +30,7 @@ with open(args.input, encoding="utf-8") as f:
     serialized_sequence = f.read()
 
 # instantiate a QRMI
-qrmi = PasqalCloud(args.backend)
+qrmi = QuantumResource(args.backend, ResourceType.PasqalCloud)
 
 # Check if QR it's accessible
 is_avail = qrmi.is_accessible()

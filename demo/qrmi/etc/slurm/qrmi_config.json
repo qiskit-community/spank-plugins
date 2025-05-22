@@ -41,10 +41,11 @@
       }
     },
     {
-      "name": "pasqal",
+      "name": "FRESNEL",
       "type": "pasqal-cloud",
       "environment": {
-        "QRMI_PASQAL_CLOUD_ENDPOINT": "http://"
+        "QRMI_PASQAL_CLOUD_PROJECT_ID": "",
+        "QRMI_PASQAL_CLOUD_AUTH_TOKEN": ""
       }
     }
   ]

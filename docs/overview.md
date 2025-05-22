@@ -42,7 +42,7 @@ A `Quantum Computer` is comprised of the QPU and the classical compute needed to
 https://slurm.schedmd.com/spank.html
 
 ### Spank quantum plugin
-A plugin in slurm that manages the operation of quantum jobs in slurm. It handles slurm resources related to quantum and is configured so that jobs can execute on Quantum Computers. 
+A plugin in Slurm that manages the operation of quantum jobs in Slurm. It handles Slurm resources related to quantum and is configured so that jobs can execute on Quantum Computers. 
 
 ### Qiskit primitives (Sampler and Estimator)
 The two most common tasks for quantum computers are sampling quantum states and calculating expectation values. These tasks motivated the design of the Qiskit primitives: `Estimator` and `Sampler`.
@@ -60,11 +60,18 @@ Extension of the context overview of involved components, personas and backend s
 ## Vendor-Specific Definitions: IBM
 
 ### IBM Quantum Platform
-Cloud-based quantum computing iservice providing access to IBM's fleet of quantum backends. Sometimes abbreviated as IQP.
+Cloud-based quantum computing service providing access to IBM's fleet of quantum backends. Sometimes abbreviated as IQP.
 
 ### Direct Access API
 Local interface to am IBM Quantum Computer. Sometimes abbreviated as DA API. Below the Direct Access API, classical preparation of jobs prior to the actual quantum execution can run in parallel (called *lanes* in the API definition).
 
+## Vendor-Specific Definitions: Pasqal
+
+### Pasqal Cloud Service
+Cloud-based quantum computing service providing access to Pasqal QPU's and emulators. Sometimes abbreviated as PCS.
+
+### Pulser
+Pasqal's native programming library [GitHub](https://github.com/pasqal-io/pulser). Supported in the low-level interfaces such as the QRMI.
 
 ## High Level Structure
 
@@ -95,17 +102,17 @@ Any type of resource should implement resource control interface. Flow of workin
 ## Integration Flow
 
 Similar to any Gres resource (GPU, AIU, etc), we treat QPU as gres and acquire it for whole duration of the job.
-Primitive calls will manage the data and call towards the Quantum Computer (for most cases through slurm to govern user access to the slurm-level quantum resource and potentially inject Quantum Computer access credentials)
+Primitive calls will manage the data and call towards the Quantum Computer (for most cases through Slurm to govern user access to the slurm-level quantum resource and potentially inject Quantum Computer access credentials)
 
 ![integration Flow](./images/integration_flow.png)
 
-This avoids drawbacks of other options, e.g. when the user application's primitive call will create other slurm jobs that send primitive data towards the Quantum Computer.
+This avoids drawbacks of other options, e.g. when the user application's primitive call will create other Slurm jobs that send primitive data towards the Quantum Computer.
 Having this logic of sending data towards the Quantum Computer in qiskit level code reduces complexity and latency, and avoids complexity in error handling.
 
 ## High Level Flow of Quantum Plugin
 
-This is the high level flow from when slurm jobs are started to how requests find their way to a Quantum Computer.
-Requests refer to any interaction between appliction and Quantum Computer (e.g. including getting configuration information that is needed for transpilation).
+This is the high level flow from when Slurm jobs are started to how requests find their way to a Quantum Computer.
+Requests refer to any interaction between application and Quantum Computer (e.g. including getting configuration information that is needed for transpilation).
 
 ![High Level Flow -- png editable with draw.io, please keep it that way](./images/high-level-plugin-flow.png)
 
@@ -130,15 +137,15 @@ Quantum plugin will be using Spank architecture events sequence of call during j
 ## Architectural Tenents
 
 * A Slurm-level QPU resource maps to physical resource of a Quantum Computer
-  * Quantum backend selection is part of that slurm resource definition and is considered configuration, not source code
-  * Qiskit-level code can refer to that slurm resource and access/use the quantum resource behind it. Qiskit-level code should avoid naming the desired backend directly (=> it should be part of the slurm resource definition instead)
-  * slurm QPU resources have an identity (allowing to bind against it from qiskit)
-  * additional qualifiers of the slurm QPU resource are backend type specific
-  * parallelism abstracts (such as execution lanes which are anonymous units to prepare jobs in parallel for quantum execution which is still serialized) are abstracted behind the slurm QPU resource. Qualifiers may be used to deal with specifics (such as: are these lanes held exclusive for one user, or is there a shared access possible)
+  * Quantum backend selection is part of that Slurm resource definition and is considered configuration, not source code
+  * Qiskit-level code can refer to that Slurm resource and access/use the quantum resource behind it. Qiskit-level code should avoid naming the desired backend directly (=> it should be part of the Slurm resource definition instead)
+  * Slurm QPU resources have an identity (allowing to bind against it from qiskit)
+  * additional qualifiers of the Slurm QPU resource are backend type specific
+  * parallelism abstracts (such as execution lanes which are anonymous units to prepare jobs in parallel for quantum execution which is still serialized) are abstracted behind the Slurm QPU resource. Qualifiers may be used to deal with specifics (such as: are these lanes held exclusive for one user, or is there a shared access possible)
 * Quantum resources are acquired/locked before usage
-  * as identification/selection of the quantum resource is through the slurm resource, transpilation can only happen after that
+  * as identification/selection of the quantum resource is through the Slurm resource, transpilation can only happen after that
   * initially, transpilation will happen after acquiring the resource, which can can lead to slightly lower QPU utilization, as other jobs may be locked out. This may (should!) be improved in a later phase and requires an extended concept (such as first step is define the resource, which may or may not result in actions, second step is lock for execution) -- more details required at a later time!
 * Primitive calls will trigger submission towards the Quantum Computer
-  * Flow is triggered from the qiskit-level code, without scheduling additional intermediate slurm jobs
-  * The network flow can go through the slurm plugin, to govern user access or manage access to the Quantum Computer
+  * Flow is triggered from the qiskit-level code, without scheduling additional intermediate Slurm jobs
+  * The network flow can go through the Slurm plugin, to govern user access or manage access to the Quantum Computer
   * The network/data flow can be specific to a backend type (using intermediate storage to hold input/output data, or sending data in-line)

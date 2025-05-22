@@ -37,3 +37,4 @@ For information on how to contribute to this project, please take a look at our 
 1. Slurm documentation https://slurm.schedmd.com/
 2. Qiskit https://www.ibm.com/quantum/qiskit
 3. IBM Quantum https://www.ibm.com/quantum
+4. Pasqal https://pasqal.com

@@ -4,7 +4,7 @@ HPC user experience, HPC developer experience and usage patterns
 ## Content
 
 - [Principles](#principles)
-- [Connecting physical resources to slurm resoures and how to use them](#connecting-physical-resources-to-slurm-resoures-and-how-to-use-them)
+- [Connecting physical resources to Slurm resoures and how to use them](#connecting-physical-resources-to-slurm-resources-and-how-to-use-them)
   - [HPC admin scope](#hpc-admin-scope)
   - [HPC user scope](#hpc-user-scope)
   - [HPC application scope](#hpc-application-scope)
@@ -13,7 +13,7 @@ HPC user experience, HPC developer experience and usage patterns
     - [Qiskit Runtime Service](#qiskit-runtime-service)
 - [Examples](#examples)
   - [Running jobs with dependencies](#running-jobs-with-dependencies)
-  - [Running a job with several slurm QPU resources](#running-a-job-with-several-slurm-qpu-resources)
+  - [Running a job with several Slurm QPU resources](#running-a-job-with-several-slurm-qpu-resources)
   - [Running primitives directly](#running-primitives-directly)
   - [Other workflow tools](#other-workflow-tools)
 
@@ -21,21 +21,21 @@ See [Overview](./overview.md) for a glossary of terms.
 
 ## Principles
 
-Slurm QPU resource definitions determine what physical resources can be used by slurm jobs.
+Slurm QPU resource definitions determine what physical resources can be used by Slurm jobs.
 User source code should be agnostic to specific backend instances and even backend types as far as possible.
 This keeps source code portable while the QPU selection criteria are part of the resource definition (which is considered configuration as opposed to source code).
-The source code does not have to take care resp. is not involved in resource reservation handling (that is done when slurm jobs are assigned QPU resources and start running, if applicable on the backend) or execution modes like sessions (these are automatically in place while the job is running, if applicable on the backend).
+The source code does not have to take care resp. is not involved in resource reservation handling (that is done when Slurm jobs are assigned QPU resources and start running, if applicable on the backend) or execution modes like sessions (these are automatically in place while the job is running, if applicable on the backend).
 This makes the source code more portable between similar QPU resource types through different backend access methods (such as IBM's Direct Access API and IBM's Qiskit Runtime service through IBM Quantum Platform).
 All backend types (such as IBM's Direct Access API, IBM's Qiskit Runtime service, or Pasqal's backends) follow these principles.
 
-## Connecting physical resources to slurm resoures and how to use them
+## Connecting physical resources to Slurm resources and how to use them
 
 Note the exact syntax is subject to change -- this is a sketch of the UX at this time.
 
 ### HPC admin scope
 
-HPC administrators configure the SPANK plugin, what physical resources can be provided to slurm jobs.
-This configuration contains all the information needed to have slurm jobs access the physical resources, such as endpoints, and access credentials -- note some parts of the configuration such as credentials can be sensitive information.
+HPC administrators configure the SPANK plugin, what physical resources can be provided to Slurm jobs.
+This configuration contains all the information needed to have Slurm jobs access the physical resources, such as endpoints, and access credentials -- note some parts of the configuration such as credentials can be sensitive information.
 
 See the file [qrmi_config.json.example](../plugins/spank_ibm/qrmi_config.json.example) for a comprehensive example showing.
 
@@ -49,7 +49,7 @@ NodeName=node[1-5000] Gres=qpu,name:ibm_fez
 
 ### HPC user scope
 
-HPC users submit jobs using QPU resources that are tied to slurm QPU resources.
+HPC users submit jobs using QPU resources that are tied to Slurm QPU resources.
 The name attribute references what the HPC administrator has defined.
 Mid-term, backend selection can be based on criteria other than a predefined name which refers to a specific backend (e.g. by capacity and error rate qualifiers which help downselect between the defined set of backends).
 
@@ -82,7 +82,7 @@ srun ...
 
 ### HPC application scope
 
-HPC applications use the slurm QPU resources assigned to the slurm job.
+HPC applications use the Slurm QPU resources assigned to the Slurm job.
 
 Environment variables provide more details for use by the appliction, e.g. `SLURM_JOB_QPU_RESOURCES` listing the quantum resource names (comma separated if there are several provided).
 These variables will be used by QRMI.
@@ -144,12 +144,12 @@ Specifically, this includes:
 Access credentials should not be visible to HPC users or other non-privileged users on the system.
 Therefore, sensitive data can be put in separate files which can be access protected accordingly.
 
-Note that slurm has got full access to the backend.
+Note that Slurm has got full access to the backend.
 This has several implications:
 
-* the slurm plugin is responsible for multi-tenancy (ensuring that users don't see results of other users' jobs)
+* the Slurm plugin is responsible for multi-tenancy (ensuring that users don't see results of other users' jobs)
 * vetting of users (who is allowed to access the QPU) and ensuring according access is up to the HPC cluster side
-* the capacity and priority of the QPU usage is solely managed through slurm; there is not other scheduling of users involved outside of slurm
+* the capacity and priority of the QPU usage is solely managed through Slurm; there is not other scheduling of users involved outside of Slurm
 
 ##### HPC user scope
 Execution lanes are not exposed to the HPC administrator or user directly.
@@ -176,7 +176,19 @@ At this time, users have to provide the above details (no shared cluster-wide Qu
 
 #### Pasqal
 
-tbd.
+#### Pasqal Cloud Services
+##### HPC admin scope
+There is no specific set-up required from HPC admins for PCS usage.
+
+##### HPC user scope
+It is expected, that users specify additional access details in environment variables.
+Specifically, this currently includes
+
+* PCS resource to target (FRESNEL, EMU_FRESNEL, EMU_MPS)
+* Authorization token
+
+#### Pasqal on-prem devices
+TBD.
 
 ## Examples
 
@@ -185,7 +197,7 @@ tbd.
 FIXME: show example with 1 classical job => 1 quantum job (python pseudo code)=> 1 classical job.
 Main topic: show dependencies
 
-### Running a job with several slurm QPU resources
+### Running a job with several Slurm QPU resources
 
 FIXME: show example (quantum only, python, is good enough) where several backends are defined, referenced and used
 Main topic: show how ids play an important role in that case

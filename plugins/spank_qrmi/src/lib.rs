@@ -27,6 +27,7 @@ mod models;
 use self::models::{QRMIResource, QRMIResources, ResourceType};
 
 use qrmi::ibm::{IBMDirectAccess, IBMQiskitRuntimeService};
+use qrmi::pasqal::PasqalCloud;
 use qrmi::QuantumResource;
 
 const SLURM_BATCH_SCRIPT: u32 = 0xfffffffb;
@@ -186,8 +187,8 @@ unsafe impl Plugin for SpankQrmi {
                     ResourceType::QiskitRuntimeService => {
                         Some(Box::new(IBMQiskitRuntimeService::new(qpu_name)))
                     }
-                    _ => {
-                        None // skip unsupported type
+                    ResourceType::PasqalCloud => {
+                        Some(Box::new(PasqalCloud::new(qpu_name)))
                     }
                 };
 
@@ -257,8 +258,9 @@ unsafe impl Plugin for SpankQrmi {
                             let mut instance = IBMQiskitRuntimeService::new(name);
                             let _ = instance.release(token);
                         }
-                        _ => {
-                            // skip unsupported type
+                        ResourceType::PasqalCloud => {
+                            let mut instance = PasqalCloud::new(name);
+                            let _ = instance.release(token);
                         }
                     }
                 }

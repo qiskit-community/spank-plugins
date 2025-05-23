@@ -10,9 +10,9 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 //
-use eyre::WrapErr;
+use eyre::{eyre, WrapErr};
 use slurm_spank::{Context, Plugin, SpankHandle, SpankOption, SLURM_VERSION_NUMBER, SPANK_PLUGIN};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use std::error::Error;
 use std::process;
@@ -57,17 +57,17 @@ macro_rules! enter {
 macro_rules! dump_context {
     ($spank:expr) => {
         if let Ok(result) = $spank.job_id() {
-            info!("S_JOB_ID = {}", result);
+            debug!("S_JOB_ID = {}", result);
         } else {
-            info!("S_JOB_ID =");
+            debug!("S_JOB_ID =");
         }
         if let Ok(result) = $spank.job_stepid() {
-            info!("S_JOB_STEPID = {:x}", result);
+            debug!("S_JOB_STEPID = {:x}", result);
         } else {
-            info!("S_JOB_STEPID =");
+            debug!("S_JOB_STEPID =");
         }
-        info!("S_JOB_ARGV = {:#?}", $spank.job_argv().unwrap_or(vec!()));
-        info!(
+        debug!("S_JOB_ARGV = {:#?}", $spank.job_argv().unwrap_or(vec!()));
+        debug!(
             "S_PLUGIN_ARGV = {:#?}",
             $spank.plugin_argv().unwrap_or(vec!())
         );
@@ -139,12 +139,19 @@ unsafe impl Plugin for SpankQrmi {
             .get_option_value("qpu")
             .wrap_err("Failed to read --qpu=names option")?
             .map(|s| s.to_string());
-        if qpu_option.is_none() {
-            // do nothing if not qpu job
-            return Ok(());
-        }
 
-        let binding = qpu_option.unwrap();
+        let binding = match qpu_option {
+            Some(v) => v,
+            None => {
+                // do nothing if not qpu job
+                return Ok(());
+            }
+        };
+
+        // initialize environment variables
+        spank.setenv("SLURM_JOB_QPU_RESOURCES", "", true)?;
+        spank.setenv("SLURM_JOB_QPU_TYPES", "", true)?;
+
         let qpu_names: Vec<&str> = binding.split(",").map(|l| l.trim()).collect();
         info!("qpu names = {:#?}", qpu_names);
 
@@ -152,11 +159,21 @@ unsafe impl Plugin for SpankQrmi {
         if plugin_argv.len() != 1 {
             return Ok(());
         }
-        let f = File::open(plugin_argv[0]).expect("qrmi_config.json not found");
+        let f = match File::open(plugin_argv[0]) {
+            Ok(v) => v,
+            Err(err) => {
+                return Err(eyre!(
+                    "Failed to open {}. reason = {}",
+                    plugin_argv[0],
+                    err.to_string()
+                )
+                .into());
+            }
+        };
         let mut buf_reader = BufReader::new(f);
         let mut config_json_str = String::new();
         buf_reader.read_to_string(&mut config_json_str)?;
-        let config = serde_json::from_str::<QRMIResources>(&config_json_str).unwrap();
+        let config = serde_json::from_str::<QRMIResources>(&config_json_str)?;
 
         let mut config_map: HashMap<String, QRMIResource> = HashMap::new();
         for qrmi in config.resources {
@@ -182,41 +199,37 @@ unsafe impl Plugin for SpankQrmi {
                     env::set_var(format!("{qpu_name}_{key}"), value);
                 }
 
-                let instance: Option<Box<dyn QuantumResource>> = match qrmi.r#type {
-                    ResourceType::IBMDirectAccess => Some(Box::new(IBMDirectAccess::new(qpu_name))),
+                let mut instance: Box<dyn QuantumResource> = match qrmi.r#type {
+                    ResourceType::IBMDirectAccess => Box::new(IBMDirectAccess::new(qpu_name)),
                     ResourceType::QiskitRuntimeService => {
-                        Some(Box::new(IBMQiskitRuntimeService::new(qpu_name)))
+                        Box::new(IBMQiskitRuntimeService::new(qpu_name))
                     }
-                    ResourceType::PasqalCloud => {
-                        Some(Box::new(PasqalCloud::new(qpu_name)))
-                    }
+                    ResourceType::PasqalCloud => Box::new(PasqalCloud::new(qpu_name)),
                 };
 
-                if let Some(mut v) = instance {
-                    let token: Option<String> = match v.acquire() {
-                        Ok(v) => Some(v),
-                        Err(err) => {
-                            error!("qrmi.acquire() failed: {:#?}", err);
-                            None
-                        }
-                    };
-                    if let Some(acquisition_token) = token {
-                        info!("acquisition token = {}", acquisition_token);
-                        spank.setenv(
-                            format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),
-                            &acquisition_token,
-                            true,
-                        )?;
-                        spank.setenv(
-                            format!("{qpu_name}_QRMI_IBM_QRS_SESSION_ID"),
-                            &acquisition_token,
-                            true,
-                        )?;
-                        avail_names.push(qpu_name.to_string());
-                        avail_types.push(qrmi.r#type.as_str().to_string());
-                        types.push(qrmi.r#type.clone());
-                        acquisition_tokens.push(acquisition_token);
+                let token: Option<String> = match instance.acquire() {
+                    Ok(v) => Some(v),
+                    Err(err) => {
+                        error!("qrmi.acquire() failed: {:#?}", err);
+                        None
                     }
+                };
+                if let Some(acquisition_token) = token {
+                    debug!("acquisition token = {}", acquisition_token);
+                    spank.setenv(
+                        format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),
+                        &acquisition_token,
+                        true,
+                    )?;
+                    spank.setenv(
+                        format!("{qpu_name}_QRMI_IBM_QRS_SESSION_ID"),
+                        &acquisition_token,
+                        true,
+                    )?;
+                    avail_names.push(qpu_name.to_string());
+                    avail_types.push(qrmi.r#type.as_str().to_string());
+                    types.push(qrmi.r#type.clone());
+                    acquisition_tokens.push(acquisition_token);
                 }
             }
         }

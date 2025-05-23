@@ -1,0 +1,18 @@
+diff -Naru slurm-docker-cluster/.env slurm-docker-cluster.centos9/.env
+--- slurm-docker-cluster/.env	2025-05-24 01:07:36
++++ slurm-docker-cluster.centos9/.env	2025-05-24 01:08:22
+@@ -3,4 +3,4 @@
+ 
+ # Image version used to tag the container at build time (Typically matches the
+ # Slurm tag in semantic version form)
+-IMAGE_TAG=24.11.5.1-dev
++IMAGE_TAG=24.11.5.1-centos9-dev
+diff -Naru slurm-docker-cluster/Dockerfile slurm-docker-cluster.centos9/Dockerfile
+--- slurm-docker-cluster/Dockerfile	2025-05-24 01:07:39
++++ slurm-docker-cluster.centos9/Dockerfile	2025-05-24 01:08:25
+@@ -1,4 +1,4 @@
+-FROM rockylinux:9
++FROM quay.io/centos/centos:stream9
+ 
+ LABEL org.opencontainers.image.source="https://github.com/giovtorres/slurm-docker-cluster" \
+       org.opencontainers.image.title="slurm-docker-cluster" \

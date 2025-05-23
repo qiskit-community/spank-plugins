@@ -49,6 +49,20 @@ popd
 patch -p1 < ./shared/spank-plugins/demo/qrmi/slurm-docker-cluster/file.patch
 ```
 
+Rocky Linux 9 is used as default. If you want to another  operating system, apply additional patch.
+
+##### CentOS Stream 9
+
+```bash
+patch -p1 < ./shared/spank-plugins/demo/qrmi/slurm-docker-cluster/centos9.patch
+```
+
+##### CentOS Stream 10
+
+```bash
+patch -p1 < ./shared/spank-plugins/demo/qrmi/slurm-docker-cluster/centos10.patch
+```
+
 #### 5. Building containers
 
 ```bash

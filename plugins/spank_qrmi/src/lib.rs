@@ -210,7 +210,12 @@ unsafe impl Plugin for SpankQrmi {
                 let token: Option<String> = match instance.acquire() {
                     Ok(v) => Some(v),
                     Err(err) => {
-                        error!("qrmi.acquire() failed: {:#?}", err);
+                        error!(
+                            "Failed to acquire quantum resource: {}/{:#?}, reason: {}",
+                            qpu_name,
+                            qrmi.r#type,
+                            err.to_string()
+                        );
                         None
                     }
                 };
@@ -269,7 +274,17 @@ unsafe impl Plugin for SpankQrmi {
                         }
                         ResourceType::PasqalCloud => Box::new(PasqalCloud::new(name)),
                     };
-                    let _ = instance.release(token);
+                    match instance.release(token) {
+                        Ok(()) => (),
+                        Err(err) => {
+                            error!(
+                                "Failed to release quantum resource: {}/{:#?}. reason = {}",
+                                name,
+                                res_type,
+                                err.to_string()
+                            );
+                        }
+                    }
                 }
             }
         }

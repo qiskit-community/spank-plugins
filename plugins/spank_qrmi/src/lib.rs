@@ -199,7 +199,7 @@ unsafe impl Plugin for SpankQrmi {
                     env::set_var(format!("{qpu_name}_{key}"), value);
                 }
 
-                let instance: Box<dyn QuantumResource> = match qrmi.r#type {
+                let mut instance: Box<dyn QuantumResource> = match qrmi.r#type {
                     ResourceType::IBMDirectAccess => Box::new(IBMDirectAccess::new(qpu_name)),
                     ResourceType::QiskitRuntimeService => {
                         Box::new(IBMQiskitRuntimeService::new(qpu_name))
@@ -207,7 +207,7 @@ unsafe impl Plugin for SpankQrmi {
                     ResourceType::PasqalCloud => Box::new(PasqalCloud::new(qpu_name)),
                 };
 
-                let token: Option<String> = match v.acquire() {
+                let token: Option<String> = match instance.acquire() {
                     Ok(v) => Some(v),
                     Err(err) => {
                         error!("qrmi.acquire() failed: {:#?}", err);

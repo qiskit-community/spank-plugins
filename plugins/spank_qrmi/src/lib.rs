@@ -148,8 +148,10 @@ unsafe impl Plugin for SpankQrmi {
             }
         };
 
+        // initialize environment variables
         spank.setenv("SLURM_JOB_QPU_RESOURCES", "", true)?;
         spank.setenv("SLURM_JOB_QPU_TYPES", "", true)?;
+
         let qpu_names: Vec<&str> = binding.split(",").map(|l| l.trim()).collect();
         info!("qpu names = {:#?}", qpu_names);
 
@@ -197,39 +199,37 @@ unsafe impl Plugin for SpankQrmi {
                     env::set_var(format!("{qpu_name}_{key}"), value);
                 }
 
-                let instance: Option<Box<dyn QuantumResource>> = match qrmi.r#type {
-                    ResourceType::IBMDirectAccess => Some(Box::new(IBMDirectAccess::new(qpu_name))),
+                let instance: Box<dyn QuantumResource> = match qrmi.r#type {
+                    ResourceType::IBMDirectAccess => Box::new(IBMDirectAccess::new(qpu_name)),
                     ResourceType::QiskitRuntimeService => {
-                        Some(Box::new(IBMQiskitRuntimeService::new(qpu_name)))
+                        Box::new(IBMQiskitRuntimeService::new(qpu_name))
                     }
-                    ResourceType::PasqalCloud => Some(Box::new(PasqalCloud::new(qpu_name))),
+                    ResourceType::PasqalCloud => Box::new(PasqalCloud::new(qpu_name)),
                 };
 
-                if let Some(mut v) = instance {
-                    let token: Option<String> = match v.acquire() {
-                        Ok(v) => Some(v),
-                        Err(err) => {
-                            error!("qrmi.acquire() failed: {:#?}", err);
-                            None
-                        }
-                    };
-                    if let Some(acquisition_token) = token {
-                        info!("acquisition token = {}", acquisition_token);
-                        spank.setenv(
-                            format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),
-                            &acquisition_token,
-                            true,
-                        )?;
-                        spank.setenv(
-                            format!("{qpu_name}_QRMI_IBM_QRS_SESSION_ID"),
-                            &acquisition_token,
-                            true,
-                        )?;
-                        avail_names.push(qpu_name.to_string());
-                        avail_types.push(qrmi.r#type.as_str().to_string());
-                        types.push(qrmi.r#type.clone());
-                        acquisition_tokens.push(acquisition_token);
+                let token: Option<String> = match v.acquire() {
+                    Ok(v) => Some(v),
+                    Err(err) => {
+                        error!("qrmi.acquire() failed: {:#?}", err);
+                        None
                     }
+                };
+                if let Some(acquisition_token) = token {
+                    debug!("acquisition token = {}", acquisition_token);
+                    spank.setenv(
+                        format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),
+                        &acquisition_token,
+                        true,
+                    )?;
+                    spank.setenv(
+                        format!("{qpu_name}_QRMI_IBM_QRS_SESSION_ID"),
+                        &acquisition_token,
+                        true,
+                    )?;
+                    avail_names.push(qpu_name.to_string());
+                    avail_types.push(qrmi.r#type.as_str().to_string());
+                    types.push(qrmi.r#type.clone());
+                    acquisition_tokens.push(acquisition_token);
                 }
             }
         }

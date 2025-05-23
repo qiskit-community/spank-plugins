@@ -47,7 +47,7 @@ struct SpankQrmi {
 /// Log entering function
 macro_rules! enter {
     () => {
-        info!("PID = {}, UID = {}", process::id(), unsafe {
+        debug!("PID = {}, UID = {}", process::id(), unsafe {
             libc::getuid()
         });
     };
@@ -261,21 +261,15 @@ unsafe impl Plugin for SpankQrmi {
                 for (index, name) in names.iter().enumerate() {
                     let res_type = &types[index];
                     let token = &tokens[index];
-                    info!("releasing {}, {:#?}, {}", name, res_type, token);
-                    match res_type {
-                        ResourceType::IBMDirectAccess => {
-                            let mut instance = IBMDirectAccess::new(name);
-                            let _ = instance.release(token);
-                        }
+                    debug!("releasing {}, {:#?}, {}", name, res_type, token);
+                    let mut instance: Box<dyn QuantumResource> = match res_type {
+                        ResourceType::IBMDirectAccess => Box::new(IBMDirectAccess::new(name)),
                         ResourceType::QiskitRuntimeService => {
-                            let mut instance = IBMQiskitRuntimeService::new(name);
-                            let _ = instance.release(token);
+                            Box::new(IBMQiskitRuntimeService::new(name))
                         }
-                        ResourceType::PasqalCloud => {
-                            let mut instance = PasqalCloud::new(name);
-                            let _ = instance.release(token);
-                        }
-                    }
+                        ResourceType::PasqalCloud => Box::new(PasqalCloud::new(name)),
+                    };
+                    let _ = instance.release(token);
                 }
             }
         }
@@ -291,7 +285,7 @@ unsafe impl Plugin for SpankQrmi {
         dump_context!(spank);
         if let Ok(result) = spank.job_env() {
             // dump job environment variables for development
-            info!("{:#?}", result);
+            debug!("{:#?}", result);
         }
         Ok(())
     }

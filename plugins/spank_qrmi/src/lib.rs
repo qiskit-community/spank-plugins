@@ -37,11 +37,15 @@ const SLURM_BATCH_SCRIPT: u32 = 0xfffffffb;
 // All spank plugins must define this macro for the Slurm plugin loader.
 SPANK_PLUGIN!(b"spank_qrmi", SLURM_VERSION_NUMBER, SpankQrmi);
 
+struct Resource {
+    name: String,
+    r#type: ResourceType,
+    token: String,
+}
+
 #[derive(Default)]
 struct SpankQrmi {
-    qpu_names: Option<Vec<String>>,
-    qpu_types: Option<Vec<ResourceType>>,
-    acquisition_tokens: Option<Vec<String>>,
+    resources: Vec<Resource>,
 }
 
 /// Log entering function
@@ -180,10 +184,8 @@ unsafe impl Plugin for SpankQrmi {
             config_map.insert(qrmi.name.clone(), qrmi);
         }
 
-        let mut avail_names: Vec<String> = vec![];
-        let mut avail_types: Vec<String> = vec![];
-        let mut types: Vec<ResourceType> = vec![];
-        let mut acquisition_tokens: Vec<String> = Vec::new();
+        let mut avail_names: String = Default::default();
+        let mut avail_types: String = Default::default();
         for qpu_name in qpu_names {
             if let Some(qrmi) = config_map.get(qpu_name) {
                 info!(
@@ -221,29 +223,40 @@ unsafe impl Plugin for SpankQrmi {
                 };
                 if let Some(acquisition_token) = token {
                     debug!("acquisition token = {}", acquisition_token);
-                    spank.setenv(
-                        format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),
-                        &acquisition_token,
-                        true,
-                    )?;
-                    spank.setenv(
-                        format!("{qpu_name}_QRMI_IBM_QRS_SESSION_ID"),
-                        &acquisition_token,
-                        true,
-                    )?;
-                    avail_names.push(qpu_name.to_string());
-                    avail_types.push(qrmi.r#type.as_str().to_string());
-                    types.push(qrmi.r#type.clone());
-                    acquisition_tokens.push(acquisition_token);
+                    match qrmi.r#type { 
+                        ResourceType::IBMDirectAccess => {
+                            spank.setenv(
+                                format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),
+                                &acquisition_token,
+                                true,
+                            )?;
+                        }
+                        ResourceType::QiskitRuntimeService => {
+                            spank.setenv(
+                                format!("{qpu_name}_QRMI_IBM_QRS_SESSION_ID"),
+                                &acquisition_token,
+                                true,
+                            )?;
+                        }
+                        _ => {}
+                    }
+
+                    self.resources.push(Resource {
+                        name: qpu_name.to_string(),
+                        r#type: qrmi.r#type.clone(),
+                        token: acquisition_token,
+                    });
+                    if !avail_names.is_empty() {
+                        avail_names += ",";
+                        avail_types += ",";
+                    }
+                    avail_names += qpu_name;
+                    avail_types += qrmi.r#type.as_str();
                 }
             }
         }
-        spank.setenv("SLURM_JOB_QPU_RESOURCES", avail_names.join(","), true)?;
-        spank.setenv("SLURM_JOB_QPU_TYPES", avail_types.join(","), true)?;
-        self.qpu_names = Some(avail_names);
-        self.qpu_types = Some(types);
-        self.acquisition_tokens = Some(acquisition_tokens);
-
+        spank.setenv("SLURM_JOB_QPU_RESOURCES", avail_names, true)?;
+        spank.setenv("SLURM_JOB_QPU_TYPES", avail_types, true)?;
         Ok(())
     }
 
@@ -258,32 +271,24 @@ unsafe impl Plugin for SpankQrmi {
         if spank.context()? == Context::Remote {
             dump_context!(spank);
 
-            if let (Some(names), Some(types), Some(tokens)) = (
-                self.qpu_names.clone(),
-                self.qpu_types.clone(),
-                self.acquisition_tokens.clone(),
-            ) {
-                for (index, name) in names.iter().enumerate() {
-                    let res_type = &types[index];
-                    let token = &tokens[index];
-                    debug!("releasing {}, {:#?}, {}", name, res_type, token);
-                    let mut instance: Box<dyn QuantumResource> = match res_type {
-                        ResourceType::IBMDirectAccess => Box::new(IBMDirectAccess::new(name)),
-                        ResourceType::QiskitRuntimeService => {
-                            Box::new(IBMQiskitRuntimeService::new(name))
-                        }
-                        ResourceType::PasqalCloud => Box::new(PasqalCloud::new(name)),
-                    };
-                    match instance.release(token) {
-                        Ok(()) => (),
-                        Err(err) => {
-                            error!(
-                                "Failed to release quantum resource: {}/{:#?}. reason = {}",
-                                name,
-                                res_type,
-                                err.to_string()
-                            );
-                        }
+            for res in self.resources.iter() {
+                debug!("releasing {}, {:#?}, {}", res.name, res.r#type, res.token);
+                let mut instance: Box<dyn QuantumResource> = match res.r#type {
+                    ResourceType::IBMDirectAccess => Box::new(IBMDirectAccess::new(&res.name)),
+                    ResourceType::QiskitRuntimeService => {
+                        Box::new(IBMQiskitRuntimeService::new(&res.name))
+                    }
+                    ResourceType::PasqalCloud => Box::new(PasqalCloud::new(&res.name)),
+                };
+                match instance.release(&res.token) {
+                    Ok(()) => (),
+                    Err(err) => {
+                        error!(
+                            "Failed to release quantum resource: {}/{}. reason = {}",
+                            res.name,
+                            res.r#type.as_str(),
+                            err.to_string()
+                        );
                     }
                 }
             }

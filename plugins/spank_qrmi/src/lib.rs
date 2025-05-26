@@ -37,14 +37,19 @@ const SLURM_BATCH_SCRIPT: u32 = 0xfffffffb;
 // All spank plugins must define this macro for the Slurm plugin loader.
 SPANK_PLUGIN!(b"spank_qrmi", SLURM_VERSION_NUMBER, SpankQrmi);
 
+/// Resource metadata
 struct Resource {
+    /// QPU name
     name: String,
+    /// Resource type
     r#type: ResourceType,
+    /// acquisition token which is obtained by QRMI.acquire()
     token: String,
 }
 
 #[derive(Default)]
 struct SpankQrmi {
+    /// A list of available QPU resources
     resources: Vec<Resource>,
 }
 
@@ -152,13 +157,15 @@ unsafe impl Plugin for SpankQrmi {
             }
         };
 
-        // initialize environment variables
+        // initializes job environment variables in case an error is returned within this function.
         spank.setenv("SLURM_JOB_QPU_RESOURCES", "", true)?;
         spank.setenv("SLURM_JOB_QPU_TYPES", "", true)?;
 
+        // converts comma separated string to string array
         let qpu_names: Vec<&str> = binding.split(",").map(|l| l.trim()).collect();
         info!("qpu names = {:#?}", qpu_names);
 
+        // tries to open qrmi_config.json
         let plugin_argv = spank.plugin_argv().unwrap_or_default();
         if plugin_argv.len() != 1 {
             return Ok(());
@@ -174,9 +181,12 @@ unsafe impl Plugin for SpankQrmi {
                 .into());
             }
         };
+
+        // reads qrmi_config.json and parse it. 
         let mut buf_reader = BufReader::new(f);
         let mut config_json_str = String::new();
         buf_reader.read_to_string(&mut config_json_str)?;
+        // returns Err if fails to parse a file - invalid JSON, invalid resource type etc.
         let config = serde_json::from_str::<QRMIResources>(&config_json_str)?;
 
         let mut config_map: HashMap<String, QRMIResource> = HashMap::new();
@@ -184,6 +194,7 @@ unsafe impl Plugin for SpankQrmi {
             config_map.insert(qrmi.name.clone(), qrmi);
         }
 
+        // list of QPU names & types that have successfully called QRMI.acquire().
         let mut avail_names: String = Default::default();
         let mut avail_types: String = Default::default();
         for qpu_name in qpu_names {
@@ -223,7 +234,8 @@ unsafe impl Plugin for SpankQrmi {
                 };
                 if let Some(acquisition_token) = token {
                     debug!("acquisition token = {}", acquisition_token);
-                    match qrmi.r#type { 
+                    match qrmi.r#type {
+                        // TODO: Use unified environmet variable name
                         ResourceType::IBMDirectAccess => {
                             spank.setenv(
                                 format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),
@@ -246,6 +258,8 @@ unsafe impl Plugin for SpankQrmi {
                         r#type: qrmi.r#type.clone(),
                         token: acquisition_token,
                     });
+
+                    // re-creates comma separated values
                     if !avail_names.is_empty() {
                         avail_names += ",";
                         avail_types += ",";

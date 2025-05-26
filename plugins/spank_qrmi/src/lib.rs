@@ -235,7 +235,7 @@ unsafe impl Plugin for SpankQrmi {
                 if let Some(acquisition_token) = token {
                     debug!("acquisition token = {}", acquisition_token);
                     match qrmi.r#type {
-                        // TODO: Use unified environmet variable name
+                        // TODO: Use unified environment variable name
                         ResourceType::IBMDirectAccess => {
                             spank.setenv(
                                 format!("{qpu_name}_QRMI_IBM_DA_SESSION_ID"),

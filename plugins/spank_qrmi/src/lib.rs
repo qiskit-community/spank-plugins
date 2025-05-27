@@ -204,12 +204,28 @@ unsafe impl Plugin for SpankQrmi {
                     qpu_name, qrmi.r#type, qrmi.environment
                 );
 
-                // Set environment variables specified in config file.
+                // If user specifies access details in environment variables,
+                // these are available as job environment variables. Reads through them and
+                // set user-specified {qpu_name}_QRMI_xxx env vars to this slurm daemon process
+                // for subsequent QRMI.acquire/release call.
+                if let Ok(result) = spank.job_env() {
+                    for env in result {
+                        if let Some((key, value)) = env.split_once("=") {
+                            if key.starts_with(&format!("{qpu_name}_QRMI_")) {
+                                debug!("set user-specified envvar: {} = {}", key, value);
+                                env::set_var(key, value);
+                            }
+                        }
+                    }
+                }
+
+                // Next, set environment variables specified in config file.
                 for (key, value) in &qrmi.environment {
-                    // set to job's envronment
-                    spank.setenv(format!("{qpu_name}_{key}"), value, true)?;
-                    // set to the current process for subsequent QRMI.acquire() call
-                    env::set_var(format!("{qpu_name}_{key}"), value);
+                    // set to job's envronment - overrides == false
+                    if spank.setenv(format!("{qpu_name}_{key}"), value, false).is_ok() {
+                        // set to the current process for subsequent QRMI.acquire() call
+                        env::set_var(format!("{qpu_name}_{key}"), value);
+                    }
                 }
 
                 let mut instance: Box<dyn QuantumResource> = match qrmi.r#type {

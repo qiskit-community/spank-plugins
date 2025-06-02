@@ -2,7 +2,7 @@
 
 QRMI Task Runner is an executable to run a quantum workload on the specified QPU resource. This is designed to be used in a Slurm job, configuration parameters such as endpoint URL and access credentials are taken from the process environment variables. Users can run a quantum workload by specifying Qiskit Primitive input for IBM Direct Access or Qiskit Runtime Service, or Pulser Sequence for Pascal Cloud. 
 
-Slurm infrastructure sends a SIGCONT/SIGTERM signal when it cancels a job. This executable receives these signals and cancels the running quantum workload.
+This executable receives SIGCONT/SIGTERM signals sent by Slurm infrastructure and cancels the running quantum workload.
 
 ## Supported OS
 
@@ -100,7 +100,7 @@ Run Pulser sequence on FRESNEL. Arguments `--input` and `--job-runs` are require
 #SBATCH --cpus-per-task=1
 #SBATCH --qpu=ibm_torino,ibm_marrakesh
 
-qrun /shared/spank-plugins/commands/task_runner/target/release/qrmi_task_runner --qpu-name ibm_marrakesh --input /shared/input/estimator_input.json --program-id estimator
+/shared/spank-plugins/commands/task_runner/target/release/qrmi_task_runner --qpu-name ibm_marrakesh --input /shared/input/estimator_input.json --program-id estimator
 ```
 
 By default, task results are output to stdout and written to the `slurm-N.out` file; if `--output <file>` is specified as qrmi_task_runner arguments, results are written to that file.

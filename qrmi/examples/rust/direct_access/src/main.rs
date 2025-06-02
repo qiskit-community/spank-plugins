@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         panic!("{} is not accessible", args.backend);
     }
 
-    let lock = qrmi.acquire().await.unwrap();
+    let lock = qrmi.acquire().await?;
 
     println!("{:#?}", qrmi.metadata().await);
 

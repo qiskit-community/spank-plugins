@@ -23,6 +23,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
+use once_cell::sync::OnceCell;
+use tokio::runtime::Runtime;
+
 mod models;
 use self::models::{QRMIResource, QRMIResources, ResourceType};
 
@@ -51,6 +54,14 @@ struct Resource {
 struct SpankQrmi {
     /// A list of available QPU resources
     resources: Vec<Resource>,
+    runtime: OnceCell<Runtime>,
+}
+impl SpankQrmi {
+    fn get_runtime(&self) -> &Runtime {
+        self.runtime.get_or_init(|| {
+            Runtime::new().expect("Failed to create runtime")
+        })
+    }
 }
 
 /// Log entering function
@@ -236,7 +247,10 @@ unsafe impl Plugin for SpankQrmi {
                     ResourceType::PasqalCloud => Box::new(PasqalCloud::new(qpu_name)),
                 };
 
-                let token: Option<String> = match instance.acquire() {
+                let result = self.get_runtime().block_on(async {
+                    instance.acquire().await
+                });
+                let token: Option<String> = match result {
                     Ok(v) => Some(v),
                     Err(err) => {
                         error!(
@@ -310,7 +324,11 @@ unsafe impl Plugin for SpankQrmi {
                     }
                     ResourceType::PasqalCloud => Box::new(PasqalCloud::new(&res.name)),
                 };
-                match instance.release(&res.token) {
+
+                let result = self.get_runtime().block_on(async {
+                    instance.release(&res.token).await
+                });
+                match result {
                     Ok(()) => (),
                     Err(err) => {
                         error!(

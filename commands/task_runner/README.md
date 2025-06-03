@@ -70,7 +70,7 @@ Options:
           Print version
 ```
 
-## Example - Slurm job script
+### Example - Slurm job script
 
 * The QPU resource name specified for qrmi_task_runner must be one of those specified with the `--qpu` option. In the following example, 2 QPU resources are defined(`ibm_torino` and `ibm_marrakesh`) in the --qpu option, and one of them(`ibm_marrakesh`) is specified for qrmi_task_runner.
 * The argument of qrmi_task_runner must be specified according to the resource type corresponding to that QPU resource. If `ibm_marrakesh` was defined as `qiskit-runtime-service` in `qrmi_config.json`, must specify `--input` and `--program-id`.
@@ -105,6 +105,92 @@ Run Pulser sequence on FRESNEL. Arguments `--input` and `--job-runs` are require
 #SBATCH --qpu=FRESNEL
 
 srun ./target/release/qrmi_task_runner --qpu-name FRESNEL --input sequence_input.json --job-runs 1000 FRESNEL
+```
+
+### Run locally for your testing 
+
+You can run qrmi_task_runner on your host locally for your development or testing by specifying parameters via environment variable setting like below.
+
+#### IBM Direct Access
+
+| Environment variables | Descriptions |
+| ---- | ---- |
+| SLURM_JOB_QPU_RESOURCES | Quantum backend name |
+| SLURM_JOB_QPU_TYPES | Should be `direct-access` |
+| {qpu_name}_QRMI_IBM_DA_ENDPOINT | Direct Access endpoint URL |
+| {qpu_name}_QRMI_IBM_DA_IAM_ENDPOINT | IBM Cloud IAM endpoint URL(e.g. `https://iam.cloud.ibm.com`) |
+| {qpu_name}_QRMI_IBM_DA_IAM_APIKEY | IBM Cloud IAM API Key |
+| {qpu_name}_QRMI_IBM_DA_SERVICE_CRN | Cloud Resource Name(CRN) of the provisioned Direct Access instance, starting with `crn:v1:`. |
+| {qpu_name}_QRMI_IBM_DA_AWS_ACCESS_KEY_ID | AWS Access Key ID to access S3 bucket |
+| {qpu_name}_QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY | AWS Secret Access Key to access S3 bucket |
+| {qpu_name}_QRMI_IBM_DA_S3_ENDPOINT | S3 endpoint URL |
+| {qpu_name}_QRMI_IBM_DA_S3_BUCKET | S3 bucket name |
+| {qpu_name}_QRMI_IBM_DA_S3_REGION | S3 bucket region name(e.g. `us-east`) |
+| {qpu_name}_QRMI_IBM_DA_TIMEOUT_SECONDS | Time (in seconds) after which job should time out and get cancelled. It is based on system execution time (not wall clock time). System execution time is the amount of time that the system is dedicated to processing your job. |
+
+Example:
+
+```shell-session
+export SLURM_JOB_QPU_RESOURCES=test_heron
+export SLURM_JOB_QPU_TYPES=direct-access
+export test_heron_QRMI_IBM_DA_ENDPOINT=http://localhost:8080
+export test_heron_QRMI_IBM_DA_IAM_ENDPOINT=https://iam.cloud.ibm.com
+export test_heron_QRMI_IBM_DA_IAM_APIKEY=<your API key>
+export test_heron_QRMI_IBM_DA_SERVICE_CRN=<your instance>
+export test_heron_QRMI_IBM_DA_AWS_ACCESS_KEY_ID=<your AWS access key ID>
+export test_heron_QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY=<your AWS secret access key>
+export test_heron_QRMI_IBM_DA_S3_ENDPOINT=https://s3.us-east.cloud-object-storage.appdomain.cloud
+export test_heron_QRMI_IBM_DA_S3_REGION=us-east
+export test_heron_QRMI_IBM_DA_S3_BUCKET=<your bucket name>
+export test_heron_QRMI_IBM_DA_TIMEOUT_SECONDS=3600
+
+./target/release/qrmi_task_runner --qpu-name test_heron --input /shared/input/estimator_input.json --program-id estimator
+```
+
+
+#### Qiskit Runtime Service
+
+| Environment variables | Descriptions |
+| ---- | ---- |
+| SLURM_JOB_QPU_RESOURCES | Quantum backend name |
+| SLURM_JOB_QPU_TYPES | Should be `qiskit-runtime-service` |
+| {backend_name}_QRMI_IBM_QRS_ENDPOINT | Qiskit Runtime Service endpoint URL(e.g. `https://quantum.cloud.ibm.com/api`) |
+| {backend_name}_QRMI_IBM_QRS_IAM_ENDPOINT | IBM Cloud IAM endpoint URL(e.g. `https://iam.cloud.ibm.com`) |
+| {backend_name}_QRMI_IBM_QRS_IAM_APIKEY | IBM Cloud IAM API Key |
+| {backend_name}_QRMI_IBM_QRS_SERVICE_CRN | Cloud Resource Name(CRN) of the provisioned Qiskit Runtime Service instance, starting with `crn:v1:`. |
+| {backend_name}_QRMI_IBM_QRS_TIMEOUT_SECONDS | (Optional) Cost of the job as the estimated time it should take to complete (in seconds). Should not exceed the cost of the program, default: `None`. |
+
+Example:
+
+```shell-session
+export SLURM_JOB_QPU_RESOURCES=ibm_marrakesh
+export SLURM_JOB_QPU_TYPES=qiskit-runtime-service
+export test_heron_QRMI_IBM_QRS_ENDPOINT=https://quantum.cloud.ibm.com/api
+export test_heron_QRMI_IBM_QRS_IAM_ENDPOINT=https://iam.cloud.ibm.com
+export test_heron_QRMI_IBM_QRS_IAM_APIKEY=<your API key>
+export test_heron_QRMI_IBM_QRS_SERVICE_CRN=<your instance>
+
+./target/release/qrmi_task_runner --qpu-name ibm_marrakesh --input /shared/input/estimator_input.json --program-id estimator
+```
+
+#### Pasqal Cloud
+
+| Environment variables | Descriptions |
+| ---- | ---- |
+| SLURM_JOB_QPU_RESOURCES | Backend name |
+| SLURM_JOB_QPU_TYPES | Should be `pasqal-cloud` |
+| <backend_name>_QRMI_PASQAL_CLOUD_PROJECT_ID |  Pasqal Cloud Project ID to access the QPU |
+| <backend_name>_QRMI_PASQAL_CLOUD_AUTH_TOKEN | Pasqal Cloud Auth Token |
+
+Example:
+
+```shell-session
+export SLURM_JOB_QPU_RESOURCES=FRESNEL
+export SLURM_JOB_QPU_TYPES=qiskit-pasqal-cloud
+export FRESNEL_QRMI_PASQAL_CLOUD_PROJECT_ID=<your project ID>
+export FRESNEL_QRMI_PASQAL_CLOUD_AUTH_TOKEN=<your auth token>
+
+./target/release/qrmi_task_runner --qpu-name FRESNEL --input /shared/input/sequence_input.json --job-runs 1000
 ```
 
 

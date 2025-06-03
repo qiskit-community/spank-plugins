@@ -185,7 +185,7 @@ Example:
 
 ```shell-session
 export SLURM_JOB_QPU_RESOURCES=FRESNEL
-export SLURM_JOB_QPU_TYPES=qiskit-pasqal-cloud
+export SLURM_JOB_QPU_TYPES=pasqal-cloud
 export FRESNEL_QRMI_PASQAL_CLOUD_PROJECT_ID=<your project ID>
 export FRESNEL_QRMI_PASQAL_CLOUD_AUTH_TOKEN=<your auth token>
 

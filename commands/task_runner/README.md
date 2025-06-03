@@ -70,27 +70,16 @@ Options:
           Print version
 ```
 
-### Example - IBM Direct Access or Qiskit Runtime Service
-
-Run estimator primitive on ibm_marrakesh. Arguments `--input` and `--program-id` are required for those resource types.
-
-```shell-session
-./target/release/qrmi_task_runner --qpu-name ibm_marrakesh --input estimator_input.json --program-id estimator
-```
-
-### Example - Pasqal Cloud
-
-Run Pulser sequence on FRESNEL. Arguments `--input` and `--job-runs` are required for this resource type.
-
-```shell-session
-./target/release/qrmi_task_runner --qpu-name FRESNEL --input sequence_input.json --job-runs 1000 FRESNEL
-```
-
-### Example - Slurm job script
+## Example - Slurm job script
 
 * The QPU resource name specified for qrmi_task_runner must be one of those specified with the `--qpu` option. In the following example, 2 QPU resources are defined(`ibm_torino` and `ibm_marrakesh`) in the --qpu option, and one of them(`ibm_marrakesh`) is specified for qrmi_task_runner.
 * The argument of qrmi_task_runner must be specified according to the resource type corresponding to that QPU resource. If `ibm_marrakesh` was defined as `qiskit-runtime-service` in `qrmi_config.json`, must specify `--input` and `--program-id`.
 * The environment variables required for execution are set by the [spank_qrmi](../../plugins/spank_qrmi) and [spank_qrmi_supp](../../plugins/spank_qrmi_supp) plug-ins.
+* By default, task results are output to stdout and written to the `slurm-N.out` file; if `--output <file>` is specified as qrmi_task_runner arguments, results are written to that file.
+
+#### IBM Direct Access or Qiskit Runtime Service
+
+Run estimator primitive on ibm_marrakesh. Arguments `--input` and `--program-id` are required for those resource types.
 
 ```shell-session
 #!/bin/bash
@@ -100,10 +89,23 @@ Run Pulser sequence on FRESNEL. Arguments `--input` and `--job-runs` are require
 #SBATCH --cpus-per-task=1
 #SBATCH --qpu=ibm_torino,ibm_marrakesh
 
-/shared/spank-plugins/commands/task_runner/target/release/qrmi_task_runner --qpu-name ibm_marrakesh --input /shared/input/estimator_input.json --program-id estimator
+srun /shared/spank-plugins/commands/task_runner/target/release/qrmi_task_runner --qpu-name ibm_marrakesh --input /shared/input/estimator_input.json --program-id estimator
 ```
 
-By default, task results are output to stdout and written to the `slurm-N.out` file; if `--output <file>` is specified as qrmi_task_runner arguments, results are written to that file.
+#### Pasqal Cloud
+
+Run Pulser sequence on FRESNEL. Arguments `--input` and `--job-runs` are required for this resource type.
+
+```shell-session
+#!/bin/bash
+
+#SBATCH --job-name=qrmi_job
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --qpu=FRESNEL
+
+srun ./target/release/qrmi_task_runner --qpu-name FRESNEL --input sequence_input.json --job-runs 1000 FRESNEL
+```
 
 
 ## Contributing

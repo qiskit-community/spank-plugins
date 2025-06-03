@@ -1,7 +1,0 @@
-[requires]
-cjson/1.7.18
-[generators]
-CMakeDeps
-CMakeToolchain
-[layout]
-cmake_layout

@@ -117,16 +117,16 @@ You can run qrmi_task_runner on your host locally for your development or testin
 | ---- | ---- |
 | SLURM_JOB_QPU_RESOURCES | Quantum backend name |
 | SLURM_JOB_QPU_TYPES | Should be `direct-access` |
-| {qpu_name}_QRMI_IBM_DA_ENDPOINT | Direct Access endpoint URL |
-| {qpu_name}_QRMI_IBM_DA_IAM_ENDPOINT | IBM Cloud IAM endpoint URL(e.g. `https://iam.cloud.ibm.com`) |
-| {qpu_name}_QRMI_IBM_DA_IAM_APIKEY | IBM Cloud IAM API Key |
-| {qpu_name}_QRMI_IBM_DA_SERVICE_CRN | Cloud Resource Name(CRN) of the provisioned Direct Access instance, starting with `crn:v1:`. |
-| {qpu_name}_QRMI_IBM_DA_AWS_ACCESS_KEY_ID | AWS Access Key ID to access S3 bucket |
-| {qpu_name}_QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY | AWS Secret Access Key to access S3 bucket |
-| {qpu_name}_QRMI_IBM_DA_S3_ENDPOINT | S3 endpoint URL |
-| {qpu_name}_QRMI_IBM_DA_S3_BUCKET | S3 bucket name |
-| {qpu_name}_QRMI_IBM_DA_S3_REGION | S3 bucket region name(e.g. `us-east`) |
-| {qpu_name}_QRMI_IBM_DA_TIMEOUT_SECONDS | Time (in seconds) after which job should time out and get cancelled. It is based on system execution time (not wall clock time). System execution time is the amount of time that the system is dedicated to processing your job. |
+| {backend_name}_QRMI_IBM_DA_ENDPOINT | Direct Access endpoint URL |
+| {backend_name}_QRMI_IBM_DA_IAM_ENDPOINT | IBM Cloud IAM endpoint URL(e.g. `https://iam.cloud.ibm.com`) |
+| {backend_name}_QRMI_IBM_DA_IAM_APIKEY | IBM Cloud IAM API Key |
+| {backend_name}_QRMI_IBM_DA_SERVICE_CRN | Cloud Resource Name(CRN) of the provisioned Direct Access instance, starting with `crn:v1:`. |
+| {backend_name}_QRMI_IBM_DA_AWS_ACCESS_KEY_ID | AWS Access Key ID to access S3 bucket |
+| {backend_name}_QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY | AWS Secret Access Key to access S3 bucket |
+| {backend_name}_QRMI_IBM_DA_S3_ENDPOINT | S3 endpoint URL |
+| {backend_name}_QRMI_IBM_DA_S3_BUCKET | S3 bucket name |
+| {backend_name}_QRMI_IBM_DA_S3_REGION | S3 bucket region name(e.g. `us-east`) |
+| {backend_name}_QRMI_IBM_DA_TIMEOUT_SECONDS | Time (in seconds) after which job should time out and get cancelled. It is based on system execution time (not wall clock time). System execution time is the amount of time that the system is dedicated to processing your job. |
 
 Example:
 
@@ -146,7 +146,6 @@ export test_heron_QRMI_IBM_DA_TIMEOUT_SECONDS=3600
 
 ./target/release/qrmi_task_runner --qpu-name test_heron --input /shared/input/estimator_input.json --program-id estimator
 ```
-
 
 #### Qiskit Runtime Service
 
@@ -192,7 +191,6 @@ export FRESNEL_QRMI_PASQAL_CLOUD_AUTH_TOKEN=<your auth token>
 
 ./target/release/qrmi_task_runner --qpu-name FRESNEL --input /shared/input/sequence_input.json --job-runs 1000
 ```
-
 
 ## Contributing
 

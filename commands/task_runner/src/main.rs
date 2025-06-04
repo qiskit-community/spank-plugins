@@ -15,6 +15,7 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::fs;
 
 use std::env;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -27,6 +28,7 @@ use signal_hook_tokio::Signals;
 
 use clap::builder::TypedValueParser as _;
 use clap::{Parser, Subcommand, ValueEnum};
+use serde::{Serialize, Deserialize};
 
 use qrmi::ibm::{IBMDirectAccess, IBMQiskitRuntimeService};
 use qrmi::pasqal::PasqalCloud;
@@ -36,7 +38,8 @@ static IS_RUNNING: AtomicBool = AtomicBool::new(true);
 
 const POLLING_INTERVAL: u64 = 1000;
 
-#[derive(Debug, Clone, PartialEq, ValueEnum)]
+#[derive(Debug, Clone, PartialEq, ValueEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[allow(dead_code)]
 /// Qiskit Primitive types
 pub enum PrimitiveType {
@@ -52,6 +55,29 @@ impl PrimitiveType {
             PrimitiveType::Sampler => "sampler",
         }
     }
+}
+
+/// qrmi_payload_v1、The input to QPU resource
+#[derive(Serialize, Deserialize, Debug)]
+pub struct QrmiInput {
+    /// Number of times the pulser sequence is repeated. Required for pasqal-cloud QPU resource
+    /// type.
+    job_runs: Option<i32>,
+
+    /// Parameters to inject into the primitive. Required for direct-access and
+    /// qiskit-runtime-service QPU resources. Estimator schema:
+    /// https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/estimator_v2_schema.json,
+    /// Sampler schema:
+    /// https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/sampler_v2_schema.json
+    parameters: Option<serde_json::Value>,
+
+    /// ID of the primitive to be executed. Required for direct-access and qiskit-runtime-service
+    /// QPU resources.
+    program_id: Option<PrimitiveType>,
+
+    /// Pulser sequence for pasqal-cloud QPU resource. Required for pasqal-cloud QPU resource
+    /// type.
+    sequence: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Subcommand)]
@@ -82,45 +108,91 @@ pub enum ResourceType {
 }
 impl ResourceType {
     fn new(qpu_type: &str, args: Args) -> Result<Self, Box<dyn std::error::Error>> {
+        let payload = match fs::read_to_string(&args.input) {
+            Ok(v) => v,
+            Err(err) => {
+                return Err(
+                    eyre!(
+                        "Failed to open {}. reason = {}",
+                        args.input,
+                        err
+                    ).into()
+                );
+            }
+        };
+        let deserialized: QrmiInput = serde_json::from_str(&payload).unwrap();
         if qpu_type == "direct-access" {
-            let program_id = match &args.program_id {
-                Some(v) => v.clone(),
+            let input = match &deserialized.parameters {
+                Some(v) => v.to_string(),
                 None => {
                     return Err(
                         eyre!(
-                            "Missing argument: {}. Usage: qrmi_task_runner --input <file> --program-id <type> <QPU_NAME>",
-                            "--program-id"
+                            "Missing property: {} in the payload.",
+                            "parameters"
                         ).into()
                     );
                 }
             };
-            Ok(Self::IBMDirectAccess { input: args.input, program_id })
+            let program_id = match &deserialized.program_id {
+                Some(v) => v.clone(),
+                None => {
+                    return Err(
+                        eyre!(
+                            "Missing property: {} in the payload.",
+                            "program_id"
+                        ).into()
+                    );
+                }
+            };
+            Ok(Self::IBMDirectAccess { input, program_id })
         } else if qpu_type == "qiskit-runtime-service" {
-            let program_id = match &args.program_id {
+            let input = match &deserialized.parameters {
+                Some(v) => v.to_string(),
+                None => {
+                    return Err(
+                        eyre!(
+                            "Missing property: {} in the payload.",
+                            "parameters"
+                        ).into()
+                    );
+                }
+            };
+            let program_id = match &deserialized.program_id {
                 Some(v) => v.clone(),
                 None => {
                     return Err(
                         eyre!(
-                            "Missing argument: {}. Usage: qrmi_task_runner --input <file> --program-id <type> <QPU_NAME>",
-                            "--program-id"
+                            "Missing property: {} in the payload.",
+                            "program_id"
                         ).into()
                     );
                 }
             };
-            Ok(Self::QiskitRuntimeService { input: args.input, program_id })
+            Ok(Self::QiskitRuntimeService { input, program_id })
         } else if qpu_type == "pasqal-cloud" {
-            let job_runs = match &args.job_runs {
-                Some(v) => *v,
+            let job_runs = match &deserialized.job_runs {
+                Some(v) => v,
                 None => {
                     return Err(
                         eyre!(
-                            "Missing argument: {}. Usage: qrmi_task_runner --input <file> --job-runs <count> <QPU_NAME>",
-                            "--job-runs"
+                            "Missing property: {} in the payload.",
+                            "job_runs"
                         ).into()
                     );
                 }
             };
-            Ok(Self::PasqalCloud { sequence: args.input, job_runs })
+            let sequence = match &deserialized.sequence {
+                Some(v) => v.to_string(),
+                None => {
+                    return Err(
+                        eyre!(
+                            "Missing property: {} in the payload.",
+                            "sequence"
+                        ).into()
+                    );
+                }
+            };
+            Ok(Self::PasqalCloud { sequence, job_runs: *job_runs })
         } else {
             Err(
                 eyre!(
@@ -142,22 +214,14 @@ impl ResourceType {
         match self {
             ResourceType::IBMDirectAccess { input, program_id }
             | ResourceType::QiskitRuntimeService { input, program_id } => {
-                let f = File::open(input).unwrap_or_else(|_| panic!("{} not found", input));
-                let mut buf_reader = BufReader::new(f);
-                let mut contents = String::new();
-                buf_reader.read_to_string(&mut contents).ok()?;
                 Some(Payload::QiskitPrimitive {
-                    input: contents,
+                    input: input.to_string(),
                     program_id: program_id.as_str().to_string(),
                 })
             }
             ResourceType::PasqalCloud { sequence, job_runs } => {
-                let f = File::open(sequence).unwrap_or_else(|_| panic!("{} not found", sequence));
-                let mut buf_reader = BufReader::new(f);
-                let mut contents = String::new();
-                buf_reader.read_to_string(&mut contents).ok()?;
                 Some(Payload::PasqalCloud {
-                    sequence: contents,
+                    sequence: sequence.to_string(),
                     job_runs: *job_runs,
                 })
             }
@@ -179,20 +243,12 @@ impl ResourceType {
 #[command(about = "qrmi_task_runner - Command to run a QRMI task")]
 struct Args {
     /// QPU resource name.
-    #[arg(short, long, value_name = "name")]
+    #[arg(value_name = "name")]
     qpu_name: String,
 
-    #[arg(short, long, value_name = "file")]
-    /// Input to QPU resource. Parameters to inject into the primitive for direct-access or qiskit-runtime-service QPU resource. Pulser sequence for pasqal-cloud QPU resource.
+    /// Input to QPU resource.
+    #[arg(value_name = "file")]
     input: String,
-
-    #[arg(long, value_name = "type")]
-    /// ID of the primitive to be executed. Required for direct-access or qiskit-runtime-service QPU resource.
-    program_id: Option<PrimitiveType>,
-
-    #[arg(long, value_name = "counts")]
-    /// Number of times the pulser sequence is repeated. Required for pasqal-cloud QPU resource.
-    job_runs: Option<i32>,
 
     /// Write output to <file> instead of stdout.
     #[arg(short, long, value_name = "file")]

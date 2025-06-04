@@ -128,10 +128,15 @@ input_json = {
     },
 }
 
-print(json.dumps(input_json, cls=RuntimeEncoder, indent=2))
+payload_json = {
+    "parameters": input_json,
+    "program_id": "estimator"
+}
+
+print(json.dumps(payload_json, cls=RuntimeEncoder, indent=2))
 with open(
     f"estimator_input_{args.backend}.json", "w", encoding="utf-8"
 ) as primitive_input_file:
-    json.dump(input_json, primitive_input_file, cls=RuntimeEncoder, indent=2)
+    json.dump(payload_json, primitive_input_file, cls=RuntimeEncoder, indent=2)
 
 print("done")

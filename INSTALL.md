@@ -284,7 +284,29 @@ srun python /shared/spank-plugins/primitives/python/examples/ibm/estimator.py
 [root@slurmctld /]# sbatch run_estimator.sh
 ```
  
-4. Checking primitive results
+
+4. Running Pasqal job
+
+run_pasqal.sh
+```bash
+#!/bin/bash
+
+#SBATCH --job-name=pasqal_job
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --qpu=FRESNEL <<<< CUSTOMIZE THIS LINE!!! TO BE CONSISTENT WITH qrmi_config.json
+
+# Your script goes here
+source /shared/pyenv/bin/activate
+srun python /shared/spank-plugins/qrmi/examples/python/pasqal_cloud/example.py FRESNEL /shared/spank-plugins/qrmi/examples/python/pasqal_cloud/pulser_seq.json
+```
+
+```bash
+[root@slurmctld /]# sbatch run_sampler.sh
+```
+
+
+5. Checking primitive results
 
 Once above scripts are completed, you must find `slurm-{job_id}.out` in the current directory.
 
@@ -314,5 +336,10 @@ For example,
   > Expectation value: 0.16554467382152394
   > Metadata: {'shots': 4096, 'target_precision': 0.015625, 'circuit_metadata': {}, 'resilience': {}, 'num_randomizations': 32}
 ```
+
+### Running serialized jobs using the qrmi_task_runner Slurm Cluster
+
+It is possible to run JSON-serialized jobs directly using a commandline utility called qrmi_task runner.
+See [the docs](./commands/task_runner/README.md) for that tool for details.
 
 ## END OF DOCUMENT

@@ -1,11 +1,20 @@
-import random
+# This code is part of Qiskit.
+#
+# (C) Copyright 2025 Pasqal, IBM. All Rights Reserved.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
 
 from dotenv import load_dotenv
-from pulser import Pulse, QPUBackend, Register, Sequence
+from pulser import MockDevice, Pulse, QPUBackend, Register, Sequence
 from pulser.backend.remote import JobParams
 from pulser_qrmi_backend.backend import PulserQRMIConnection
 from pulser_qrmi_backend.service import QRMIService
-from target import get_device
 
 # Create QRMI
 load_dotenv()
@@ -13,17 +22,17 @@ service = QRMIService()
 
 resources = service.resources()
 if len(resources) == 0:
-    raise ValueError("No quantum resource is available.")
+    print("No quantum resource is available.")
 
 # Randomly select QR
-qrmi = resources[random.randrange(len(resources))]
+qrmi = resources[0]
 print(qrmi.metadata())
 
 qrmi_conn = PulserQRMIConnection(qrmi)
 
 # Generate Pulser device
-device = get_device(qrmi)
-
+# device = get_device(qrmi)
+device = MockDevice
 
 reg = Register(
     {

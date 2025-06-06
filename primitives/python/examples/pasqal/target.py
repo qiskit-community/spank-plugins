@@ -15,9 +15,10 @@
 """Pulser Device creation"""
 
 # pylint: disable=invalid-name
-import json
 import random
 
+import pulser
+import pulser.abstract_repr
 from dotenv import load_dotenv
 from pulser.devices import Device
 from pulser_qrmi_backend.service import QRMIService
@@ -36,8 +37,8 @@ def get_device(qrmi: QuantumResource) -> Device:
         pulser.devices.Device: Pulser device
     """
     target = qrmi.target()
-    target = json.loads(target.value)
-    return Device(**target)
+    # target = json.loads(target.value)
+    return pulser.abstract_repr.deserialize_device(target)
 
 
 def get_target(qrmi: QuantumResource) -> Target:

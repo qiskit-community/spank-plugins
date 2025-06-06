@@ -12,8 +12,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Setup qrmi-primitives"""
+"""Setup qiskit-qrmi-primitives"""
 import os
+
 import setuptools
 
 # Handle version.

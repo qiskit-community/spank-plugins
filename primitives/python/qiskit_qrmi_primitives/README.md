@@ -52,10 +52,10 @@ $ pip install .
 $ popd
 ```
 
-The `qrmi-qiskit-primitives` package is installed in the virtual environment.
+The `qiskit-qrmi-primitives` package is installed in the virtual environment.
 
 ```shell-session
-# pip show qrmi-primitives
+# pip show qiskit-qrmi-primitives
 Name: qrmi-qiskit-primitives
 Version: 0.1.0
 Summary: QRMI based implementations of Qiskit PrimitiveV2

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # This code is part of Qiskit.
 #
 # (C) Copyright 2025 IBM. All Rights Reserved.
@@ -10,19 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""SamplerV2 Primitive implementation with IBM QRMI"""
-from typing import Union
-from qrmi import QuantumResource
+from .service import QRMIService
+from .base_estimator import QRMIBaseEstimatorV2
 from .base_sampler import QRMIBaseSamplerV2
-
-
-class SamplerV2(QRMIBaseSamplerV2):
-    """SamplerV2 for QRMI"""
-
-    def __init__(
-        self,
-        qrmi: QuantumResource,
-        *,
-        options: dict | None = None,
-    ) -> None:
-        super().__init__(qrmi, options=options)
+from .runtime_job_v2 import RuntimeJobV2

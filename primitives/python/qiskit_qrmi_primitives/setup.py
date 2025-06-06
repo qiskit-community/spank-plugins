@@ -34,7 +34,7 @@ with open(REQUIREMENTS_PATH) as requirements_file:
     REQUIREMENTS = requirements_file.read()
 
 setuptools.setup(
-    name="qrmi-primitives",
+    name="qiskit-qrmi-primitives",
     version=VERSION,
     description="QRMI based implementations of Qiskit PrimitiveV2",
     long_description=README,

@@ -7,7 +7,14 @@ import logging
 import typing
 
 import pulser
-from pulser.backend.remote import JobParams, RemoteConnection, RemoteResults
+from pulser.backend.remote import (
+    BatchStatus,
+    JobParams,
+    JobStatus,
+    RemoteConnection,
+    RemoteResults,
+)
+from pulser.backend.results import Results
 from pulser.devices import Device
 
 from qrmi import QuantumResource  # type: ignore
@@ -30,6 +37,19 @@ class PulserQRMIConnection(RemoteConnection):
         target = json.loads(target.value)
         dev = Device(**target)
         return {dev.name: dev}
+
+    def _fetch_result(
+        self, batch_id: str, job_ids: list[str] | None
+    ) -> pulser.Sequence[Results]:
+        raise NotImplementedError("Not applicable to current design")
+
+    def _get_batch_status(self, batch_id: str) -> BatchStatus:
+        raise NotImplementedError("Not applicable to current design")
+
+    def _query_job_progress(
+        self, batch_id: str
+    ) -> typing.Mapping[str, tuple[JobStatus, Results | None]]:
+        raise NotImplementedError("Not applicable to current design")
 
     def submit(
         self,

@@ -15,6 +15,7 @@ from typing import Union
 from qrmi import QuantumResource
 from .base_estimator import QRMIBaseEstimatorV2
 
+
 class EstimatorV2(QRMIBaseEstimatorV2):
     """EstimatorV2 for QRMI"""
 

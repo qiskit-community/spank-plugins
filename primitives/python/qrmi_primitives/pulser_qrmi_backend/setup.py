@@ -35,7 +35,7 @@ with open(REQUIREMENTS_PATH) as requirements_file:
     REQUIREMENTS = requirements_file.read()
 
 setuptools.setup(
-    name="qrmi-primitives",
+    name="qrmi-pulser-backend",
     version=VERSION,
     description="QRMI based implementations of Pulser Backend",
     long_description=README,

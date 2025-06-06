@@ -26,3 +26,31 @@ When run as a job in a Slurm cluster, these environment variables are set by the
 | ---- | ---- |
 | SLURM_JOB_QPU_RESOURCES | Quantum resource names. Comma-separated values, e.g. `FRESNEL,ibm_brisbane` |
 | SLURM_JOB_QPU_TYPES | Quantum resource types. Comma-separated values corresponding to each Quantum resource name specified by `SLURM_JOB_QPU_RESOURCES`.<br><br>Supported types:<ul><li>`pasqal-cloud`</li></ul> |
+
+
+
+## How to run
+
+### SamplerV2
+
+Use the Qiskit Pasqal Provider
+
+```shell-session
+$ python sampler.py
+```
+
+### Pulser
+
+Use Pulser directly
+
+```shell-session
+$ python estimator.py
+```
+
+### Target -> Pulser device
+
+Example to show how to get the Pulser device via the QRMI.
+
+```shell-session
+$ python target.py
+```

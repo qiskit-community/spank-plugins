@@ -20,8 +20,8 @@ import random
 
 from dotenv import load_dotenv
 from pulser.devices import Device
+from pulser_qrmi_backend.service import QRMIService
 from qiskit.transpiler.target import Target
-from qrmi_primitives import QRMIService
 
 from qrmi import QuantumResource
 
@@ -39,10 +39,11 @@ def get_device(qrmi: QuantumResource) -> Device:
     target = json.loads(target.value)
     return Device(**target)
 
+
 def get_target(qrmi: QuantumResource) -> Target:
-    """Returns Qiskit Target of Pasqal Device for use with Qiskit Pasqal Provider
-    """
+    """Returns Qiskit Target of Pasqal Device for use with Qiskit Pasqal Provider"""
     raise NotImplementedError
+
 
 if __name__ == "__main__":
     import random

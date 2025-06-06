@@ -3,7 +3,8 @@ import random
 from dotenv import load_dotenv
 from pulser import Pulse, QPUBackend, Register, Sequence
 from pulser.backend.remote import JobParams
-from qrmi_primitives import PulserQRMIConnection, QRMIService
+from pulser_qrmi_backend.backend import PulserQRMIConnection
+from pulser_qrmi_backend.service import QRMIService
 from target import get_device
 
 # Create QRMI

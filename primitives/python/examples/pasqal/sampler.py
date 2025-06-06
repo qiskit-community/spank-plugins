@@ -1,7 +1,7 @@
 import random
 
 from dotenv import load_dotenv
-from qrmi_primitives import QRMIService
+from pulser_qrmi_backend.service import QRMIService
 from target import get_device
 
 # Create QRMI

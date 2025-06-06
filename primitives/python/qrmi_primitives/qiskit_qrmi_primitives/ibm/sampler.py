@@ -15,6 +15,7 @@ from typing import Union
 from qrmi import QuantumResource
 from .base_sampler import QRMIBaseSamplerV2
 
+
 class SamplerV2(QRMIBaseSamplerV2):
     """SamplerV2 for QRMI"""
 

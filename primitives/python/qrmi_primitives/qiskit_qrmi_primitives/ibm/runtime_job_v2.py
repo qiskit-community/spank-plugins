@@ -35,11 +35,7 @@ class RuntimeJobV2(BasePrimitiveJob[PrimitiveResult, TaskStatus]):
     """Representation of a runtime V2 primitive exeuction."""
 
     def __init__(
-        self,
-        qrmi: QuantumResource,
-        job_id: str,
-        *,
-        delete_job: bool = False
+        self, qrmi: QuantumResource, job_id: str, *, delete_job: bool = False
     ) -> None:
         """RuntimeJob constructor.
 

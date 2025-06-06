@@ -2,21 +2,23 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import typing
 
 import pulser
+from pulser.backend.remote import JobParams, RemoteConnection, RemoteResults
 from pulser.devices import Device
 
-from qrmi import QuantumResource
+from qrmi import QuantumResource  # type: ignore
 
 logger = logging.getLogger(__name__)
 
 
-class PulserQRMIConnection(pulser.backend.remote.RemoteConnection):
-    """A connection to Pasqal Cloud, to submit Sequences to QPUs.
-    """
+class PulserQRMIConnection(RemoteConnection):
+    """A connection to Pasqal Cloud, to submit Sequences to QPUs."""
 
-    def __init__(qrmi: QuantumResource) -> None:
+    def __init__(self, qrmi: QuantumResource) -> None:
         self._qrmi = qrmi
 
     def supports_open_batch(self) -> bool:
@@ -36,14 +38,14 @@ class PulserQRMIConnection(pulser.backend.remote.RemoteConnection):
         open: bool = False,
         batch_id: str | None = None,
         **kwargs: typing.Any,
-    ) -> pulser.backend.remote.RemoteResults:
+    ) -> RemoteResults:
         """Submits the sequence for execution on a remote Pasqal backend."""
         if open:
             raise NotImplementedError("Open batches are not implemented in QRMI.")
         sequence = self._add_measurement_to_sequence(sequence)
         # Check that Job Params are correctly defined
-        job_params: list[pulser.backend.remote.JobParams] = (
-            pulser.json.utils.make_json_compatible(kwargs.get("job_params", []))
+        job_params: list[JobParams] = pulser.json.utils.make_json_compatible(
+            kwargs.get("job_params", [])
         )
         mimic_qpu: bool = kwargs.get("mimic_qpu", False)
         if mimic_qpu:
@@ -88,9 +90,7 @@ class PulserQRMIConnection(pulser.backend.remote.RemoteConnection):
             payload = Payload.PasqalCloud(
                 sequence=seq_to_submit.to_abstract_repr(), job_runs=params["runs"]
             )
-            results.append(
-                self._qrmi.task_start(payload)
-            )
+            results.append(self._qrmi.task_start(payload))
         if wait:
             for res in results:
                 # Returns the result of the job when it's done

@@ -22,7 +22,7 @@ from qrmi import QuantumResource
 
 @dataclass
 class Options:
-    """Options for :class:`~.QRMIBaseSamplerV2`"""
+    """Options for :class:`~.QPPSamplerV2`"""
 
     default_shots: int = 1024
     """The default shots to use if none are specified in :meth:`~.run`.

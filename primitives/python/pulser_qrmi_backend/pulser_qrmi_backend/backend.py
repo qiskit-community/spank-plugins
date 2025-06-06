@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import typing
 
 import pulser
@@ -21,13 +22,13 @@ from pulser.backend.remote import (
     BatchStatus,
     JobParams,
     JobStatus,
+    RemoteBackend,
     RemoteConnection,
-    RemoteResults,
 )
 from pulser.backend.results import Results
 from pulser.devices import Device
 
-from qrmi import Payload, QuantumResource  # type: ignore
+from qrmi import Payload, QuantumResource, TaskStatus  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -64,14 +65,18 @@ class PulserQRMIConnection(RemoteConnection):
     def submit(
         self,
         sequence: pulser.Sequence,
-        wait: bool = False,
+        wait: bool = True,
         open: bool = False,
         batch_id: str | None = None,
         **kwargs: typing.Any,
-    ) -> RemoteResults:
-        """Submits the sequence for execution on a remote Pasqal backend."""
+    ) -> list[dict[str, dict[str, str]]]:  # type: ignore
+        """Submits the sequence for execution on a remote Pasqal backend.
+        Currently forces waiting for execution and return list of result dicts.
+        """
         if open:
             raise NotImplementedError("Open batches are not implemented in QRMI.")
+        if not wait:
+            raise NotImplementedError("Waiting is currently implied by QRMI")
         sequence = self._add_measurement_to_sequence(sequence)
         # Check that Job Params are correctly defined
         job_params: list[JobParams] = pulser.json.utils.make_json_compatible(
@@ -91,21 +96,23 @@ class PulserQRMIConnection(RemoteConnection):
                 "It is not possible to add jobs to a previously created batch "
                 "with QRMI."
             )
+
+        # TODO, reinstate check
         # Create a new batch by submitting to the targeted qpu
         # Find the targeted QPU
-        for qpu_id, device in self.fetch_available_devices().items():
-            if sequence.device.name == device.name:
-                break
-        else:
-            raise ValueError(
-                f"The Sequence's device {sequence.device.name} doesn't match the "
-                "name of a device of any available QPU. Select your device among"
-                "fetch_available_devices() and change your Sequence's device using"
-                "its switch_device method."
-            )
+        # for qpu_id, device in self.fetch_available_devices().items():
+        #    if sequence.device.name == device.name:
+        #        break
+        # else:
+        #    raise ValueError(
+        #        f"The Sequence's device {sequence.device.name} doesn't match the "
+        #        "name of a device of any available QPU. Select your device among"
+        #        "fetch_available_devices() and change your Sequence's device using"
+        #        "its switch_device method."
+        #    )
 
         # Check JobParams
-        pulser.QPUBackend.validate_job_params(job_params, device.max_runs)
+        # pulser.QPUBackend.validate_job_params(job_params, device.max_runs)
 
         # Submit one QRMI Job per job params
         results = []
@@ -120,12 +127,37 @@ class PulserQRMIConnection(RemoteConnection):
             payload = Payload.PasqalCloud(
                 sequence=seq_to_submit.to_abstract_repr(), job_runs=params["runs"]
             )
-            results.append(self._qrmi.task_start(payload))
-        if wait:
-            for res in results:
-                # Returns the result of the job when it's done
-                res.join()
-        job_ids = [res.get_id() for res in results]
-        return pulser.backend.remote.RemoteResults(
-            self._batch_id_from_job_ids(job_ids), self, job_ids
-        )
+            new_task_id = self._qrmi.task_start(payload)
+            print(f"task start, {new_task_id}", flush=True)
+            while wait:  # Currently always True
+                status = self._qrmi.task_status(new_task_id)
+                if status == TaskStatus.Completed:
+                    print("Task completed")
+                    time.sleep(2)
+                    break
+                elif status == TaskStatus.Failed:
+                    print("Task failed")
+                    break
+                else:
+                    print("Task status %s, waiting 1s" % status)
+                    time.sleep(1)
+            print("get results", flush=True)
+            # Get the results
+            results.append(self._qrmi.task_result(new_task_id).value)
+
+        return results
+
+
+class PulserQRMIBackend(RemoteBackend):
+    def __init__(
+        self,
+        sequence: pulser.Sequence,
+        connection: PulserQRMIConnection,
+        mimic_qpu: bool = False,
+    ) -> None:
+        self._sequence = sequence
+        self._connection = connection
+        self._mimic_qpu = mimic_qpu
+
+    def run(self, job_params: list[JobParams] | None = None, wait: bool = False) -> list[dict[str, dict[str, str]]]:  # type: ignore
+        return self._connection.submit(self._sequence, wait=wait, job_params=job_params, mimic_qpu=self._mimic_qpu)  # type: ignore

@@ -11,10 +11,12 @@
 # that they have been altered from the originals.
 
 from dotenv import load_dotenv
-from pulser import MockDevice, Pulse, QPUBackend, Register, Sequence
+from pulser import AnalogDevice, Pulse, Register, Sequence
 from pulser.backend.remote import JobParams
-from pulser_qrmi_backend.backend import PulserQRMIConnection
+from pulser_qrmi_backend.backend import PulserQRMIBackend, PulserQRMIConnection
 from pulser_qrmi_backend.service import QRMIService
+
+# from target import get_device
 
 # Create QRMI
 load_dotenv()
@@ -32,7 +34,7 @@ qrmi_conn = PulserQRMIConnection(qrmi)
 
 # Generate Pulser device
 # device = get_device(qrmi)
-device = MockDevice
+device = AnalogDevice
 
 reg = Register(
     {
@@ -51,6 +53,6 @@ pulse1 = Pulse.ConstantPulse(100, 2, 2, 0)
 seq.add(pulse1, "rydberg")
 seq.measure("ground-rydberg")
 
-backend = QPUBackend(seq, qrmi_conn)
+backend = PulserQRMIBackend(seq, qrmi_conn)
 result = backend.run([JobParams(runs=1000, variables=[])], wait=True)
-print(result)
+print(f"Results: {result}")

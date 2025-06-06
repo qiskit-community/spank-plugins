@@ -37,7 +37,6 @@ def get_device(qrmi: QuantumResource) -> Device:
         pulser.devices.Device: Pulser device
     """
     target = qrmi.target()
-    # target = json.loads(target.value)
     return pulser.abstract_repr.deserialize_device(target)
 
 

@@ -189,11 +189,13 @@ bash-5.1# exit
 4. Building [Primitives](./primitives/python/README.md)
 
 ```bash
-[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/qrmi_primitives/qiskit_qrmi_primitives
-[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/qrmi_primitives/pulser_qrmi_backend
-[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/examples/ibm
+[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/qiskit_qrmi_primitives
+[root@slurmctld /]# pip install .
+[root@slurmctld /]# cd examples/ibm
 [root@slurmctld /]# pip install -r requirements.txt
-[root@slurmctld /]# /shared/spank-plugins/primitives/python/examples/pasqal
+[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/pulser_qrmi_backend
+[root@slurmctld /]# pip install .
+[root@slurmctld /]# examples/pasqal
 [root@slurmctld /]# pip install -r requirements.txt
 ```
 
@@ -259,7 +261,7 @@ run_sampler.sh
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/spank-plugins/primitives/python/examples/ibm/sampler.py
+srun python /shared/spank-plugins/primitives/python/qiskit_qrmi_primitives/examples/ibm/sampler.py
 ```
 
 ```bash
@@ -279,7 +281,7 @@ run_estimator.sh
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/spank-plugins/primitives/python/examples/ibm/estimator.py
+srun python /shared/spank-plugins/primitives/python/qiskit_qrmi_primitives/examples/ibm/estimator.py
 ```
 
 ```bash
@@ -300,7 +302,7 @@ run_pulser_backend.sh
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/spank-plugins/primitives/python/examples/pulser_backend.py
+srun python /shared/spank-plugins/primitives/python/pulser_qrmi_backend/examples/pasqal/pulser_backend.py
 ```
 
 ```bash

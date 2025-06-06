@@ -13,3 +13,7 @@
 cargo clean
 cargo build --release
 ```
+
+## License
+
+[GPL-3.0](https://github.com/qiskit-community/spank-plugins/blob/main/LICENSE)

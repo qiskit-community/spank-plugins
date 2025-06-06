@@ -15,6 +15,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Iterable
 
+from pulser import MockDevice
 from qiskit import QuantumCircuit
 from qiskit_pasqal_provider.providers import Sampler
 from qiskit_pasqal_provider.providers.abstract_base import PasqalJob
@@ -57,11 +58,12 @@ class QPPSamplerV2(Sampler):
         self, pubs: Iterable[QuantumCircuit], shots: int | None = None
     ) -> PasqalJob:
         # get the register from the analog gate inside QuantumCircuit
+        qc = pubs[0]
         _analog_register = get_register_from_circuit(qc)
 
         seq = gen_seq(
             analog_register=_analog_register,
-            device=DigitalAnalogDevice,
+            device=MockDevice,
             circuit=qc,
         )
 
@@ -69,21 +71,17 @@ class QPPSamplerV2(Sampler):
         job_runs = shots if shots else self._options.default_shots
         payload = Payload.PasqalCloud(sequence=sequence, job_runs=job_runs)
         new_task_id = self._qrmi.task_start(payload)
-        print(f"task start, {new_task_id}", flush=True)
+        results = []
         while True:
             status = self._qrmi.task_status(new_task_id)
             if status == TaskStatus.Completed:
-                print("Task completed")
-                time.sleep(2)
+                time.sleep(0.5)
+                # Get the results
+                results.append(self._qrmi.task_result(new_task_id).value)
                 break
             elif status == TaskStatus.Failed:
-                print("Task failed")
                 break
             else:
-                print("Task status %s, waiting 1s" % status)
                 time.sleep(1)
-        print("get results", flush=True)
-        # Get the results
-        results.append(self._qrmi.task_result(new_task_id).value)
 
         return results

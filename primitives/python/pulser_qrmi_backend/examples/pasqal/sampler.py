@@ -17,11 +17,7 @@ from dotenv import load_dotenv
 from pulser_qrmi_backend.service import QRMIService
 from qiskit.circuit import QuantumCircuit
 from qiskit_pasqal_provider.providers.gate import HamiltonianGate, InterpolatePoints
-from target import get_device
-
-from primitives.python.qrmi_primitives.qiskit_qrmi_primitives.pasqal.sampler import (
-    QPPSamplerV2,
-)
+from qiskit_qrmi_primitives.pasqal.sampler import QPPSamplerV2
 
 # Create QRMI
 load_dotenv()
@@ -36,7 +32,7 @@ qrmi = resources[random.randrange(len(resources))]
 print(qrmi.metadata())
 
 # Generate transpiler target from backend configuration & properties
-target = get_device(qrmi)
+# target = get_device(qrmi)
 
 ######################################################
 #                Create Quantum Program              #
@@ -68,8 +64,5 @@ gate = HamiltonianGate(ampl, det, phase, coords, grid_transform="triangular")
 qc = QuantumCircuit(len(coords))
 qc.append(gate, qc.qubits)
 
-# To be abstracted away by QRMI Sampler
-
-
 sampler = QPPSamplerV2(qrmi=qrmi)
-print(sampler.run(qc))
+print(sampler.run([qc]))

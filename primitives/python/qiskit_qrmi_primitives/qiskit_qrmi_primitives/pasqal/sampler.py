@@ -17,7 +17,7 @@ from typing import Iterable
 
 from pulser import MockDevice
 from qiskit import QuantumCircuit
-from qiskit_pasqal_provider.providers import Sampler
+from qiskit_pasqal_provider.providers import SamplerV2 as PasqalSamplerV2
 from qiskit_pasqal_provider.providers.abstract_base import PasqalJob
 from qiskit_pasqal_provider.providers.pulse_utils import (
     gen_seq,
@@ -41,8 +41,8 @@ class Options:
     """
 
 
-class QPPSamplerV2(Sampler):
-    """Sampler V2 base class for Pasqal QPUs
+class QPPSamplerV2(PasqalSamplerV2):
+    """SamplerV2 base class for Pasqal QPUs
     Note: future work to make it work with BaseSamplerV2"""
 
     def __init__(

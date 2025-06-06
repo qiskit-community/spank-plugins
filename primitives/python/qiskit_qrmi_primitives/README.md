@@ -4,11 +4,11 @@
 
 | Directory | Description |
 | ---- | ---- |
-| [qrmi_primitives](./qrmi_primitives) | Sampler and Estimator primitive implementations based on QRMI |
-| [qrmi_primitives/pulser/pasqal](./qrmi_primitives/pulser/pasqal/) | Primitives implementation for Pasqal on Pulser |
-| [qrmi_primitives/qiskit/ibm](./qrmi_primitives/qiskit/ibm) | Primitives implementation for IBM Quantum services |
-| [qrmi_primitives/qiskit/pasqal](./qrmi_primitives/qiskit/pasqal) | Primitives implementation for Pasqal on Qiskit |
+| [qiskit_qrmi_primitives](./qiskit_qrmi_primitives) | Qiskit Sampler and Estimator primitive implementations based on QRMI |
+| [qiskit_qrmi_primitives/ibm](./qiskit_qrmi_primitives/ibm) | Qiskit Primitives implementation for IBM Quantum services |
+| [qiskit_qrmi_primitives/pasqal](./qiskit_qrmi_primitives/pasqal) | Qiskit Primitives implementation for Pasqal |
 | [examples](./examples) | Sample programs to demonstrate Sampler and Estimator primitives. |
+
 
 ## How to install
 
@@ -52,10 +52,10 @@ $ pip install .
 $ popd
 ```
 
-The `qrmi-qiskit-primitives` package is installed in the virtual environment.
+The `qiskit-qrmi-primitives` package is installed in the virtual environment.
 
 ```shell-session
-# pip show qrmi-primitives
+# pip show qiskit-qrmi-primitives
 Name: qrmi-qiskit-primitives
 Version: 0.1.0
 Summary: QRMI based implementations of Qiskit PrimitiveV2

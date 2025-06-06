@@ -4,11 +4,13 @@
 
 | Directory | Description |
 | ---- | ---- |
-| [qrmi_primitives](./qrmi_primitives) | Sampler and Estimator primitive implementations based on QRMI |
-| [qrmi_primitives/pulser/pasqal](./qrmi_primitives/pulser/pasqal/) | Primitives implementation for Pasqal on Pulser |
-| [qrmi_primitives/qiskit/ibm](./qrmi_primitives/qiskit/ibm) | Primitives implementation for IBM Quantum services |
-| [qrmi_primitives/qiskit/pasqal](./qrmi_primitives/qiskit/pasqal) | Primitives implementation for Pasqal on Qiskit |
-| [examples](./examples) | Sample programs to demonstrate Sampler and Estimator primitives. |
+| [qiskit_qrmi_primitives](./qiskit_qrmi_primitives) | Qiskit Sampler and Estimator primitive implementations based on QRMI |
+| [qiskit_qrmi_primitives/qiskit_qrmi_primitives/ibm](./qiskit_qrmi_primitives/qiskit_qrmi_primitives/ibm) | Qiskit Primitives implementation for IBM Quantum services |
+| [qiskit_qrmi_primitives/qiskit_qrmi_primitives/pasqal](./qiskit_qrmi_primitives/qiskit_qrmi_primitives/pasqal) | Qiskit Primitives implementation for Pasqal |
+| [qiskit_qrmi_primitives/examples](./qiskit_qrmi_primitives/examples) | Sample programs to demonstrate Sampler and Estimator primitives. |
+| [pulser_qrmi_backend/pulser_qrmi_backend](./pulser_qrmi_backend/pulser_qrmi_backend) | `Backend` implementation for Pasqal on Pulser |
+| [pulser_qrmi_backend/examples](./pulser_qrmi_backend/examples) | `Backend` example for Pasqal with Pulser |
+
 
 ## How to install
 

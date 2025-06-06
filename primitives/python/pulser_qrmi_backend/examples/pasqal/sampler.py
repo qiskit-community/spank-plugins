@@ -14,15 +14,14 @@
 import random
 
 from dotenv import load_dotenv
-from pulser import DigitalAnalogDevice
 from pulser_qrmi_backend.service import QRMIService
 from qiskit.circuit import QuantumCircuit
 from qiskit_pasqal_provider.providers.gate import HamiltonianGate, InterpolatePoints
-from qiskit_pasqal_provider.providers.pulse_utils import (
-    gen_seq,
-    get_register_from_circuit,
-)
 from target import get_device
+
+from primitives.python.qrmi_primitives.qiskit_qrmi_primitives.pasqal.sampler import (
+    QPPSamplerV2,
+)
 
 # Create QRMI
 load_dotenv()
@@ -71,15 +70,6 @@ qc.append(gate, qc.qubits)
 
 # To be abstracted away by QRMI Sampler
 
-# get the register from the analog gate inside QuantumCircuit
-_analog_register = get_register_from_circuit(qc)
 
-seq = gen_seq(
-    analog_register=_analog_register,
-    device=DigitalAnalogDevice,
-    circuit=qc,
-)
-
-sequence = seq.to_abstract_repr()
-
-program = {"sequence": sequence, "job_runs": 1000}
+sampler = QPPSamplerV2(qrmi=qrmi)
+print(sampler.run(qc))

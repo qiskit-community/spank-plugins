@@ -11,13 +11,19 @@
 # that they have been altered from the originals.
 
 """Sampler V2 base class for Pasqal Cloud QRMI"""
+import time
 from dataclasses import dataclass, field
 from typing import Iterable
 
+from qiskit import QuantumCircuit
 from qiskit_pasqal_provider.providers import Sampler
 from qiskit_pasqal_provider.providers.abstract_base import PasqalJob
+from qiskit_pasqal_provider.providers.pulse_utils import (
+    gen_seq,
+    get_register_from_circuit,
+)
 
-from qrmi import QuantumResource
+from qrmi import Payload, QuantumResource, TaskStatus
 
 
 @dataclass
@@ -48,6 +54,36 @@ class QPPSamplerV2(Sampler):
         self._options = Options(**options) if options else Options()
 
     def run(
-        self, pubs: Iterable[QuantumCircuittes], shots: int | None = None
+        self, pubs: Iterable[QuantumCircuit], shots: int | None = None
     ) -> PasqalJob:
-        raise NotImplementedError
+        # get the register from the analog gate inside QuantumCircuit
+        _analog_register = get_register_from_circuit(qc)
+
+        seq = gen_seq(
+            analog_register=_analog_register,
+            device=DigitalAnalogDevice,
+            circuit=qc,
+        )
+
+        sequence = seq.to_abstract_repr()
+        job_runs = shots if shots else self._options.default_shots
+        payload = Payload.PasqalCloud(sequence=sequence, job_runs=job_runs)
+        new_task_id = self._qrmi.task_start(payload)
+        print(f"task start, {new_task_id}", flush=True)
+        while True:
+            status = self._qrmi.task_status(new_task_id)
+            if status == TaskStatus.Completed:
+                print("Task completed")
+                time.sleep(2)
+                break
+            elif status == TaskStatus.Failed:
+                print("Task failed")
+                break
+            else:
+                print("Task status %s, waiting 1s" % status)
+                time.sleep(1)
+        print("get results", flush=True)
+        # Get the results
+        results.append(self._qrmi.task_result(new_task_id).value)
+
+        return results

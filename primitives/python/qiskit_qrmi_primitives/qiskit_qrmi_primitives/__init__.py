@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # This code is part of Qiskit.
 #
 # (C) Copyright 2025 IBM. All Rights Reserved.
@@ -10,8 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""IBM implementations of Primitive"""
-
-from .sampler import SamplerV2
-from .estimator import EstimatorV2
+from .service import QRMIService
+from .base_estimator import QRMIBaseEstimatorV2
+from .base_sampler import QRMIBaseSamplerV2
 from .runtime_job_v2 import RuntimeJobV2

@@ -2,7 +2,7 @@
 
 # This code is part of Qiskit.
 #
-# (C) Copyright 2025 IBM. All Rights Reserved.
+# (C) Copyright 2025 Pasqal, IBM. All Rights Reserved.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -12,8 +12,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Setup qrmi-primitives"""
+"""Setup qrmi-pulser-backend"""
 import os
+
 import setuptools
 
 # Handle version.
@@ -34,14 +35,14 @@ with open(REQUIREMENTS_PATH) as requirements_file:
     REQUIREMENTS = requirements_file.read()
 
 setuptools.setup(
-    name="qrmi-primitives",
+    name="qrmi-pulser-backend",
     version=VERSION,
-    description="QRMI based implementations of Qiskit PrimitiveV2",
+    description="QRMI based implementations of Pulser Backend",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://quantum.ibm.com/",
-    author="IBM Quantum",
-    author_email="qiskit@us.ibm.com",
+    url="https://pasqal.com",
+    author="Pasqal SAS",
+    author_email="contact@pasqal.com",
     license="Apache 2.0",
     classifiers=[
         "Environment :: Console",

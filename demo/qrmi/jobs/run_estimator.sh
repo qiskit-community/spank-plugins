@@ -9,4 +9,4 @@
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/spank-plugins/primitives/python/examples/ibm/estimator.py
+srun python /shared/spank-plugins/primitives/python/qiskit_qrmi_primitives/examples/ibm/estimator.py

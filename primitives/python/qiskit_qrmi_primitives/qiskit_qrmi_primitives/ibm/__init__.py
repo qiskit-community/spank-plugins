@@ -10,18 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""EstimatorV2 Primitive implementation with IBM QRMI"""
-from typing import Union
-from qrmi import QuantumResource
-from .base_estimator import QRMIBaseEstimatorV2
+"""IBM implementations of Primitive"""
 
-class EstimatorV2(QRMIBaseEstimatorV2):
-    """EstimatorV2 for QRMI"""
-
-    def __init__(
-        self,
-        qrmi: QuantumResource,
-        *,
-        options: dict | None = None,
-    ) -> None:
-        super().__init__(qrmi, options=options)
+from .sampler import SamplerV2
+from .estimator import EstimatorV2

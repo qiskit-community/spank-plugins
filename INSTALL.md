@@ -189,9 +189,11 @@ bash-5.1# exit
 4. Building [Primitives](./primitives/python/README.md)
 
 ```bash
-[root@slurmctld /]# cd /shared/spank-plugins/primitives/python
-[root@slurmctld /]# pip install .
-[root@slurmctld /]# cd examples/ibm
+[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/qrmi_primitives/qiskit_qrmi_primitives
+[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/qrmi_primitives/pulser_qrmi_backend
+[root@slurmctld /]# cd /shared/spank-plugins/primitives/python/examples/ibm
+[root@slurmctld /]# pip install -r requirements.txt
+[root@slurmctld /]# /shared/spank-plugins/primitives/python/examples/pasqal
 [root@slurmctld /]# pip install -r requirements.txt
 ```
 
@@ -287,7 +289,7 @@ srun python /shared/spank-plugins/primitives/python/examples/ibm/estimator.py
 
 4. Running Pasqal job
 
-run_pasqal.sh
+run_pulser_backend.sh
 ```bash
 #!/bin/bash
 
@@ -298,11 +300,11 @@ run_pasqal.sh
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/spank-plugins/qrmi/examples/python/pasqal_cloud/example.py FRESNEL /shared/spank-plugins/qrmi/examples/python/pasqal_cloud/pulser_seq.json
+srun python /shared/spank-plugins/primitives/python/examples/pulser_backend.py
 ```
 
 ```bash
-[root@slurmctld /]# sbatch run_sampler.sh
+[root@slurmctld /]# sbatch run_pulser_backend.sh
 ```
 
 

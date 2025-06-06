@@ -18,8 +18,8 @@ import numpy as np
 from dotenv import load_dotenv
 from qiskit.circuit.library import EfficientSU2
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from qrmi_primitives import QRMIService
-from qrmi_primitives.ibm import SamplerV2
+from qiskit_qrmi_primitives import QRMIService
+from qiskit_qrmi_primitives.ibm import SamplerV2
 
 from target import get_target
 

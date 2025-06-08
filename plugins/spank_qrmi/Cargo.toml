@@ -1,8 +1,21 @@
 [package]
 name = "spank-qrmi"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 license = "GPL-3.0"
+description = "SPANK Plugin for Quantum Resource Management Interface(QRMI)"
+keywords = [
+    "quantum-computing",
+    "slurm",
+    "slurm-job-scheduler",
+    "slurm-workload-manager",
+    "plugins",
+    "spank",
+    "rust"
+]
+readme = "README.md"
+repository = "https://github.com/qiskit-community/spank-plugins"
+authors = ["IBM Quantum <qiskit@us.ibm.com>"]
 
 [lib]
 crate-type = ["cdylib"]

@@ -40,7 +40,7 @@ setuptools.setup(
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://quantum.ibm.com/",
-    author="IBM Quantum",
+    author="IBM, Pasqal SAS and UKRI-STFC (Hartree Centre)",
     author_email="qiskit@us.ibm.com",
     license="Apache 2.0",
     classifiers=[
@@ -55,7 +55,14 @@ setuptools.setup(
         "Programming Language :: Python :: 3.12",
         "Topic :: Scientific/Engineering",
     ],
-    keywords="quantum",
+    keywords=[
+        "quantum-computing",
+        "quantum-programming-language",
+        "qiskit",
+        "pulser",
+        "slurm",
+        "python"
+    ],
     packages=setuptools.find_packages(exclude=["examples*", "tests*"]),
     install_requires=REQUIREMENTS,
     python_requires=">=3.11",

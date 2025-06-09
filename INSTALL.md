@@ -217,17 +217,16 @@ Refer [this example](./plugins/spank_qrmi/qrmi_config.json.example) and describe
 
 7. Installing SPANK Plugins
 
-> [!NOTE]
-> When you setup your own slurm cluster, `plugstack.conf` and above plugin libraries need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
-
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
-
 ```bash
 optional /shared/spank-plugins/plugins/spank_qrmi/target/release/libspank_qrmi.so /etc/slurm/qrmi_config.json
 optional /shared/spank-plugins/plugins/spank_qrmi_supp/build/libspank_qrmi_supp.so
 ```
 
 Above example assumes you create qrmi_config.json under /etc/slurm directory.
+
+> [!NOTE]
+> When you setup your own slurm cluster, `plugstack.conf`, `qrmi_config.json` and above plugin libraries need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
 
 8. Checking SPANK Plugins installation
 

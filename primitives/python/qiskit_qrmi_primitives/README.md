@@ -82,7 +82,6 @@ Contributor must execute the commands below and fix any issues before submitting
 
 #### Python code
 ```shell-session 
-$ pushd primitives/python
-$ pylint ./qiskit_qrmi_primitives
-$ black --check ./qiskit_qrmi_primitives
+$ pylint .
+$ black --check .
 ``` 

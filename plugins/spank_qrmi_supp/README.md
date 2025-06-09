@@ -7,8 +7,8 @@ This is [SPANK plugin](https://slurm.schedmd.com/spank.html) to set supplemental
 * CMake
 * gcc
 * Slurm header & library
-  * slurm/slurm.h must be under /usr/include
-  * libslurm.so must be under /usr/lib64/slurm or /usr/lib/x86_64-linux-gnu/slurm
+  * slurm/slurm.h must be available under /usr/include
+  * libslurm.so must be available under /usr/lib64 or /usr/lib/x86_64-linux-gnu
 
 ## How to build
 

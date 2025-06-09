@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Setup qrmi-pulser-backend"""
+"""Setup pulser-qrmi-backend"""
 import os
 
 import setuptools
@@ -35,7 +35,7 @@ with open(REQUIREMENTS_PATH) as requirements_file:
     REQUIREMENTS = requirements_file.read()
 
 setuptools.setup(
-    name="qrmi-pulser-backend",
+    name="pulser-qrmi-backend",
     version=VERSION,
     description="QRMI based implementations of Pulser Backend",
     long_description=README,

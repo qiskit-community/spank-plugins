@@ -34,7 +34,7 @@ qrmi_conn = PulserQRMIConnection(qrmi)
 
 # Generate Pulser device
 # device = get_device(qrmi)
-device = AnalogDevice
+device = AnalogDevice # temp workaround
 
 reg = Register(
     {

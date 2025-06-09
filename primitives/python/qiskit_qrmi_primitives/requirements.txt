@@ -1,5 +1,5 @@
 qiskit>=1.4.2
 qiskit_ibm_runtime>=0.30.0
 qiskit_qasm3_import
-qiskit-pasqal-provider>=0.1.0
+qiskit-pasqal-provider>=0.1.1
 qrmi>=0.5.0

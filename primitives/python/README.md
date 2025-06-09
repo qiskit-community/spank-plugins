@@ -72,7 +72,7 @@ Required-by:
 
 ## Examples
 
-Examples are available in [./examples](./examples) directory. Refer README in each sub directory.
+Examples are available in [./pulser_qrmi_backend/examples](./pulser_qrmi_backend/examples) and [./qiskit_qrmi_primitives/examples](./qiskit_qrmi_primitives/examples)directory. Refer README in each sub directory.
 
 ## Contributing
 

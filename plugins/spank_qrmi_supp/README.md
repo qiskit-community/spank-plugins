@@ -23,13 +23,15 @@ make
 
 If the above build step is successful, a Linux shared library named `libspank_qrmi_supp.so` will be created under the `build/` directory. 
 
-SPANK plugin are loaded in up to five separate contexts during a Slurm job as described in [this page](https://slurm.schedmd.com/spank.html#SECTION_SPANK-PLUGINS). Copy this library to `/usr/lib64/slurm` directory on the nodes load this plugin.
-
 In addition, add the following 1 line to the /etc/slurm/plugstack.conf on the nodes where this plugin is installed.
 
 ```bash
 optional /usr/lib64/slurm/libspank_qrmi_supp.so
 ```
+
+> [!NOTE]
+> When you setup your own slurm cluster, `plugstack.conf` and above plugin libraries need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
+
 
 > [!NOTE]
 > This plugin refers '--qpu=names' option which is registered by [spank_qrmi](../spank_qrmi/README.md). This `spank_qrmi` plugin must be listed in plugstack.conf.

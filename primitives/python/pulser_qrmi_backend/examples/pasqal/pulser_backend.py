@@ -10,13 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import json
+
 from dotenv import load_dotenv
-from pulser import AnalogDevice, Pulse, Register, Sequence
+from pulser import Pulse, Register, Sequence
 from pulser.backend.remote import JobParams
 from pulser_qrmi_backend.backend import PulserQRMIBackend, PulserQRMIConnection
 from pulser_qrmi_backend.service import QRMIService
-
-# from target import get_device
+from target import get_device
 
 # Create QRMI
 load_dotenv()
@@ -28,13 +29,11 @@ if len(resources) == 0:
 
 # Randomly select QR
 qrmi = resources[0]
-print(qrmi.metadata())
 
 qrmi_conn = PulserQRMIConnection(qrmi)
 
 # Generate Pulser device
-# device = get_device(qrmi)
-device = AnalogDevice # temp workaround
+device = get_device(qrmi)
 
 reg = Register(
     {
@@ -55,4 +54,4 @@ seq.measure("ground-rydberg")
 
 backend = PulserQRMIBackend(seq, qrmi_conn)
 result = backend.run([JobParams(runs=1000, variables=[])], wait=True)
-print(f"Results: {result}")
+print(f"Results: {json.loads(result[0])['counter']}")

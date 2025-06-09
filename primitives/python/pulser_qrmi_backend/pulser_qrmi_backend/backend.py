@@ -128,7 +128,7 @@ class PulserQRMIConnection(RemoteConnection):
                 sequence=seq_to_submit.to_abstract_repr(), job_runs=params["runs"]
             )
             new_task_id = self._qrmi.task_start(payload)
-            print(f"task start, {new_task_id}", flush=True)
+            print(f"task start: {new_task_id}", flush=True)
             while wait:  # Currently always True
                 status = self._qrmi.task_status(new_task_id)
                 if status == TaskStatus.Completed:
@@ -139,7 +139,7 @@ class PulserQRMIConnection(RemoteConnection):
                 elif status == TaskStatus.Failed:
                     break
                 else:
-                    print("Task status %s, waiting 1s" % status)
+                    print("Task status %s, waiting 1s" % status, flush=True)
                     time.sleep(1)
         return results
 

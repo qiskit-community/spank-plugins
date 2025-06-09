@@ -11,6 +11,7 @@
 # that they have been altered from the originals.
 
 
+import json
 import random
 
 from dotenv import load_dotenv
@@ -29,10 +30,6 @@ if len(resources) == 0:
 
 # Randomly select QR
 qrmi = resources[random.randrange(len(resources))]
-print(qrmi.metadata())
-
-# Generate transpiler target from backend configuration & properties
-# target = get_device(qrmi)
 
 ######################################################
 #                Create Quantum Program              #
@@ -65,4 +62,5 @@ qc = QuantumCircuit(len(coords))
 qc.append(gate, qc.qubits)
 
 sampler = QPPSamplerV2(qrmi=qrmi)
-print(sampler.run([qc]))
+res = sampler.run([qc])
+print(json.loads(res[0])['counter'])

@@ -220,3 +220,7 @@ $ . ~/.cargo/env
 $ cargo fmt --all -- --check
 $ cargo clippy --all-targets -- -D warnings
 ```
+
+## License
+
+[Apache-2.0](https://github.com/qiskit-community/spank-plugins/blob/main/qrmi/LICENSE.txt)

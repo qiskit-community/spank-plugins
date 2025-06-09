@@ -195,7 +195,7 @@ bash-5.1# exit
 [root@slurmctld /]# pip install -r requirements.txt
 [root@slurmctld /]# cd /shared/spank-plugins/primitives/python/pulser_qrmi_backend
 [root@slurmctld /]# pip install .
-[root@slurmctld /]# examples/pasqal
+[root@slurmctld /]# cd examples/pasqal
 [root@slurmctld /]# pip install -r requirements.txt
 ```
 
@@ -218,7 +218,7 @@ Refer [this example](./plugins/spank_qrmi/qrmi_config.json.example) and describe
 7. Installing SPANK Plugins
 
 > [!NOTE]
-> The plugstack.conf file and the plugin library must be available on the node where the user executes the `sbatch` command and on the compute node where the QRUN command is executed.
+> When you setup your own slurm cluster, `plugstack.conf` and above plugin libraries need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
 
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
 

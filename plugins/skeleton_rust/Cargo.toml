@@ -1,8 +1,20 @@
 [package]
 name = "spank-rust-skeleton"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "GPL-3.0"
+description = "Skeleton Code(Example) of SPANK Plugin"
+keywords = [
+    "slurm",
+    "slurm-job-scheduler",
+    "slurm-workload-manager",
+    "plugins",
+    "spank",
+    "rust"
+]
+readme = "README.md"
+repository = "https://github.com/qiskit-community/spank-plugins"
+authors = ["IBM Quantum <qiskit@us.ibm.com>"]
 
 [lib]
 crate-type = ["cdylib"]

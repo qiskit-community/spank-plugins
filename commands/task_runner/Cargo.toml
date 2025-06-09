@@ -1,9 +1,12 @@
 [package]
 name = "qrmi_task_runner"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/qiskit-community/spank-plugins"
+description = "A command-line executable to run QRMI tasks"
+readme = "README.md"
+categories = ["command-line-utilities"]
 
 [dependencies]
 qrmi = { path = "../../qrmi" }

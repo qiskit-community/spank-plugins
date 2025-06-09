@@ -38,3 +38,4 @@ For information on how to contribute to this project, please take a look at our 
 2. Qiskit https://www.ibm.com/quantum/qiskit
 3. IBM Quantum https://www.ibm.com/quantum
 4. Pasqal https://pasqal.com
+5. STFC The Hartree Centre, https://www.hartree.stfc.ac.uk. This work was supported by the Hartree National Centre for Digital Innovation (HNCDI) programme.

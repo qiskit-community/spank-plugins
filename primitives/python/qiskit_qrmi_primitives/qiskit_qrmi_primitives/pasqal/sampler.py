@@ -82,6 +82,7 @@ class QPPSamplerV2(PasqalSamplerV2):
             elif status == TaskStatus.Failed:
                 break
             else:
+                print("Task status %s, waiting 1s" % status, flush=True)
                 time.sleep(1)
 
         return results

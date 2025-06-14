@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("backend", help="Backend name")
 parser.add_argument("base_url", help="API endpoint")
 parser.add_argument("apikey", help="IAM API key")
-parser.add_argument("crn", help="'Service CRN of your instance")
+parser.add_argument("crn", help="Service CRN of your instance")
 parser.add_argument(
     "--iam_url", help="IAM endpoint", default="https://iam.cloud.ibm.com"
 )
@@ -120,15 +120,22 @@ input_json = {
     "options": {},
 }
 
-payload_json = {
-    "parameters": input_json,
-    "program_id": "sampler"
-}
 
-print(json.dumps(payload_json, cls=RuntimeEncoder, indent=2))
-with open(
-    f"sampler_input_{args.backend}.json", "w", encoding="utf-8"
-) as primitive_input_file:
-    json.dump(payload_json, primitive_input_file, cls=RuntimeEncoder, indent=2)
+def dump(json_data: dict, filename: str) -> None:
+    """Write json data to the specified file
+
+    Args:
+        json_data(dict): JSON data
+        filename(str): output filename
+    """
+    print(json.dumps(json_data, cls=RuntimeEncoder, indent=2))
+    with open(filename, "w", encoding="utf-8") as primitive_input_file:
+        json.dump(json_data, primitive_input_file, cls=RuntimeEncoder, indent=2)
+
+dump(
+    {"parameters": input_json, "program_id": "sampler"},
+    f"sampler_input_{args.backend}.json",
+)
+dump(input_json, f"sampler_input_{args.backend}_params_only.json")
 
 print("done")

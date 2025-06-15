@@ -86,7 +86,7 @@ HPC applications use the Slurm QPU resources assigned to the Slurm job.
 
 Environment variables provide more details for use by the appliction, e.g. `SLURM_JOB_QPU_RESOURCES` listing the quantum resource names (comma separated if there are several provided).
 These variables will be used by QRMI.
-See the README files in the various QRMI flavor directories ([Direct Access](../primitives/python/qiskit_qrmi_primitives/examples/ibm/direct_access/README.md), [Qiskit Runtime Service](../primitives/python/qiskit_qrmi_primitives/examples/ibm/qiskit_runtime_service/README.md)) for details.
+See the README files in the various QRMI flavor directories ([ibm](../primitives/python/qiskit_qrmi_primitives/examples/ibm/README.md), [pasqal](../primitives/python/qiskit_qrmi_primitives/examples/pasqal/README.md)) for details.
 
 ```python
 from qiskit import QuantumCircuit

@@ -37,7 +37,7 @@ Note the exact syntax is subject to change -- this is a sketch of the UX at this
 HPC administrators configure the SPANK plugin, what physical resources can be provided to Slurm jobs.
 This configuration contains all the information needed to have Slurm jobs access the physical resources, such as endpoints, and access credentials -- note some parts of the configuration such as credentials can be sensitive information.
 
-See the file [qrmi_config.json.example](../plugins/spank_ibm/qrmi_config.json.example) for a comprehensive example showing.
+See the file [qrmi_config.json.example](../plugins/spank_qrmi/qrmi_config.json.example) for a comprehensive example showing.
 
 In `slurm.conf`, qpu generic resources can be assigned to some or all nodes for usage:
 ```

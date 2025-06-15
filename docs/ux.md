@@ -37,7 +37,7 @@ Note the exact syntax is subject to change -- this is a sketch of the UX at this
 HPC administrators configure the SPANK plugin, what physical resources can be provided to Slurm jobs.
 This configuration contains all the information needed to have Slurm jobs access the physical resources, such as endpoints, and access credentials -- note some parts of the configuration such as credentials can be sensitive information.
 
-See the file [qrmi_config.json.example](../plugins/spank_ibm/qrmi_config.json.example) for a comprehensive example showing.
+See the file [qrmi_config.json.example](../plugins/spank_qrmi/qrmi_config.json.example) for a comprehensive example showing.
 
 In `slurm.conf`, qpu generic resources can be assigned to some or all nodes for usage:
 ```
@@ -86,13 +86,13 @@ HPC applications use the Slurm QPU resources assigned to the Slurm job.
 
 Environment variables provide more details for use by the appliction, e.g. `SLURM_JOB_QPU_RESOURCES` listing the quantum resource names (comma separated if there are several provided).
 These variables will be used by QRMI.
-See the README files in the various QRMI flavor directories ([Direct Access](../primitives/python/examples/direct_access/README.md), [Qiskit Runtime Service](../primitives/python/examples/qiskit_runtime_service/README.md)) for details.
+See the README files in the various QRMI flavor directories ([ibm](../primitives/python/qiskit_qrmi_primitives/examples/ibm/README.md), [pasqal](../primitives/python/qiskit_qrmi_primitives/examples/pasqal/README.md)) for details.
 
 ```python
 from qiskit import QuantumCircuit
-from qrmi_primitives import QRMIService
+from qiskit_qrmi_primitives import QRMIService
 # using an IBM QRMI flavor:
-from qrmi_primitives.ibm import SamplerV2
+from qiskit_qrmi_primitives.ibm import SamplerV2
 
 # define circuit
 
@@ -129,7 +129,7 @@ result = job.result()
 print(f">>> {result}")
 ```
 
-See [examples directory](../primitives/python/examples/) for example files.
+See [examples directory](../primitives/python/qiskit_qrmi_primitives/examples/) for example files.
 
 ### Backend specifics
 #### IBM Direct Access API

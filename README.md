@@ -12,6 +12,7 @@ This is repository with Slurm Spank plugins for Quantum resources and jobs suppo
 1. [Installation](INSTALL.md)
 1. [How-Tos](./docs/howtos/)
 1. [How to Give Feedback](#how-to-give-feedback)
+1. [How to Cite This Work](#how-to-cite-this-work)
 1. [Contribution Guidelines](#contribution-guidelines)
 1. [References and Acknowledgements](#references-and-acknowledgements)
 
@@ -23,6 +24,16 @@ This is repository with Slurm Spank plugins for Quantum resources and jobs suppo
 We encourage your feedback! You can share your thoughts with us by:
 - [Opening an issue](https://github.com/qiskit-community/spank-plugins/issues) in the repository
 
+
+----------------------------------------------------------------------------------------------------
+
+### How to Cite This Work
+
+If you use the “Quantum Spank plugin” in your research or projects, please consider citing the associated overview paper  [Quantum resources in resource management systems](https://arxiv.org/abs/2506.10052). 
+This helps support the continued development and visibility of the repository. 
+The BibTeX citation handle can be found in the [CITATION.bib](CITATION.bib) file.
+
+Note that the overview paper is a work  in progress, and we expect multiple versions to be released as the project evolves.
 
 ----------------------------------------------------------------------------------------------------
 

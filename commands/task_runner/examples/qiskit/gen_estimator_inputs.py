@@ -30,7 +30,7 @@ from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 from qiskit.primitives.containers.estimator_pub import EstimatorPub
 
 parser = argparse.ArgumentParser(
-    description="A tool to generate SamplerV2 input for testing"
+    description="A tool to generate EstimatorV2 input for testing"
 )
 parser.add_argument("backend", help="Backend name")
 parser.add_argument("base_url", help="API endpoint")
@@ -128,15 +128,20 @@ input_json = {
     },
 }
 
-payload_json = {
-    "parameters": input_json,
-    "program_id": "estimator"
-}
+def dump(json_data: dict, filename: str) -> None:
+    """Write json data to the specified file
 
-print(json.dumps(payload_json, cls=RuntimeEncoder, indent=2))
-with open(
-    f"estimator_input_{args.backend}.json", "w", encoding="utf-8"
-) as primitive_input_file:
-    json.dump(payload_json, primitive_input_file, cls=RuntimeEncoder, indent=2)
+    Args:
+        json_data(dict): JSON data
+        filename(str): output filename
+    """
+    print(json.dumps(json_data, cls=RuntimeEncoder, indent=2))
+    with open(filename, "w", encoding="utf-8") as primitive_input_file:
+        json.dump(json_data, primitive_input_file, cls=RuntimeEncoder, indent=2)
 
+dump(
+    {"parameters": input_json, "program_id": "estimator"},
+    f"estimator_input_{args.backend}.json",
+)
+dump(input_json, f"estimator_input_{args.backend}_params_only.json")
 print("done")

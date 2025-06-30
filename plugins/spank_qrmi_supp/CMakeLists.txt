@@ -17,7 +17,7 @@
 #
 
 cmake_minimum_required(VERSION 3.10)
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 project (spank_qrmi_supp C)
 
 #
@@ -36,6 +36,7 @@ else (NOT SLURM_FOUND)
   set (SLURM_INCLUDE_DIRS ${SLURM_INCLUDE_DIR})
   find_path(SLURM_MODULES_DIR NAMES slurm
           PATHS
+          /lib64/slurm
           /usr/lib64/slurm
           /usr/lib/x86_64-linux-gnu/slurm
           DOC "Directory containing SLURM extensions."

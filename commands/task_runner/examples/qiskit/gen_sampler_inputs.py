@@ -26,7 +26,7 @@ from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from qiskit import qasm3
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 from qiskit.primitives.containers.sampler_pub import SamplerPub
-from qiskit.circuit.library import EfficientSU2
+from qiskit.circuit.library import efficient_su2
 
 parser = argparse.ArgumentParser(
     description="A tool to generate SamplerV2 input for testing"
@@ -85,7 +85,7 @@ pm = generate_preset_pass_manager(
 )
 
 # Create a circuit - You need at least one circuit as the input to the Sampler primitive.
-circuit = EfficientSU2(127, entanglement="linear", flatten=True)
+circuit = efficient_su2(127, entanglement="linear")
 circuit.measure_all()
 # The circuit is parametrized, so we will define the parameter values for execution
 param_values = np.random.rand(circuit.num_parameters)

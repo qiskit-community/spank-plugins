@@ -618,8 +618,6 @@ class DAAService:
             )
             return {"ok": False}
 
-        job["usage"] = {}
-
         # status=Running
         self.job_status(job, "Running", create=True)
 

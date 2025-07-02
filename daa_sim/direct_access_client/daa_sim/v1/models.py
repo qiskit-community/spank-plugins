@@ -710,6 +710,7 @@ class JobResponse(BaseModel):
     )
 
     usage: Usage = Field(
+        default=None,
         description="Job usage details.",
     )
 

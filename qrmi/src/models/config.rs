@@ -23,9 +23,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
+/// QRMI resource types
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-/// QRMI resource types
 pub enum ResourceType {
     /// IBM Direct Access
     IBMDirectAccess,
@@ -61,8 +61,8 @@ impl ResourceType {
     }
 }
 
+/// A QRMI resource definition
 #[derive(Debug, Clone, serde::Deserialize)]
-/// A QRMI resource
 pub struct ResourceDef {
     /// resource name
     pub name: String,
@@ -74,14 +74,14 @@ pub struct ResourceDef {
     pub environment: HashMap<String, String>,
 }
 
+/// A set of QRMI resource definitions
 #[derive(Debug, Clone, serde::Deserialize)]
-/// A QRMI resource
 pub struct ResourceDefs {
     /// resource name
     pub resources: Vec<ResourceDef>,
 }
 
-/// A list of [`ResourceDef`] specified to this Slurm job.
+/// QRMI configuration file
 pub struct Config {
     pub resource_map: HashMap<String, ResourceDef>,
 }

@@ -139,6 +139,7 @@ pub unsafe extern "C" fn qrmi_string_free(ptr: *mut c_char) -> ReturnCode {
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
 /// @version 0.6.0
 #[no_mangle]
+/// cbindgen:ptrs-as-arrays=[[array; ]]
 pub unsafe extern "C" fn qrmi_string_array_free(
     size: usize,
     array: *mut *mut c_char,
@@ -363,7 +364,7 @@ pub unsafe extern "C" fn qrmi_config_resource_def_free(ptr: *mut ResourceDef) ->
 ///
 /// * The memory pointed to by `outlen` must have enough room to store size_t value.
 ///
-/// * `outp` must be non nul.
+/// * `names` must be non nul.
 ///
 /// # Example
 ///
@@ -378,25 +379,26 @@ pub unsafe extern "C" fn qrmi_config_resource_def_free(ptr: *mut ResourceDef) ->
 ///      }
 ///
 /// @param (config) [in] A Config handle
-/// @param (outlen) [out] number of resource names in the list
-/// @param (outp) [out] A list of the resource names if succeeded. Must call qrmi_string_array_free() to free if no longer used.
+/// @param (num_names) [out] number of resource names in the list
+/// @param (names) [out] A list of the resource names if succeeded. Must call qrmi_string_array_free() to free if no longer used.
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
 /// @version 0.6.0
 #[no_mangle]
+/// cbindgen:ptrs-as-arrays=[[names;]]
 pub unsafe extern "C" fn qrmi_config_resource_names_get(
     config: *mut Config,
-    outlen: *mut usize,
-    outp: *mut *mut *mut c_char,
+    num_names: *mut usize,
+    names: *mut *mut *mut c_char,
 ) -> ReturnCode {
-    if config.is_null() || outp.is_null() {
+    if config.is_null() || names.is_null() {
         return ReturnCode::NullPointerError;
     }
 
-    let names = (*config).resource_map.keys();
-    let count = names.len();
+    let keys = (*config).resource_map.keys();
+    let count = keys.len();
     let mut raw_ptrs: Vec<*mut c_char> = Vec::with_capacity(count);
-    for name in names {
-        let str_c = CString::new(name.as_str()).unwrap();
+    for key in keys {
+        let str_c = CString::new(key.as_str()).unwrap();
         raw_ptrs.push(str_c.into_raw());
     }
 
@@ -405,8 +407,8 @@ pub unsafe extern "C" fn qrmi_config_resource_names_get(
     std::mem::forget(boxed_array);
 
     unsafe {
-        *outlen = count;
-        *outp = raw;
+        *num_names = count;
+        *names = raw;
     }
     ReturnCode::Success
 }
@@ -544,15 +546,15 @@ pub unsafe extern "C" fn qrmi_resource_is_accessible(
 ///     }
 ///
 /// @param (qrmi) [in] A QrmiQuantumResource handle
-/// @param (outp) [out] An acquisition token if succeeded. Must call qrmi_string_free() to free if no longer used.
+/// @param (acquisition_token) [out] An acquisition token if succeeded. Must call qrmi_string_free() to free if no longer used.
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
 /// @version 0.6.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_acquire(
     qrmi: *mut QuantumResource,
-    outp: *mut *mut c_char,
+    acquisition_token: *mut *mut c_char,
 ) -> ReturnCode {
-    if qrmi.is_null() || outp.is_null() {
+    if qrmi.is_null() || acquisition_token.is_null() {
         return ReturnCode::NullPointerError;
     }
 
@@ -563,7 +565,7 @@ pub unsafe extern "C" fn qrmi_resource_acquire(
         Ok(token) => {
             if let Ok(token_cstr) = CString::new(token) {
                 unsafe {
-                    *outp = token_cstr.into_raw();
+                    *acquisition_token = token_cstr.into_raw();
                 }
                 return ReturnCode::Success;
             }
@@ -604,7 +606,7 @@ pub unsafe extern "C" fn qrmi_resource_acquire(
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_release(
     qrmi: *mut QuantumResource,
-    acquisition_token: *mut c_char,
+    acquisition_token: *const c_char,
 ) -> ReturnCode {
     if qrmi.is_null() {
         return ReturnCode::NullPointerError;
@@ -634,7 +636,7 @@ pub unsafe extern "C" fn qrmi_resource_release(
 ///
 /// * `qrmi` must have been returned by a previous call to qrmi_resource_new().
 ///
-/// * `outp` must be non-null.
+/// * `task_id` must be non-null.
 ///
 /// * The memory pointed to by `input` and `program_id` in QrmiPayload_QiskitPrimitive_Body contain a valid nul terminator.
 ///
@@ -660,16 +662,16 @@ pub unsafe extern "C" fn qrmi_resource_release(
 ///
 /// @param (qrmi) [in] A QrmiQuantumResource handle
 /// @param (payload) [in] payload
-/// @param (outp) [out] A task identifier if succeeded. Must call qrmi_string_free() to free if no longer used.
+/// @param (task_id) [out] A task identifier if succeeded. Must call qrmi_string_free() to free if no longer used.
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
 /// @version 0.6.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_task_start(
     qrmi: *mut QuantumResource,
-    payload: *mut Payload,
-    outp: *mut *mut c_char,
+    payload: *const Payload,
+    task_id: *mut *mut c_char,
 ) -> ReturnCode {
-    if qrmi.is_null() || outp.is_null() {
+    if qrmi.is_null() || task_id.is_null() {
         return ReturnCode::NullPointerError;
     }
 
@@ -701,7 +703,7 @@ pub unsafe extern "C" fn qrmi_resource_task_start(
             Ok(job_id) => {
                 if let Ok(job_id_cstr) = CString::new(job_id) {
                     unsafe {
-                        *outp = job_id_cstr.into_raw();
+                        *task_id = job_id_cstr.into_raw();
                     }
                     return ReturnCode::Success;
                 }
@@ -740,7 +742,7 @@ pub unsafe extern "C" fn qrmi_resource_task_start(
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_task_stop(
     qrmi: *mut QuantumResource,
-    task_id: *mut c_char,
+    task_id: *const c_char,
 ) -> ReturnCode {
     if qrmi.is_null() {
         return ReturnCode::NullPointerError;
@@ -773,7 +775,7 @@ pub unsafe extern "C" fn qrmi_resource_task_stop(
 ///
 /// * The memory pointed to by `task_id` must contain a valid nul terminator.
 ///
-/// * The memory pointed to by `outp` must have enough room to store `QrmiTaskStatus` value.
+/// * The memory pointed to by `status` must have enough room to store `QrmiTaskStatus` value.
 ///
 /// * The nul terminator must be within `isize::MAX` from `task_id`
 ///
@@ -790,21 +792,21 @@ pub unsafe extern "C" fn qrmi_resource_task_stop(
 ///
 /// @param (qrmi) [in] A QrmiQuantumResource handle
 /// @param (task_id) [in] A task identifier
-/// @param (outp) [out] A pointer to the memory to store `QrmiTaskStatus` value
+/// @param (status) [out] A pointer to the memory to store `QrmiTaskStatus` value
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
 /// @version 0.6.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_task_status(
     qrmi: *mut QuantumResource,
-    task_id: *mut c_char,
-    outp: *mut TaskStatus,
+    task_id: *const c_char,
+    status: *mut TaskStatus,
 ) -> ReturnCode {
     if qrmi.is_null() {
         return ReturnCode::NullPointerError;
     }
 
     ffi_helpers::null_pointer_check!(task_id, ReturnCode::Error);
-    ffi_helpers::null_pointer_check!(outp, ReturnCode::Error);
+    ffi_helpers::null_pointer_check!(status, ReturnCode::Error);
 
     if let Ok(task_id_str) = CStr::from_ptr(task_id).to_str() {
         let result = (*qrmi)
@@ -812,7 +814,7 @@ pub unsafe extern "C" fn qrmi_resource_task_status(
             .block_on(async { (*qrmi).inner.task_status(task_id_str).await });
         match result {
             Ok(v) => {
-                *outp = v;
+                *status = v;
                 return ReturnCode::Success;
             }
             Err(err) => {
@@ -854,7 +856,7 @@ pub unsafe extern "C" fn qrmi_resource_task_status(
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_task_result(
     qrmi: *mut QuantumResource,
-    task_id: *mut c_char,
+    task_id: *const c_char,
     outp: *mut *mut c_char,
 ) -> ReturnCode {
     if qrmi.is_null() {
@@ -943,7 +945,7 @@ pub unsafe extern "C" fn qrmi_resource_target(
 ///
 /// * `qrmi` must have been returned by a previous call to qrmi_resource_new().
 ///
-/// * `outlen` and `outp` must be non nul.
+/// * `num_keys` and `key_names` must be non nul.
 ///
 /// # Example
 ///
@@ -958,17 +960,18 @@ pub unsafe extern "C" fn qrmi_resource_target(
 ///     }
 ///
 /// @param (qrmi) [in] A QrmiQuantumResource handle
-/// @param (outlen) [out] number of keys available in the metadata
-/// @param (outp) [out] A list of metadata key names if succeeded. Must call qrmi_string_array_free() to free if no longer used.
+/// @param (num_keys) [out] number of keys available in the metadata
+/// @param (key_names) [out] A list of metadata key names if succeeded. Must call qrmi_string_array_free() to free if no longer used.
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
 /// @version 0.6.0
 #[no_mangle]
+/// cbindgen:ptrs-as-arrays=[[key_names;]]
 pub unsafe extern "C" fn qrmi_resource_metadata_keys_get(
     qrmi: *mut QuantumResource,
-    outlen: *mut usize,
-    outp: *mut *mut *mut c_char,
+    num_keys: *mut usize,
+    key_names: *mut *mut *mut c_char,
 ) -> ReturnCode {
-    if qrmi.is_null() || outp.is_null() {
+    if qrmi.is_null() || num_keys.is_null() || key_names.is_null() {
         return ReturnCode::NullPointerError;
     }
 
@@ -987,8 +990,8 @@ pub unsafe extern "C" fn qrmi_resource_metadata_keys_get(
     std::mem::forget(boxed_array);
 
     unsafe {
-        *outlen = count;
-        *outp = raw;
+        *num_keys = count;
+        *key_names = raw;
     }
     ReturnCode::Success
 }
@@ -1004,7 +1007,7 @@ pub unsafe extern "C" fn qrmi_resource_metadata_keys_get(
 ///
 /// * The nul terminator must be within `isize::MAX` from `key`.
 ///
-/// * `outp` must be non nul.
+/// * `value` must be non nul.
 ///
 /// # Example
 ///
@@ -1017,16 +1020,16 @@ pub unsafe extern "C" fn qrmi_resource_metadata_keys_get(
 ///
 /// @param (qrmi) [in] A QrmiQrmiQuantumResource handle
 /// @param (key) [in] metadata key name
-/// @param (outp) [out] metadata value if succeeded
+/// @param (value) [out] metadata value if succeeded
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
 /// @version 0.6.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_metadata_value_get(
     qrmi: *mut QuantumResource,
-    key: *mut c_char,
-    outp: *mut *mut c_char,
+    key: *const c_char,
+    value: *mut *mut c_char,
 ) -> ReturnCode {
-    if qrmi.is_null() || outp.is_null() {
+    if qrmi.is_null() || value.is_null() {
         return ReturnCode::NullPointerError;
     }
     ffi_helpers::null_pointer_check!(key, ReturnCode::Error);
@@ -1035,10 +1038,10 @@ pub unsafe extern "C" fn qrmi_resource_metadata_value_get(
         let result = (*qrmi)
             .runtime
             .block_on(async { (*qrmi).inner.metadata().await });
-        if let Some(value) = result.get(key_str) {
-            if let Ok(value_cstr) = CString::new(value.as_str()) {
+        if let Some(val) = result.get(key_str) {
+            if let Ok(value_cstr) = CString::new(val.as_str()) {
                 unsafe {
-                    *outp = value_cstr.into_raw();
+                    *value = value_cstr.into_raw();
                 }
                 return ReturnCode::Success;
             }

@@ -38,22 +38,25 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  size_t num_keys = 0;
-  char **metadata_keys = NULL;
-  QrmiReturnCode retval =
-      qrmi_resource_metadata_keys_get(qrmi, &num_keys, &metadata_keys);
-  if (retval == QRMI_RETURN_CODE_SUCCESS) {
-    for (int i = 0; i < num_keys; i++) {
-      char *value = NULL;
-      qrmi_resource_metadata_value_get(qrmi, metadata_keys[i], &value);
-      printf("metadata key=[%s], value=[%s]\n", metadata_keys[i], value);
-      qrmi_string_free(value);
+  QrmiResourceMetadata *metadata = NULL;
+  QrmiReturnCode rc = qrmi_resource_metadata(qrmi, &metadata);
+  if (rc == QRMI_RETURN_CODE_SUCCESS) {
+    size_t num_keys = 0;
+    char **metadata_keys = NULL;
+    rc = qrmi_resource_metadata_keys(metadata, &num_keys, &metadata_keys);
+    if (rc == QRMI_RETURN_CODE_SUCCESS) {
+      for (int i = 0; i < num_keys; i++) {
+        char *value = qrmi_resource_metadata_value(metadata, metadata_keys[i]);
+        printf("metadata key=[%s], value=[%s]\n", metadata_keys[i], value);
+        qrmi_string_free(value);
+      }
+      qrmi_string_array_free(num_keys, metadata_keys);
     }
-    qrmi_string_array_free(num_keys, metadata_keys);
+    qrmi_resource_metadata_free(metadata);
   }
 
   bool is_accessible = false;
-  int rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
+  rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
   if (rc == QRMI_RETURN_CODE_SUCCESS) {
     if (is_accessible == false) {
       fprintf(stderr, "%s cannot be accessed.\n", argv[1]);

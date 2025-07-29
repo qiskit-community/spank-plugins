@@ -30,6 +30,10 @@ after_includes = """
  *  @defgroup QrmiQuantumResource Quantum Resource
  *
  *  Functions used when accessing Quantum resource from the QRMI C API.
+ *
+ *  @defgroup QrmiResourceMetadata Quantum Resource Metadata
+ *
+ *  Functions used when accessing Quantum resource metadata from the QRMI C API.
  */
 """
 
@@ -42,6 +46,7 @@ rename_variants = "ScreamingSnakeCase"
 "TaskStatus" = "QrmiTaskStatus"
 "Config" = "QrmiConfig"
 "QuantumResource" = "QrmiQuantumResource"
+"ResourceMetadata" = "QrmiResourceMetadata"
 "KeyValue" = "QrmiKeyValue"
 "EnvironmentVariables" = "QrmiEnvironmentVariables"
 "ResourceDef" = "QrmiResourceDef"

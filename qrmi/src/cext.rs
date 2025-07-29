@@ -78,6 +78,12 @@ pub struct ResourceDef {
     environments: EnvironmentVariables,
 }
 
+/// Quantum resource metadata
+#[derive(Debug)]
+pub struct ResourceMetadata {
+    inner: std::collections::HashMap<String, String>,
+}
+
 /// Quantum resource handle
 pub struct QuantumResource {
     inner: Box<dyn crate::QuantumResource>,
@@ -938,12 +944,123 @@ pub unsafe extern "C" fn qrmi_resource_target(
     ReturnCode::Error
 }
 
+
 /// @ingroup QrmiQuantumResource
-/// Returns a list of the metadata keys
+/// Returns a resource metadata
 ///
 /// # Safety
 ///
 /// * `qrmi` must have been returned by a previous call to qrmi_resource_new().
+///
+/// * `outp` must be non nul.
+///
+/// # Example
+///
+///     QrmiResourceMetadata *metadata = NULL;
+///     QrmiReturnCode rc = qrmi_resource_metadata(qrmi, &metadata);
+///
+/// @param (qrmi) [in] A QrmiQuantumResource handle
+/// @param (outp) [out] A QrmiResourceMetadata handle. Must call qrmi_resource_metadata_free() to free if no longer used.
+/// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
+/// @version 0.6.0
+#[no_mangle]
+pub unsafe extern "C" fn qrmi_resource_metadata(
+    qrmi: *mut QuantumResource,
+    outp: *mut *mut ResourceMetadata,
+) -> ReturnCode {
+    if qrmi.is_null() || outp.is_null() {
+        return ReturnCode::NullPointerError;
+    }
+
+    let metadata = (*qrmi)
+        .runtime
+        .block_on(async { (*qrmi).inner.metadata().await });
+
+    let boxed_metadata = Box::new(ResourceMetadata {
+        inner: metadata,
+    });
+    unsafe {
+        *outp = Box::into_raw(boxed_metadata);
+    }
+    ReturnCode::Success
+}
+
+/// @ingroup QrmiResourceMetadata
+/// Frees the memory space pointed to by `ptr`, which must have been returned by a previous call to qrmi_resource_metadata(). Otherwise, or if ptr has already been freed, segmentation fault occurs.  If `ptr` is NULL, returns < 0.
+/// # Safety
+///
+/// * `ptr` must have been returned by a previous call to qrmi_resource_metadata().
+///
+/// # Example
+///
+///     QrmiResourceMetadata *metadata = NULL;
+///     QrmiReturnCode rc = qrmi_resource_metadata(qrmi, &metadata);
+///     if (retval == QRMI_RETURN_CODE_SUCCESS) {
+///         qrmi_resource_metadata_free(metadata); 
+///     }
+///
+/// @param (ptr) [in] A QrmiResourceMetadata handle to be free
+/// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
+/// @version 0.6.0
+#[no_mangle]
+pub unsafe extern "C" fn qrmi_resource_metadata_free(ptr: *mut ResourceMetadata) -> ReturnCode {
+    if ptr.is_null() {
+        return ReturnCode::NullPointerError;
+    }   
+    unsafe {
+        let _ = Box::from_raw(ptr);
+    };
+    ReturnCode::Success
+}
+
+/// @ingroup QrmiResourceMetadata
+/// Returns metadata value of the specified key
+///
+/// # Safety
+///
+/// * `metadata` must have been returned by a previous call to qrmi_resource_metadata().
+///
+/// * The memory pointed to by `key` must contain a valid nul terminator.
+///
+/// * The nul terminator must be within `isize::MAX` from `key`.
+///
+/// # Example
+///
+///     char *value = qrmi_resource_metadata_value(metadata, "backend_name");
+///     printf("metadata value=[%s]\n", value);
+///     qrmi_string_free(value);
+///
+/// @param (qrmi) [in] A QrmiQrmiQuantumResource handle
+/// @param (key) [in] metadata key name
+/// @param (value) [out] metadata value if succeeded. Must call qrmi_string_free() to free if no longer used.
+/// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
+/// @version 0.6.0
+#[no_mangle]
+pub unsafe extern "C" fn qrmi_resource_metadata_value(
+    metadata: *mut ResourceMetadata,
+    key: *const c_char,
+) -> *mut c_char {
+    if metadata.is_null() {
+        return std::ptr::null_mut();
+    }
+    ffi_helpers::null_pointer_check!(key, std::ptr::null_mut());
+
+    if let Ok(key_str) = CStr::from_ptr(key).to_str() {
+        if let Some(val) = (*metadata).inner.get(key_str) {
+            if let Ok(value_cstr) = CString::new(val.as_str()) {
+                return value_cstr.into_raw();
+            }
+        }
+    }
+    std::ptr::null_mut()
+}
+
+/// @ingroup QrmiResourceMetadata
+/// Returns a list of the metadata keys
+///
+/// # Safety
+///
+/// * `metadata` must have been returned by a previous call to qrmi_resource_metadata().
 ///
 /// * `num_keys` and `key_names` must be non nul.
 ///
@@ -951,7 +1068,7 @@ pub unsafe extern "C" fn qrmi_resource_target(
 ///
 ///     size_t num_keys = 0;
 ///     char **metadata_keys = NULL;
-///     QrmiReturnCode rc = qrmi_resource_metadata_keys_get(qrmi, &num_keys, &metadata_keys);
+///     QrmiReturnCode rc = qrmi_resource_metadata_keys(metadata, &num_keys, &metadata_keys);
 ///     if (rc == QRMI_RETURN_CODE_SUCCESS) {
 ///         for (int i = 0; i < num_keys; i++) {
 ///             printf("%s\n", metadata_keys[i]);
@@ -963,21 +1080,18 @@ pub unsafe extern "C" fn qrmi_resource_target(
 /// @param (num_keys) [out] number of keys available in the metadata
 /// @param (key_names) [out] A list of metadata key names if succeeded. Must call qrmi_string_array_free() to free if no longer used.
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
-/// @version 0.6.0
-#[no_mangle]
 /// cbindgen:ptrs-as-arrays=[[key_names;]]
-pub unsafe extern "C" fn qrmi_resource_metadata_keys_get(
-    qrmi: *mut QuantumResource,
+#[no_mangle]
+pub unsafe extern "C" fn qrmi_resource_metadata_keys(
+    metadata: *mut ResourceMetadata,
     num_keys: *mut usize,
     key_names: *mut *mut *mut c_char,
 ) -> ReturnCode {
-    if qrmi.is_null() || num_keys.is_null() || key_names.is_null() {
+    if metadata.is_null() {
         return ReturnCode::NullPointerError;
     }
 
-    let keys: Vec<String> = (*qrmi)
-        .runtime
-        .block_on(async { (*qrmi).inner.metadata().await.into_keys().collect() });
+    let keys = (*metadata).inner.keys();
     let count = keys.len();
     let mut raw_ptrs: Vec<*mut c_char> = Vec::with_capacity(count);
     for key in keys {
@@ -994,58 +1108,4 @@ pub unsafe extern "C" fn qrmi_resource_metadata_keys_get(
         *key_names = raw;
     }
     ReturnCode::Success
-}
-
-/// @ingroup QrmiQuantumResource
-/// Returns metadata value of the specified key
-///
-/// # Safety
-///
-/// * `qrmi` must have been returned by a previous call to qrmi_resource_new().
-///
-/// * The memory pointed to by `key` must contain a valid nul terminator.
-///
-/// * The nul terminator must be within `isize::MAX` from `key`.
-///
-/// * `value` must be non nul.
-///
-/// # Example
-///
-///     char *value = NULL;
-///     QrmiReturnCode rc = qrmi_resource_metadata_value_get(qrmi, "backend_name", &value);
-///     if (rc == QRMI_RETURN_CODE_SUCCESS) {
-///         printf(%s\n", value);
-///         qrmi_string_free(value);
-///     }
-///
-/// @param (qrmi) [in] A QrmiQrmiQuantumResource handle
-/// @param (key) [in] metadata key name
-/// @param (value) [out] metadata value if succeeded
-/// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
-/// @version 0.6.0
-#[no_mangle]
-pub unsafe extern "C" fn qrmi_resource_metadata_value_get(
-    qrmi: *mut QuantumResource,
-    key: *const c_char,
-    value: *mut *mut c_char,
-) -> ReturnCode {
-    if qrmi.is_null() || value.is_null() {
-        return ReturnCode::NullPointerError;
-    }
-    ffi_helpers::null_pointer_check!(key, ReturnCode::Error);
-
-    if let Ok(key_str) = CStr::from_ptr(key).to_str() {
-        let result = (*qrmi)
-            .runtime
-            .block_on(async { (*qrmi).inner.metadata().await });
-        if let Some(val) = result.get(key_str) {
-            if let Ok(value_cstr) = CString::new(val.as_str()) {
-                unsafe {
-                    *value = value_cstr.into_raw();
-                }
-                return ReturnCode::Success;
-            }
-        }
-    }
-    ReturnCode::Error
 }

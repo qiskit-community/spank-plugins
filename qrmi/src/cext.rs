@@ -1030,10 +1030,9 @@ pub unsafe extern "C" fn qrmi_resource_metadata_free(ptr: *mut ResourceMetadata)
 ///     printf("metadata value=[%s]\n", value);
 ///     qrmi_string_free(value);
 ///
-/// @param (qrmi) [in] A QrmiQrmiQuantumResource handle
+/// @param (metadata) [in] A QrmiResourceMetadata handle
 /// @param (key) [in] metadata key name
-/// @param (value) [out] metadata value if succeeded. Must call qrmi_string_free() to free if no longer used.
-/// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.
+/// @return metadata value if succeeded. Must call qrmi_string_free() to free if no longer used.
 /// @version 0.6.0
 #[no_mangle]
 pub unsafe extern "C" fn qrmi_resource_metadata_value(
@@ -1076,7 +1075,7 @@ pub unsafe extern "C" fn qrmi_resource_metadata_value(
 ///         qrmi_string_array_free(num_keys, metadata_keys);
 ///     }
 ///
-/// @param (qrmi) [in] A QrmiQuantumResource handle
+/// @param (metadata) [in] A QrmiResourceMetadata handle
 /// @param (num_keys) [out] number of keys available in the metadata
 /// @param (key_names) [out] A list of metadata key names if succeeded. Must call qrmi_string_array_free() to free if no longer used.
 /// @return @ref QrmiReturnCode::QRMI_RETURN_CODE_SUCCESS if succeeded.

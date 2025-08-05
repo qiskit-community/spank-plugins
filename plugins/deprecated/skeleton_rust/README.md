@@ -1,5 +1,8 @@
 # Skeleton SPANK Plugin in Rust
 
+> [!CAUTION]
+> This module is marked deprecated in a future update, and then removed. Use [skeleton](../skeleton).
+
 ## Prerequisites
 
 * Rust 1.85.1 or above

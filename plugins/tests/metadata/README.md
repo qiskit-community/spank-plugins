@@ -23,6 +23,6 @@ Example:
 If SPANK plugin is specified to validate, `type` should be `spank`.
 
 ```bash
-$ LD_LIBRARY_PATH=/lib64/slurm:$LD_LIBRARY_PATH ./test ../../spank_qrmi/target/release/libspank_qrmi.so
+$ LD_LIBRARY_PATH=/lib64/slurm:$LD_LIBRARY_PATH ./test ../../spank_qrmi/build/spank_qrmi.so
 Valid Slurm plugin library. name=spank_qrmi, type=spank, version=0xa6358c80
 ```

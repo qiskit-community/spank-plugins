@@ -1,30 +1,22 @@
-# spank_qrmi_c
+# SPANK Plugin for QRMI
 
 This is a [SPANK plugin](https://slurm.schedmd.com/spank.html) that configures access to Quantum Resources from user jobs. It handles the acquisition and release of access to Quantum Resources and sets the necessary environment variables for executing Quantum workloads. The available Quantum Resources are specified in the qrmi_config.json file, which is managed by the administrator.
-
+ 
 ## Prerequisites
 
-* Compilers
-  * gcc
-  * gcc-c++
-  * clang-tools-extra
-* Rust 1.86 or above [Link](https://www.rust-lang.org/tools/install)
+* Rust 1.85.1 or above
 * Slurm header & library
   * slurm/slurm.h must be available under /usr/include
   * libslurm.so must be available under /usr/lib64 or /usr/lib/x86_64-linux-gnu
 * you'll also need OpenSSL (libssl-dev or openssl-devel on most Unix distributions).
 
-
 ## How to build
 
 ```shell-session
 . ~/.cargo/env
-mkdir build
-cd build
-cmake ..
-make
+cargo clean
+cargo build --release
 ```
-
 
 ## SBATCH option
 
@@ -66,14 +58,14 @@ If the user sets the necessary environment variables for job execution themselve
 
 ## Installation
 
-If the above build step is successful, a Linux shared library named `spank_qrmi.so` will be created under the `build/` directory. 
+If the above build step is successful, a Linux shared library named `libspank_qrmi.so` will be created under the `target/release/` directory. 
 
 In addition, add the following 1 line to the /etc/slurm/plugstack.conf on the nodes where this plugin is installed.
 
 Note that administrator needs to create qrmi_config.json file and specify the path as plugin argument like below.
 
 ```bash
-optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
+optional /usr/lib64/slurm/libspank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
 > [!NOTE]
@@ -92,16 +84,10 @@ Options provided by plugins:
 This plugin uses Slurm logger for logging. Log messages from this plugin can be found in /var/log/slurm/slurmd.log, etc.
 
 ```bash
-[2025-07-31T09:43:34.019] [21.batch] debug:  spank: /etc/slurm/plugstack.conf:1: Loaded plugin spank_qrmi.so
-[2025-07-31T09:43:34.019] [21.batch] debug:  spank_qrmi_c(6582, 0): -> slurm_spank_init argc=1 remote=1
-[2025-07-31T09:43:34.019] [21.batch] debug:  SPANK: appending plugin option "qpu"
-[2025-07-31T09:43:34.019] [21.batch] debug:  spank_qrmi_c(6582,0): <- slurm_spank_init rc=0
-[2025-07-31T09:43:34.019] [21.batch] debug2: spank: spank_qrmi.so: init = 0
-[2025-07-31T09:43:34.019] [21.batch] debug:  spank_qrmi_c: --qpu=[ibm_sherbrooke,ibm_torino]
-[2025-07-31T09:43:34.019] [21.batch] debug:  spank_qrmi_c(6582, 0): -> slurm_spank_init_post_opt argc=1 remote=1
-[2025-07-31T09:43:34.019] [21.batch] debug:  spank_qrmi_c, fffffffb
-[2025-07-31T09:43:34.019] [21.batch] debug:  spank_qrmi_c: argv[0] = [/etc/slurm/qrmi_config.json]
-[2025-07-31T09:43:34.020] [21.batch] debug:  spank_qrmi_c: name(ibm_sherbrooke), type(1) found in qrmi_config
+[2025-05-06T02:48:52.038] [81.batch] info: spank{id="spank_qrmi" cb="slurm_spank_init_post_opt" ctx="Remote"}: qpu = test_heron, type = IBMDirectAccess env = {
+[2025-05-06T02:48:52.062] [81.batch] info: spank{id="spank_qrmi" cb="slurm_spank_init_post_opt" ctx="Remote"}: acquisition token = f3ff05d6-3cd6-402e-b242-fa8d13b9c46e
+[2025-05-06T02:48:52.063] [81.batch] info: spank{id="spank_qrmi" cb="slurm_spank_init_post_opt" ctx="Remote"}: qpu = test_eagle, type = IBMDirectAccess env = {
+[2025-05-06T02:48:52.082] [81.batch] info: spank{id="spank_qrmi" cb="slurm_spank_init_post_opt" ctx="Remote"}: acquisition token = 48a70138-f8eb-4bf9-ab90-46caa6584e9b
 ```
 
 ## Multiple QPU considerations

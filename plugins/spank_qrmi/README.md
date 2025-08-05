@@ -106,7 +106,7 @@ This plugin uses Slurm logger for logging. Log messages from this plugin can be 
 
 ## Multiple QPU considerations
 
-At runtime, each QRMI instance is linked to a single QPU resource. To enable the use of multiple Quantum resources within a single job script, this plugin sets environment variables with the resource name as a prefix. For example, if `--qpu=qpu1,qpu2 is specified, the environment variables will be set as follows:
+At runtime, each QRMI instance is linked to a single QPU resource. To enable the use of multiple Quantum resources within a single job script, this plugin sets environment variables with the resource name as a prefix. For example, if `--qpu=qpu1,qpu2` is specified, the environment variables will be set as follows:
 
 ```bash
 qpu1_QRMI_IBM_DA_ENDPOINT=http://test1

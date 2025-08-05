@@ -77,7 +77,7 @@ optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
 > [!NOTE]
-> When you setup your own slurm cluster, `plugstack.conf`, `qrmi_config.json` and above plugin libraries need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
+> When you setup your own slurm cluster, `plugstack.conf`, `qrmi_config.json` and `spank_qrmi.so` need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
 
 Once you complete installation, you must find `--qpu=names` option in the sbatch help message.
 

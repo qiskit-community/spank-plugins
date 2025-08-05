@@ -221,9 +221,8 @@ diff -Naru slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/d
 diff -Naru slurm-docker-cluster.orig/plugstack.conf.example slurm-docker-cluster/plugstack.conf.example
 --- slurm-docker-cluster.orig/plugstack.conf.example	1970-01-01 09:00:00
 +++ slurm-docker-cluster/plugstack.conf.example	2025-05-18 20:38:50
-@@ -0,0 +1,2 @@
-+optional /shared/spank-plugins/plugins/spank_qrmi/target/release/libspank_qrmi.so /etc/slurm/qrmi_config.json
-+optional /shared/spank-plugins/plugins/spank_qrmi_supp/build/libspank_qrmi_supp.so
+@@ -0,0 +1,1 @@
++optional /shared/spank-plugins/plugins/spank_qrmi/target/release/spank_qrmi.so /etc/slurm/qrmi_config.json
 diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
 --- slurm-docker-cluster.orig/qrmi_config.json.example	1970-01-01 09:00:00
 +++ slurm-docker-cluster/qrmi_config.json.example	2025-05-18 20:39:53

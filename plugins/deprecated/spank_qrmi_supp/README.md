@@ -1,7 +1,7 @@
 # Supplemental SPANK Plugin for QRMI
 
 > [!CAUTION]
-> This module is marked deprecated in a future update, and then removed. Use [spank_qrmi](../spank_qrmi).
+> This module is marked deprecated in a future update, and then removed. Use [spank_qrmi](../../spank_qrmi).
 
 This is [SPANK plugin](https://slurm.schedmd.com/spank.html) to set supplemental environment variables which can not be covered by [spank_qrmi](../spank_qrmi/README.md).
  

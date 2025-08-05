@@ -1,4 +1,4 @@
-# spank_qrmi
+# SPANK Plugin for QRMI
 
 This is a [SPANK plugin](https://slurm.schedmd.com/spank.html) that configures access to Quantum Resources from user jobs. It handles the acquisition and release of access to Quantum Resources and sets the necessary environment variables for executing Quantum workloads. The available Quantum Resources are specified in the qrmi_config.json file, which is managed by the administrator.
 

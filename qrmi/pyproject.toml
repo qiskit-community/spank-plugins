@@ -59,3 +59,6 @@ include = [
   "python/qrmi/py.typed",
   "python/qrmi/*.pyi",      
 ]
+
+[project.scripts]
+task_runner = "qrmi.tools.task_runner.main:run"

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 * Python 3.11 or 3.12
-* [QRMI Rust library](../../../README.md)
+* [QRMI Rust library](../../../../README.md)
 
 ## Set environment variables
 
@@ -29,12 +29,12 @@ with open("pulser_seq.json", "w") as f:
 
 ```shell-session
 $ cargo clean
-$ cargo build --release
+$ cargo build --example qrmi-example-pasqal-cloud --release
 ```
 
 ## How to run this example
 ```shell-session
-$ ../target/release/pasqal_cloud --help
+$ ../../../../target/release/examples/qrmi-example-pasqal-cloud --help
 QRMI for Pasqal Cloud - Example
 
 Usage: qrmi-example-pasqal-cloud --backend <BACKEND> --input <INPUT>
@@ -47,5 +47,5 @@ Options:
 ```
 For example,
 ```shell-session
-$ ../target/release/qrmi-example-pasqal-cloud -b FRESNEL -i input.json
+$ ../../../../target/release/examples/qrmi-example-pasqal-cloud -b FRESNEL -i input.json
 ```

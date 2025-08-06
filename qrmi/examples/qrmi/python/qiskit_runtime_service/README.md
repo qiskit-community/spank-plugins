@@ -4,7 +4,7 @@
 
 * Rust 1.85.1 or above
 * Python 3.11 or 3.12
-* [QRMI python package installation](../../../README.md)
+* [QRMI python package installation](../../../../README.md)
 
 ## Install dependencies
 
@@ -30,7 +30,7 @@ Because QRMI is an environment variable driven software library, all configurati
 
 ## Create Qiskit Primitive input file as input
 
-Refer [this tool](../../../../commands/task_runner/examples/qiskit) to generate. You can customize quantum circuits by editting the code.
+Refer [this tool](../../../../bin/task_runner/examples/qiskit) to generate. You can customize quantum circuits by editting the code.
 
 > [!NOTE]
 > Use the file with name ending with `_params_only.json`, e.g. `sampler_input_ibm_torino_params_only.json`.

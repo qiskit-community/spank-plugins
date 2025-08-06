@@ -3,7 +3,7 @@
 ## Prerequisites
 
 * Python 3.11 or 3.12
-* [QRMI Rust library](../../../README.md)
+* [QRMI Rust library](../../../../README.md)
 
 ## Set environment variables
 
@@ -22,7 +22,7 @@ Because QRMI is an environment variable driven software library, all configurati
 
 ## Create Qiskit Primitive input file as input
 
-Refer [this tool](../../../../commands/task_runner/examples/qiskit) to generate. You can customize quantum circuits by editting the code.
+Refer [this tool](../../../../bin/task_runner/examples/qiskit) to generate. You can customize quantum circuits by editting the code.
 
 > [!NOTE]
 > Use the file with name ending with `_params_only.json`, e.g. `sampler_input_ibm_torino_params_only.json`.
@@ -31,12 +31,12 @@ Refer [this tool](../../../../commands/task_runner/examples/qiskit) to generate.
 
 ```shell-session
 $ cargo clean
-$ cargo build --release
+$ cargo build --example qrmi-example-qiskit-runtime-service --release
 ```
 
 ## How to run this example
 ```shell-session
-$ ../target/release/qiskit_runtime_service --help
+$ ../../../../target/release/examples/qrmi-example-qiskit-runtime-service --help
 QRMI for IBM Qiskit Runtime Service - Example
 
 Usage: qrmi-example-qiskit_runtime_service --backend <BACKEND> --input <INPUT> --program-id <PROGRAM_ID>
@@ -55,5 +55,5 @@ export ibm_torino_QRMI_IBM_QRS_IAM_ENDPOINT=https://iam.cloud.ibm.com
 export ibm_torino_QRMI_IBM_QRS_IAM_APIKEY=your_apikey
 export ibm_torino_QRMI_IBM_QRS_SERVICE_CRN=your_instance
 
-../target/release/qrmi-example-qiskit_runtime_service -b ibm_torino -i sampler_input.json -p sampler
+../../../../target/release/qrmi-example-qiskit-runtime-service  -b ibm_torino -i sampler_input.json -p sampler
 ```

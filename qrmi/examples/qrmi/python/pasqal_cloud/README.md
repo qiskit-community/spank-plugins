@@ -4,7 +4,7 @@
 
 * Rust 1.85.1 or above
 * Python 3.11 or 3.12
-* [QRMI python package installation](../../../README.md)
+* [QRMI python package installation](../../../../README.md)
 
 ## Install dependencies
 

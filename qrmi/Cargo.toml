@@ -41,6 +41,7 @@ members = [
     "dependencies/direct_access_client",
     "dependencies/qiskit_runtime_client",
     "dependencies/pasqal_cloud_client",
+    "bin/task_runner",
 ]
 resolver = "2"
 

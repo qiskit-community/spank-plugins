@@ -13,7 +13,7 @@
 """SamplerV2 Primitive implementation with IBM QRMI"""
 from typing import Union
 from qrmi import QuantumResource
-from qiskit_qrmi_primitives import QRMIBaseSamplerV2
+from qrmi.primitives import QRMIBaseSamplerV2
 
 
 class SamplerV2(QRMIBaseSamplerV2):

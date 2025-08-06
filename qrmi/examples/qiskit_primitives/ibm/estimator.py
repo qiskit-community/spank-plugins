@@ -18,8 +18,8 @@ from dotenv import load_dotenv
 from qiskit.circuit.library import QAOAAnsatz
 from qiskit.transpiler import generate_preset_pass_manager
 from qiskit.quantum_info import SparsePauliOp
-from qiskit_qrmi_primitives import QRMIService
-from qiskit_qrmi_primitives.ibm import EstimatorV2
+from qrmi.primitives import QRMIService
+from qrmi.primitives.ibm import EstimatorV2
 
 from target import get_target
 

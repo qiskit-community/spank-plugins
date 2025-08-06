@@ -15,8 +15,8 @@ import json
 from dotenv import load_dotenv
 from pulser import Pulse, Register, Sequence
 from pulser.backend.remote import JobParams
-from pulser_qrmi_backend.backend import PulserQRMIBackend, PulserQRMIConnection
-from pulser_qrmi_backend.service import QRMIService
+from qrmi.pulser_backend.backend import PulserQRMIBackend, PulserQRMIConnection
+from qrmi.pulser_backend.service import QRMIService
 from target import get_device
 
 # Create QRMI

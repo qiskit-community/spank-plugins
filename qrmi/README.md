@@ -119,6 +119,18 @@ cargo run --bin stubgen --features=pyo3
 cargo doc --no-deps --open
 ```
 
+## Note
+`get_target` method changed to library so we changed how to import get_target.
+
+Before
+```
+from target import get_target
+```
+After
+```
+from qrmi.primitives.ibm import get_target
+```
+
 ## How to generate C API document
 
 ### Installing doxygen

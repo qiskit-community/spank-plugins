@@ -14,4 +14,4 @@ repository = "https://github.com/qiskit-community/spank-plugins"
 rust-version = "1.85.1" # Keep in sync with docs/client/*.md and rust-toolchain.toml.
 
 [workspace.dependencies]
-qrmi = { path = "../.." }
+qrmi = { path = "../../.." }

@@ -1,6 +1,6 @@
 diff -Naru slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
---- slurm-docker-cluster.orig/.env	2025-05-18 20:07:19
-+++ slurm-docker-cluster/.env	2025-05-18 20:12:37
+--- slurm-docker-cluster.orig/.env	2025-08-06 04:23:31
++++ slurm-docker-cluster/.env	2025-08-06 04:14:35
 @@ -1,6 +1,6 @@
  # Slurm git repo tag. See https://github.com/SchedMD/slurm/tags
 -SLURM_TAG=slurm-21-08-6-1
@@ -11,14 +11,19 @@ diff -Naru slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
 -IMAGE_TAG=21.08.6
 +IMAGE_TAG=25.05.1.1-dev
 diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
---- slurm-docker-cluster.orig/Dockerfile	2025-05-18 20:07:19
-+++ slurm-docker-cluster/Dockerfile	2025-05-18 20:39:01
-@@ -1,4 +1,4 @@
+--- slurm-docker-cluster.orig/Dockerfile	2025-08-06 04:23:31
++++ slurm-docker-cluster/Dockerfile	2025-08-06 04:21:59
+@@ -1,8 +1,8 @@
 -FROM rockylinux:8
 +FROM rockylinux:9
  
  LABEL org.opencontainers.image.source="https://github.com/giovtorres/slurm-docker-cluster" \
        org.opencontainers.image.title="slurm-docker-cluster" \
+-      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 8" \
++      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 9" \
+       org.label-schema.docker.cmd="docker-compose up -d" \
+       maintainer="Giovanni Torres"
+ 
 @@ -10,7 +10,7 @@
      && yum makecache \
      && yum -y update \
@@ -81,7 +86,7 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 diff -Naru slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.conf
 --- slurm-docker-cluster.orig/cgroup.conf	1970-01-01 09:00:00
-+++ slurm-docker-cluster/cgroup.conf	2025-05-18 20:08:52
++++ slurm-docker-cluster/cgroup.conf	2025-08-06 04:14:35
 @@ -0,0 +1,20 @@
 +###
 +#
@@ -104,8 +109,8 @@ diff -Naru slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.con
 +AllowedRAMSpace=100
 +MemorySwappiness=0
 diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/docker-compose.yml
---- slurm-docker-cluster.orig/docker-compose.yml	2025-05-18 20:07:19
-+++ slurm-docker-cluster/docker-compose.yml	2025-05-18 20:08:52
+--- slurm-docker-cluster.orig/docker-compose.yml	2025-08-06 04:23:31
++++ slurm-docker-cluster/docker-compose.yml	2025-08-06 04:17:01
 @@ -10,6 +10,7 @@
        MYSQL_PASSWORD: password
      volumes:
@@ -154,37 +159,26 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6818"
      depends_on:
-@@ -84,12 +89,45 @@
+@@ -84,12 +89,34 @@
      networks:
        - slurm-network
  
-+  daapi:
++  login:
 +    image: slurm-docker-cluster:${IMAGE_TAG}
-+    command: ["daa_sim"]
-+    hostname: daapi
-+    container_name: daapi
++    command: ["login"]
++    hostname: login
++    container_name: login
++    stdin_open: true
++    tty: true
 +    volumes:
++      - etc_munge:/etc/munge
++      - etc_slurm:/etc/slurm
 +      - slurm_jobdir:/data
 +      - ./shared:/shared
 +    expose:
-+      - "8290"
++      - "6818"
 +    depends_on:
 +      - "slurmctld"
-+    networks:
-+      - slurm-network
-+
-+  minio:
-+    image: minio/minio:latest
-+    hostname: s3
-+    ports:
-+      - ${MINIO_PORT:-9000}:9000
-+      - ${MINIO_CONSOLE_PORT:-9001}:9001
-+    volumes:
-+      - ./minio/data:/export
-+    environment:
-+      MINIO_ROOT_USER: minioadmin
-+      MINIO_ROOT_PASSWORD: minioadmin
-+    command: server /export --console-address ":9001"
 +    networks:
 +      - slurm-network
 +
@@ -202,30 +196,27 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
  networks:
    slurm-network:
 diff -Naru slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/docker-entrypoint.sh
---- slurm-docker-cluster.orig/docker-entrypoint.sh	2025-05-18 20:07:19
-+++ slurm-docker-cluster/docker-entrypoint.sh	2025-05-18 20:08:52
-@@ -61,4 +61,13 @@
+--- slurm-docker-cluster.orig/docker-entrypoint.sh	2025-08-06 04:23:31
++++ slurm-docker-cluster/docker-entrypoint.sh	2025-08-06 04:17:49
+@@ -61,4 +61,11 @@
      exec /usr/sbin/slurmd -Dvvv
  fi
  
-+if [ "$1" = "daa_sim" ]
-+then    
-+    python3.12 -m venv ~/venv
-+    source ~/venv/bin/activate
-+    cd /shared/spank-plugins/daa_sim
-+    pip install .
-+    daa_sim config.yaml
++if [ "$1" = "login" ]
++then
++    echo "---> Starting the MUNGE Authentication service (munged) ..."
++    gosu munge /usr/sbin/munged
++    exec tail -f /dev/null
 +fi
 +
  exec "$@"
 diff -Naru slurm-docker-cluster.orig/plugstack.conf.example slurm-docker-cluster/plugstack.conf.example
 --- slurm-docker-cluster.orig/plugstack.conf.example	1970-01-01 09:00:00
-+++ slurm-docker-cluster/plugstack.conf.example	2025-05-18 20:38:50
-@@ -0,0 +1,1 @@
++++ slurm-docker-cluster/plugstack.conf.example	2025-08-06 04:14:35
 +optional /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
 diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
 --- slurm-docker-cluster.orig/qrmi_config.json.example	1970-01-01 09:00:00
-+++ slurm-docker-cluster/qrmi_config.json.example	2025-05-18 20:39:53
++++ slurm-docker-cluster/qrmi_config.json.example	2025-08-06 04:14:35
 @@ -0,0 +1,36 @@
 +{
 +  "resources": [
@@ -264,8 +255,8 @@ diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-clust
 +  ]
 +}
 diff -Naru slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
---- slurm-docker-cluster.orig/slurm.conf	2025-05-18 20:07:19
-+++ slurm-docker-cluster/slurm.conf	2025-05-18 20:09:14
+--- slurm-docker-cluster.orig/slurm.conf	2025-08-06 04:23:31
++++ slurm-docker-cluster/slurm.conf	2025-08-06 04:14:35
 @@ -56,7 +56,7 @@
  #SchedulerAuth=
  #SchedulerPort=
@@ -276,8 +267,8 @@ diff -Naru slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
  FastSchedule=1
  #PriorityType=priority/multifactor
 diff -Naru slurm-docker-cluster.orig/update_slurmfiles.sh slurm-docker-cluster/update_slurmfiles.sh
---- slurm-docker-cluster.orig/update_slurmfiles.sh	2025-05-18 20:07:19
-+++ slurm-docker-cluster/update_slurmfiles.sh	2025-05-18 20:08:52
+--- slurm-docker-cluster.orig/update_slurmfiles.sh	2025-08-06 04:23:31
++++ slurm-docker-cluster/update_slurmfiles.sh	2025-08-06 04:14:35
 @@ -6,7 +6,7 @@
  
  for var in "$@"

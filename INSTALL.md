@@ -199,12 +199,10 @@ bash-5.1# exit
 [root@slurmctld /]# pip install -r requirements.txt
 ```
 
-5. Building [SPANK Plugins](./plugins)
+5. Building [SPANK Plugin](./plugins)
 
 ```bash
 [root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_qrmi
-[root@slurmctld /]# cargo build --release
-[root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_qrmi_supp
 [root@slurmctld /]# mkdir build
 [root@slurmctld /]# cd build
 [root@slurmctld /]# cmake ..
@@ -219,8 +217,7 @@ Refer [this example](./plugins/spank_qrmi/qrmi_config.json.example) and describe
 
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
 ```bash
-optional /shared/spank-plugins/plugins/spank_qrmi/target/release/libspank_qrmi.so /etc/slurm/qrmi_config.json
-optional /shared/spank-plugins/plugins/spank_qrmi_supp/build/libspank_qrmi_supp.so
+optional /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
 Above example assumes you create qrmi_config.json under /etc/slurm directory.

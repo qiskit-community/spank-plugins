@@ -36,7 +36,7 @@ $ cargo build --example qrmi-example-qiskit-runtime-service --release
 
 ## How to run this example
 ```shell-session
-$ ../../../../target/release/examples/qrmi-example-qiskit-runtime-service --help
+$ ../target/release/qrmi-example-qiskit-runtime-service --help
 QRMI for IBM Qiskit Runtime Service - Example
 
 Usage: qrmi-example-qiskit_runtime_service --backend <BACKEND> --input <INPUT> --program-id <PROGRAM_ID>
@@ -55,5 +55,5 @@ export ibm_torino_QRMI_IBM_QRS_IAM_ENDPOINT=https://iam.cloud.ibm.com
 export ibm_torino_QRMI_IBM_QRS_IAM_APIKEY=your_apikey
 export ibm_torino_QRMI_IBM_QRS_SERVICE_CRN=your_instance
 
-../../../../target/release/qrmi-example-qiskit-runtime-service  -b ibm_torino -i sampler_input.json -p sampler
+../target/release/qrmi-example-qiskit-runtime-service  -b ibm_torino -i sampler_input.json -p sampler
 ```

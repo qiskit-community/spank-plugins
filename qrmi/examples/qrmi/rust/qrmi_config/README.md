@@ -14,7 +14,7 @@ $ cargo build --release
 
 ## How to run this example
 ```shell-session
-$ ./target/release/qrmi-example-config --help
+$ ../target/release/qrmi-example-config --help
 Parsing qrmi_config.json file
 
 Usage: qrmi-example-config --file <FILE>
@@ -26,5 +26,5 @@ Options:
 ```
 For example,
 ```shell-session
-./target/release/qrmi-example-config -f /etc/slurm/qrmi_config.json
+../target/release/qrmi-example-config -f /etc/slurm/qrmi_config.json
 ```

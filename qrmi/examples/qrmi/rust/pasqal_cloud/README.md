@@ -29,12 +29,12 @@ with open("pulser_seq.json", "w") as f:
 
 ```shell-session
 $ cargo clean
-$ cargo build --example qrmi-example-pasqal-cloud --release
+$ cargo build --release
 ```
 
 ## How to run this example
 ```shell-session
-$ ../../../../target/release/examples/qrmi-example-pasqal-cloud --help
+$ ../target/release/qrmi-example-pasqal-cloud --help
 QRMI for Pasqal Cloud - Example
 
 Usage: qrmi-example-pasqal-cloud --backend <BACKEND> --input <INPUT>
@@ -47,5 +47,5 @@ Options:
 ```
 For example,
 ```shell-session
-$ ../../../../target/release/examples/qrmi-example-pasqal-cloud -b FRESNEL -i input.json
+$ ../target/release/qrmi-example-pasqal-cloud -b FRESNEL -i input.json
 ```

@@ -34,12 +34,12 @@ Refer [this tool](../../../../bin/task_runner/examples/qiskit) to generate. You 
 
 ```shell-session
 $ cargo clean
-$ cargo build --example qrmi-example-direct-access --release
+$ cargo build --release
 ```
 
 ## How to run this example
 ```shell-session
-$ ../../../../target/release/examples/qrmi-example-direct-access --help
+$ ../target/release/qrmi-example-direct-access --help
 QRMI for IBM Direct Access - Example
 
 Usage: qrmi-example-direct-access --backend <BACKEND> --input <INPUT> --program-id <PROGRAM_ID>
@@ -64,5 +64,5 @@ export test_eagle_QRMI_IBM_DA_S3_BUCKET=test
 export test_eagle_QRMI_IBM_DA_S3_REGION=us-east
 export test_eagle_QRMI_JOB_TIMEOUT_SECONDS=86400
 
-../../../../target/release/examples/qrmi-example-direct-access -b test_eagle -i sampler_input.json -p sampler
+../target/release/qrmi-example-direct-access -b test_eagle -i sampler_input.json -p sampler
 ```

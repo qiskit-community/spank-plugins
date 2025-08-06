@@ -100,6 +100,12 @@ source ~/py312_qrmi_venv/bin/activate
 pip install /shared/spank-plugins/qrmi/target/wheels/qrmi-0.5.2-cp312-abi3-manylinux_2_34_aarch64.whl
 ```
 
+## How to generate stub file for python code
+```shell-session
+. ~/.cargo/env
+cargo run --bin stubgen --features=pyo3
+```
+
 ## Examples
 
 * [Examples in Rust](./examples/qrmi/rust)

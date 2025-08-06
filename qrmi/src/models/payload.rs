@@ -12,9 +12,11 @@
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
+use pyo3_stub_gen::{define_stub_info_gatherer, derive::*};
 
 /// Task Payload
 #[derive(Debug, Clone, PartialEq)]
+#[gen_stub_pyclass_enum]
 #[cfg_attr(feature = "pyo3", pyclass)]
 pub enum Payload {
     /// Payload that contains Qiskit Primitive input.
@@ -22,3 +24,4 @@ pub enum Payload {
     /// Payload for Pasqal Cloud
     PasqalCloud { sequence: String, job_runs: i32 },
 }
+define_stub_info_gatherer!(stub_info);

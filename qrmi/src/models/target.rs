@@ -12,11 +12,14 @@
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
+use pyo3_stub_gen::{define_stub_info_gatherer, derive::*};
 
 /// A Target that contains the constraints(supported instructions, properties etc.) of a particular quantum device
 #[derive(Debug, Clone, PartialEq)]
+#[gen_stub_pyclass]
 #[cfg_attr(feature = "pyo3", pyclass(get_all))]
 pub struct Target {
     /// Serialized data
     pub value: String,
 }
+define_stub_info_gatherer!(stub_info);

@@ -55,3 +55,7 @@ python-packages = [
     "qrmi.primitives.ibm",
     "qrmi.primitives.pasqal",
 ]
+include = [
+  "python/qrmi/py.typed",
+  "python/qrmi/*.pyi",      
+]

@@ -33,7 +33,8 @@ keywords = [
     "slurm-job-scheduler",
     "slurm-workload-manager",
     "python",
-    "rust"
+    "rust",
+    "python-dotenv"
 ]
 dependencies = [
   "qiskit_ibm_runtime>=0.30.0",

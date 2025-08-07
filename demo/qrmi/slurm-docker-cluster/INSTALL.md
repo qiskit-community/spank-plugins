@@ -109,8 +109,8 @@ Slurm Cluster is now set up as shown.
 2. Creating python virtual env under shared volume
 
 ```bash
-[root@slurmctld /]# python3.12 -m venv /shared/pyenv
-[root@slurmctld /]# pip install --upgrade pip
+[root@c1 /]# python3.12 -m venv /shared/pyenv
+[root@c1 /]# pip install --upgrade pip
 ```
 
 3. Building and installing [QRMI](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md)
@@ -126,7 +126,7 @@ Slurm Cluster is now set up as shown.
 [root@c1 /]# pip install /shared/spank-plugins/qrmi/target/release/maturin/wheels/qrmi-0.7.0-cp312-abi3-manylinux_2_34_aarch64.whl
 ```
 
-5. Building [SPANK Plugin](./plugins)
+4. Building [SPANK Plugin](../../../plugins/spank_qrmi/README.md)
 
 ```bash
 [root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_qrmi
@@ -136,23 +136,23 @@ Slurm Cluster is now set up as shown.
 [root@slurmctld /]# make
 ```
 
-6. Creating qrmi_config.json
+5. Creating qrmi_config.json
 
 Refer [this example](https://github.com/qiskit-community/spank-plugins/blob/main/plugins/spank_qrmi/qrmi_config.json.example) and describe your environment. Then, create a file under /etc/slurm or other where slurm daemons can access.
 
-7. Installing SPANK Plugins
+6. Installing SPANK Plugins
 
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
 ```bash
 optional /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
-Above example assumes you create qrmi_config.json under /etc/slurm directory.
+Above example assumes you create `qrmi_config.json` under /etc/slurm directory.
 
 > [!NOTE]
 > When you setup your own slurm cluster, `plugstack.conf`, `qrmi_config.json` and above plugin libraries need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
 
-8. Checking SPANK Plugins installation
+7. Checking SPANK Plugins installation
 
 If you complete above step, you must see additional options of `sbatch` like below.
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=estimator_job
+#SBATCH --job-name=qiskit_primitive_input_job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --qpu=ibm_sherbrooke

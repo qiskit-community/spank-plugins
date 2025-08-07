@@ -22,11 +22,10 @@ project (spank_qrmi C)
 
 include(ExternalProject)
 
-ExternalProject_Add(spank-plugins
-    GIT_REPOSITORY https://github.com/ohtanim/spank-plugins.git
+ExternalProject_Add(QRMI
+    GIT_REPOSITORY https://github.com/qiskit-community/qrmi.git
     GIT_TAG main
-    PREFIX ${CMAKE_BINARY_DIR}/spank-plugins
-    SOURCE_SUBDIR qrmi
+    PREFIX ${CMAKE_BINARY_DIR}/deps
     CONFIGURE_COMMAND ""
     BUILD_COMMAND cargo build --release
     BUILD_IN_SOURCE 1
@@ -36,7 +35,7 @@ ExternalProject_Add(spank-plugins
 add_library(qrmi SHARED IMPORTED GLOBAL)
 add_dependencies(qrmi qrmi_project)
 set_target_properties(qrmi PROPERTIES
-    IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/spank-plugins/src/spank-plugins/qrmi/target/release/libqrmi.a
+    IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
 )
 
 #
@@ -82,4 +81,4 @@ target_link_libraries(spank_qrmi PUBLIC "-lcrypto")
 target_link_libraries(spank_qrmi PUBLIC "-ldl")
 target_link_libraries(spank_qrmi PUBLIC "-lpthread")
 target_link_libraries(spank_qrmi PUBLIC "-lm")
-target_include_directories(spank_qrmi PRIVATE ${CMAKE_BINARY_DIR}/spank-plugins/src/spank-plugins/qrmi)
+target_include_directories(spank_qrmi PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI)

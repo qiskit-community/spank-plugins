@@ -86,13 +86,13 @@ HPC applications use the Slurm QPU resources assigned to the Slurm job.
 
 Environment variables provide more details for use by the appliction, e.g. `SLURM_JOB_QPU_RESOURCES` listing the quantum resource names (comma separated if there are several provided).
 These variables will be used by QRMI.
-See the README files in the various QRMI flavor directories ([ibm](../primitives/python/qiskit_qrmi_primitives/examples/ibm/README.md), [pasqal](../primitives/python/qiskit_qrmi_primitives/examples/pasqal/README.md)) for details.
+See the README files in the various QRMI flavor directories ([ibm](https://github.com/qiskit-community/qrmi/blob/main/examples/qiskit_primitives/ibm/README.md), [pasqal](https://github.com/qiskit-community/qrmi/blob/main/examples/qiskit_primitives/pasqal/README.md)) for details.
 
 ```python
 from qiskit import QuantumCircuit
-from qiskit_qrmi_primitives import QRMIService
 # using an IBM QRMI flavor:
-from qiskit_qrmi_primitives.ibm import SamplerV2
+from qrmi.primitives import QRMIService
+from qrmi.primitives.ibm import SamplerV2, get_target
 
 # define circuit
 
@@ -129,7 +129,7 @@ result = job.result()
 print(f">>> {result}")
 ```
 
-See [examples directory](../primitives/python/qiskit_qrmi_primitives/examples/) for example files.
+See [examples directory](https://github.com/qiskit-community/qrmi/tree/main/examples/qiskit_primitives/) for example files.
 
 ### Backend specifics
 #### IBM Direct Access API

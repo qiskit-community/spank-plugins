@@ -107,7 +107,7 @@ cargo build -p task_runner
 ```
 
 ## How to run task_runner for Python version
-`task_runner` for Python version is already included in qiskit-qrmi package. User can use task_runner command after installing qiskit-qrmi. 
+`task_runner` for Python version is already included in qrmi package. User can use task_runner command after installing qrmi. 
 For detailed instructions on how to use it, please refer to this [README](./bin/task_runner/README.md).
 
 ## How to generate stub file for python code
@@ -130,7 +130,7 @@ cargo doc --no-deps --open
 ```
 
 ## Note
-`get_target` method changed to library so we changed how to import get_target.
+`get_target` method has been refactored into a library, so we updated the import statement.
 
 Before
 ```

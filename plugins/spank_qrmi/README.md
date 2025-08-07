@@ -41,11 +41,11 @@ For example,
 #SBATCH --job-name=sampler_job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --qpu=test_heron,test_eagle
+#SBATCH --qpu=ibm_quebec,ibm_sherbrooke
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/job_scripts/sampler.py
+srun python /shared/qrmi/examples/qiskit_primitives/ibm/sampler.py
 ```
 
 ## Configuring available Quantum Resources

@@ -1,5 +1,9 @@
 # Quantum Resource Management Interface(QRMI)
 
+> [!CAUTION]
+> QRMI related code has been moved to [new git repository](https://github.com/qiskit-community/qrmi). This directory contents will be removed soon by this repository migration.
+>
+
 ## Supported OS
 
 * Linux

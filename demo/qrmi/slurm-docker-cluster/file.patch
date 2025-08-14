@@ -4,12 +4,12 @@ diff -Naru slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
 @@ -1,6 +1,6 @@
  # Slurm git repo tag. See https://github.com/SchedMD/slurm/tags
 -SLURM_TAG=slurm-21-08-6-1
-+SLURM_TAG=slurm-25-05-1-1
++SLURM_TAG=slurm-25-05-2-1
  
  # Image version used to tag the container at build time (Typically matches the
  # Slurm tag in semantic version form)
 -IMAGE_TAG=21.08.6
-+IMAGE_TAG=25.05.1.1-dev
++IMAGE_TAG=25.05.2.1-dev
 diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
 --- slurm-docker-cluster.orig/Dockerfile	2025-08-06 04:23:31
 +++ slurm-docker-cluster/Dockerfile	2025-08-06 04:21:59

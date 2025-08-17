@@ -81,8 +81,16 @@ Note that administrator needs to create qrmi_config.json file and specify the pa
 optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
+The following table shows which Slurm context nodes these files should be copied to.
+| Files | Slurm contexts |
+| plugstack.conf | local, remote, allocator, slurmd and job_script. For more details of each context, refer [SPANK Plugin documentation](https://slurm.schedmd.com/spank.html#SECTION_SPANK-PLUGINS) |
+| qrmi_config.json | [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
+| spank_qrmi.so | [allocator](https://slurm.schedmd.com/spank.html#OPT_allocator) and [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
+
+
 > [!NOTE]
-> When you setup your own slurm cluster, `plugstack.conf`, `qrmi_config.json` and `spank_qrmi.so` need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
+> Once plugstack.conf is updated, spank plugins will be loaded at runtime during the next job launch, which means administrators do not need to restart Slurm cluster.
+
 
 Once you complete installation, you must find `--qpu=names` option in the sbatch help message.
 

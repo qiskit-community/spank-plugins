@@ -81,11 +81,19 @@ Note that administrator needs to create qrmi_config.json file and specify the pa
 optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
+For allocator node, your don't need to specify the path to qrmi_config.json like below.
+
+```bash
+optional /usr/lib64/slurm/spank_qrmi.so
+```
+
+
 The following table shows which Slurm context nodes these files should be copied to.
 | Files | Slurm contexts |
-| plugstack.conf | local, remote, allocator, slurmd and job_script. For more details of each context, refer [SPANK Plugin documentation](https://slurm.schedmd.com/spank.html#SECTION_SPANK-PLUGINS) |
-| qrmi_config.json | [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
-| spank_qrmi.so | [allocator](https://slurm.schedmd.com/spank.html#OPT_allocator) and [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
+| ---- | ---- |
+| `plugstack.conf` | local, remote, allocator, slurmd and job_script. For more details of each context, refer [SPANK Plugin documentation](https://slurm.schedmd.com/spank.html#SECTION_SPANK-PLUGINS) |
+| `qrmi_config.json` | [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
+| `spank_qrmi.so` | [allocator](https://slurm.schedmd.com/spank.html#OPT_allocator) and [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
 
 
 > [!NOTE]

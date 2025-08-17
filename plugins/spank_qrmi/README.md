@@ -125,7 +125,7 @@ This plugin uses Slurm logger for logging. Log messages from this plugin can be 
 [2025-07-31T09:43:34.020] [21.batch] debug:  spank_qrmi_c: name(ibm_sherbrooke), type(1) found in qrmi_config
 ```
 
-You can enable QRMI runtime log by specifying the following sbatch/srun arguments.
+You can enable QRMI runtime log by specifying the following `srun` arguments.
 
 |  sbatch/srun option | Slurm log level (SRUN_DEBUG) | QRMI log level (RUST_LOG) |
 | ---- | ---- | ---- |
@@ -138,7 +138,7 @@ You can enable QRMI runtime log by specifying the following sbatch/srun argument
 Example:
 
 ```bash
-#SBATCH --verbose
+srun -vv python /shared/qrmi/examples/qiskit_primitives/ibm/sampler.py
 ```
 
 

@@ -104,6 +104,23 @@ This plugin uses Slurm logger for logging. Log messages from this plugin can be 
 [2025-07-31T09:43:34.020] [21.batch] debug:  spank_qrmi_c: name(ibm_sherbrooke), type(1) found in qrmi_config
 ```
 
+You can enable QRMI runtime log by specifying the following sbatch/srun arguments.
+
+|  sbatch/srun option | Slurm log level (SRUN_DEBUG) | QRMI log level (RUST_LOG) |
+| ---- | ---- | ---- |
+| (default) | 3 | info |
+| --quiet | 2 | error |
+| --verbose | 4 | debug |
+| -vv or more | 5 | trace |
+
+
+Example:
+
+```bash
+#SBATCH --verbose
+```
+
+
 ## Multiple QPU considerations
 
 At runtime, each QRMI instance is linked to a single QPU resource. To enable the use of multiple Quantum resources within a single job script, this plugin sets environment variables with the resource name as a prefix. For example, if `--qpu=qpu1,qpu2` is specified, the environment variables will be set as follows:

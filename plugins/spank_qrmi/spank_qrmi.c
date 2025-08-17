@@ -406,7 +406,7 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
         default:
             if (level >= 5) {
                 /* -vv or more */
-                level_str = "debug";
+                level_str = "trace";
             }
             else {
                 /* default is Info as same as srun */

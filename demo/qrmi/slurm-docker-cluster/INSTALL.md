@@ -129,11 +129,11 @@ Slurm Cluster is now set up as shown.
 4. Building [SPANK Plugin](../../../plugins/spank_qrmi/README.md)
 
 ```bash
-[root@slurmctld /]# cd /shared/spank-plugins/plugins/spank_qrmi
-[root@slurmctld /]# mkdir build
-[root@slurmctld /]# cd build
-[root@slurmctld /]# cmake ..
-[root@slurmctld /]# make
+[root@c1 /]# cd /shared/spank-plugins/plugins/spank_qrmi
+[root@c1 /]# mkdir build
+[root@c1 /]# cd build
+[root@c1 /]# cmake ..
+[root@c1 /]# make
 ```
 
 5. Creating qrmi_config.json
@@ -195,7 +195,7 @@ Once above scripts are completed, you must find `slurm-{job_id}.out` in the curr
 
 For example,
 ```bash
-[root@slurmctld /]# cat slurm-81.out
+[root@login /]# cat slurm-81.out
 {'backend_name': 'test_eagle'}
 >>> Observable: ['IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII...',
  'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII...',

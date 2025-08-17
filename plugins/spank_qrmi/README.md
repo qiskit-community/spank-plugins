@@ -73,9 +73,9 @@ If the user sets the necessary environment variables for job execution themselve
 
 If the above build step is successful, a Linux shared library named `spank_qrmi.so` will be created under the `build/` directory. 
 
-In addition, add the following 1 line to the /etc/slurm/plugstack.conf on the nodes where this plugin is installed.
+In addition, add the following 1 line to the `/etc/slurm/plugstack.conf` on the nodes where this plugin is installed.
 
-Note that administrator needs to create qrmi_config.json file and specify the path as plugin argument like below.
+Note that administrator needs to create `qrmi_config.json` file and specify the path as plugin argument like below.
 
 ```bash
 optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
@@ -92,8 +92,8 @@ The following table shows which Slurm context nodes these files should be copied
 | Files | Slurm contexts |
 | ---- | ---- |
 | `plugstack.conf` | local, remote, allocator, slurmd and job_script. For more details of each context, refer [SPANK Plugin documentation](https://slurm.schedmd.com/spank.html#SECTION_SPANK-PLUGINS) |
-| `qrmi_config.json` | [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
-| `spank_qrmi.so` | [allocator](https://slurm.schedmd.com/spank.html#OPT_allocator) and [remote](https://slurm.schedmd.com/spank.html#OPT_remote) |
+| `qrmi_config.json` | [remote](https://slurm.schedmd.com/spank.html#OPT_remote) (Compute nodes) |
+| `spank_qrmi.so` | [allocator](https://slurm.schedmd.com/spank.html#OPT_allocator) and [remote](https://slurm.schedmd.com/spank.html#OPT_remote) (Login nodes and Compute nodes) |
 
 
 > [!NOTE]

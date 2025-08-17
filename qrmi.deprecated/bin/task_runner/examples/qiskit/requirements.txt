@@ -1,3 +1,0 @@
-qiskit_ibm_runtime>=0.30.0
-qiskit_qasm3_import
-ibm-cloud-sdk-core

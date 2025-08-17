@@ -13,7 +13,7 @@ This document describes how to setup QRMI and its Spank plugin on your Slurm Clu
 
 ### 1. Build and install QRMI
 
-Refer [How to build & install QRMI Python package](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md#how-to-build--install-qrmi-python-package), and create a wheel file for distribution.
+Refer [How to build & install QRMI Python package](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md#how-to-build--install-qrmi-python-package), create a wheel file for distribution and install.
 
 ### 2. Build and install SPANK Plugin
 

@@ -380,6 +380,48 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
     slurm_list_iterator_destroy(resources_iter);
     qrmi_buf_free(&keybuf);
 
+    /*
+     * Set environment variables for QRMI runtime logging.
+     */
+    buffer srun_debug;
+    qrmi_buf_init(&srun_debug, 256);
+    if (spank_getenv(spank_ctxt, "SRUN_DEBUG", srun_debug.buffer,
+                     srun_debug.capacity) == ESPANK_SUCCESS) {
+        /* if failed, level=0 --> default level(info) */
+        int level = atoi(srun_debug.buffer);
+        char *level_str = NULL;
+        switch (level) {
+        case 2:
+            /* --quiet */
+            level_str = "error";
+            break;
+        case 3:
+            /* default */
+            level_str = "info";
+            break;
+        case 4:
+            /* --verbose */
+            level_str = "debug";
+            break;
+        default:
+            if (level >= 5) {
+                /* -vv or more */
+                level_str = "debug";
+            }
+            else {
+                /* default is Info as same as srun */
+                level_str = "info";
+            }
+            break;
+        }
+        if (level_str != NULL) {
+            spank_setenv(spank_ctxt, "RUST_LOG", level_str, KEEP_IF_EXISTS);
+            slurm_debug("%s: setenv(%s, %s)", plugin_name, "RUST_LOG",
+                        level_str);
+        }
+    }
+    qrmi_buf_free(&srun_debug);
+
     slurm_debug("%s(%d,%d): <- %s rc=%d", plugin_name, pid, uid, __FUNCTION__,
                 rc);
 

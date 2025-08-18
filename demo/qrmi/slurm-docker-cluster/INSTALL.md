@@ -8,7 +8,7 @@ This document describes how to setup development environment and the plugins dev
 ### Jump To:
 - [Pre-requisites](#pre-requisites)
 - [Creating Docker-based Slurm Cluster](#creating-docker-based-slurm-cluster)
-- [Building and installing our SPANK Plugins](#building-and-installing-our-spank-plugins)
+- [Building and installing QRMI and SPANK Plugins](#building-and-installing-qrmi-and-spank-plugins)
 - [Running examples of primitive job in Slurm Cluster](#running-examples-of-primitive-job-in-slurm-cluster)
 
 

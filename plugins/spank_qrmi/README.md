@@ -4,15 +4,20 @@ This is a [SPANK plugin](https://slurm.schedmd.com/spank.html) that configures a
 
 ## Prerequisites
 
-* Compilers
-  * gcc
-  * gcc-c++
-  * clang-tools-extra
-* Rust 1.86 or above [Link](https://www.rust-lang.org/tools/install)
-* Slurm header & library
-  * slurm/slurm.h must be available under /usr/include
-  * libslurm.so must be available under /usr/lib64 or /usr/lib/x86_64-linux-gnu
-* you'll also need OpenSSL (libssl-dev or openssl-devel on most Unix distributions).
+* Compilation requires the following tools:
+  * Rust compiler 1.86 or above [Link](https://www.rust-lang.org/tools/install)
+  * A C compiler: for example, GCC(gcc) on Linux and Clang(clang-tools-extra) for Rust unknown targets/cross compilations. QRMI and its Spank plugin are compatible with a compiler conforming to the C11 standard.
+  * make/cmake (make/cmake RPM for RHEL compatible OS
+  * openssl (openssl-devel RPM for RHEL compatible OS)
+  * zlib (zlib-devel RPM for RHEL compatible OS)
+  * Slurm header & library
+    * slurm/slurm.h must be available under /usr/include
+    * libslurm.so must be available under /usr/lib64 or /usr/lib/x86_64-linux-gnu
+
+* Runtime requires the following tools:
+  * gcc (libgcc RPM for RHEL compatible OS)
+  * openssl (openssl-libs RPM for RHEL compatible OS)
+  * zlib (zlib RPM for RHEL compatible OS)
 
 
 ## How to build
@@ -41,11 +46,11 @@ For example,
 #SBATCH --job-name=sampler_job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --qpu=test_heron,test_eagle
+#SBATCH --qpu=ibm_quebec,ibm_sherbrooke
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/job_scripts/sampler.py
+srun python /shared/qrmi/examples/qiskit_primitives/ibm/sampler.py
 ```
 
 ## Configuring available Quantum Resources
@@ -68,16 +73,32 @@ If the user sets the necessary environment variables for job execution themselve
 
 If the above build step is successful, a Linux shared library named `spank_qrmi.so` will be created under the `build/` directory. 
 
-In addition, add the following 1 line to the /etc/slurm/plugstack.conf on the nodes where this plugin is installed.
+In addition, add the following 1 line to the `/etc/slurm/plugstack.conf` on the nodes where this plugin is installed.
 
-Note that administrator needs to create qrmi_config.json file and specify the path as plugin argument like below.
+Note that administrator needs to create `qrmi_config.json` file and specify the path as plugin argument like below.
 
 ```bash
 optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
+For allocator node, your don't need to specify the path to qrmi_config.json like below.
+
+```bash
+optional /usr/lib64/slurm/spank_qrmi.so
+```
+
+
+The following table shows which Slurm context nodes these files should be copied to.
+| Files | Slurm contexts |
+| ---- | ---- |
+| `plugstack.conf` | local, remote, allocator, slurmd and job_script. For more details of each context, refer [SPANK Plugin documentation](https://slurm.schedmd.com/spank.html#SECTION_SPANK-PLUGINS) |
+| `qrmi_config.json` | [remote](https://slurm.schedmd.com/spank.html#OPT_remote) (Compute nodes) |
+| `spank_qrmi.so` | [allocator](https://slurm.schedmd.com/spank.html#OPT_allocator) and [remote](https://slurm.schedmd.com/spank.html#OPT_remote) (Login nodes and Compute nodes) |
+
+
 > [!NOTE]
-> When you setup your own slurm cluster, `plugstack.conf`, `qrmi_config.json` and `spank_qrmi.so` need to be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.
+> Once plugstack.conf is updated, spank plugins will be loaded at runtime during the next job launch, which means administrators do not need to restart Slurm cluster.
+
 
 Once you complete installation, you must find `--qpu=names` option in the sbatch help message.
 
@@ -103,6 +124,23 @@ This plugin uses Slurm logger for logging. Log messages from this plugin can be 
 [2025-07-31T09:43:34.019] [21.batch] debug:  spank_qrmi_c: argv[0] = [/etc/slurm/qrmi_config.json]
 [2025-07-31T09:43:34.020] [21.batch] debug:  spank_qrmi_c: name(ibm_sherbrooke), type(1) found in qrmi_config
 ```
+
+You can enable QRMI runtime log by specifying the following `srun` arguments.
+
+|  sbatch/srun option | Slurm log level (SRUN_DEBUG) | QRMI log level (RUST_LOG) |
+| ---- | ---- | ---- |
+| (default) | 3 | info |
+| --quiet | 2 | error |
+| --verbose | 4 | debug |
+| -vv or more | 5 | trace |
+
+
+Example:
+
+```bash
+srun -vv python /shared/qrmi/examples/qiskit_primitives/ibm/sampler.py
+```
+
 
 ## Multiple QPU considerations
 

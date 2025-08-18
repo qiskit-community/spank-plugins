@@ -1,12 +1,10 @@
 #!/bin/bash
 
-#SBATCH --job-name=estimator_job
+#SBATCH --job-name=qiskit_estimator_job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --qpu=test_heron,test_eagle
-# #SBATCH --qpu=alt_marrakesh
-# #SBATCH --qpu=alt_marrakesh,test_heron
+#SBATCH --qpu=ibm_sherbrooke,ibm_brisbane
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/spank-plugins/primitives/python/qiskit_qrmi_primitives/examples/ibm/estimator.py
+srun python /shared/qrmi/examples/qiskit_primitives/ibm/estimator.py

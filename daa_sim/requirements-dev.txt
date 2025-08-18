@@ -1,7 +1,0 @@
-# Style and Lint: Following Qiskit 1.2
-black[jupyter]~=24.1
-ruff==0.0.267
-pylint==3.2.3
-
-jupyter
-pytest

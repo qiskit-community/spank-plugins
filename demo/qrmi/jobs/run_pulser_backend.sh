@@ -7,4 +7,4 @@
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/spank-plugins/primitives/python/pulser_qrmi_backend/examples/pasqal/pulser_backend.py
+srun python /shared/qrmi/examples/pulser_backend/pulser_backend.py

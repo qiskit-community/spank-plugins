@@ -30,8 +30,6 @@
  */
 SPANK_PLUGIN(spank_skeleton, 1)
 
-static const int PLUGIN_ARGC = 7;
-
 #define MAXLEN_BUF 256
 static char buf[MAXLEN_BUF + 1];
 
@@ -61,15 +59,15 @@ static char *strncpy_s(char *dst, const char *src, size_t dsize)
 static int _callback(int val, const char *optarg, int remote)
 {
     slurm_debug("%s: %s val=%d optarg=%s remote=%d",
-            plugin_name, __FUNCTION__, val, optarg, remote);
+            plugin_name, __func__, val, optarg, remote);
     strncpy_s(buf, optarg, sizeof(buf));
-    return ESPANK_SUCCESS;
+    return SLURM_SUCCESS;
 }
 
 static int dump_spank_items(spank_t spank_ctxt)
 {
-    uid_t job_id = -1;
-    uint32_t step_id = -1;
+    uid_t job_id;
+    uint32_t step_id;
     int job_argc = 0;
     char **job_argv = NULL;
 
@@ -88,7 +86,7 @@ static int dump_spank_items(spank_t spank_ctxt)
                     plugin_name, i, job_argv[i]);
         }
     }
-    return ESPANK_SUCCESS;
+    return SLURM_SUCCESS;
 }
 
 static int dump_argv(int argc, char **argv)
@@ -96,7 +94,7 @@ static int dump_argv(int argc, char **argv)
     for (int i = 0; i < argc; i++) {
         slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
     }
-    return ESPANK_SUCCESS;
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -104,9 +102,9 @@ static int dump_argv(int argc, char **argv)
  */
 struct spank_option spank_example_options[] = {
     {
-        "skeleton-option",
-        "value",
-        "Option for spank-skeleton.",
+        (char *)"skeleton-option",
+        (char *)"value",
+        (char *)"Option for spank-skeleton.",
         1, /* argument is required */
         0, /* value to return using callback */
         (spank_opt_cb_f)_callback
@@ -124,10 +122,9 @@ struct spank_option spank_example_options[] = {
  */
 int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
 {
-    int rc = ESPANK_SUCCESS;
     struct spank_option *opts_to_register = NULL;
 
-    slurm_debug("%s: -> %s argc=%d", plugin_name, __FUNCTION__, argc);
+    slurm_debug("%s: -> %s argc=%d", plugin_name, __func__, argc);
     dump_argv(argc, argv);
 
     memset(buf, '\0', sizeof(buf));
@@ -148,8 +145,10 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
         break;
     }
     if (opts_to_register) {
-        while (opts_to_register->name && (rc == ESPANK_SUCCESS)) {
-            rc = spank_option_register(spank_ctxt, opts_to_register++);
+        while (opts_to_register->name) {
+            if (spank_option_register(spank_ctxt, opts_to_register++) != ESPANK_SUCCESS) {
+                break;
+            }
         }
     }
 
@@ -184,8 +183,8 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
     slurm_debug("%s Is slurm_spank_slurmd_exit() supported ? %d", plugin_name,
         spank_symbol_supported("slurm_spank_slurmd_exit"));
 
-    slurm_debug("%s <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 
@@ -199,14 +198,12 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[])
  */
 int slurm_spank_job_prolog(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -222,14 +219,12 @@ int slurm_spank_job_prolog(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -242,14 +237,12 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_local_user_init(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -260,14 +253,12 @@ int slurm_spank_local_user_init(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_user_init(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -279,14 +270,12 @@ int slurm_spank_user_init(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_task_init_privileged(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -299,10 +288,7 @@ int slurm_spank_task_init_privileged(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-    int i;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
     dump_spank_items(spank_ctxt);
@@ -315,8 +301,8 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
         }
     }
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -329,14 +315,12 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_task_post_fork(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -347,10 +331,9 @@ int slurm_spank_task_post_fork(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv) 
 {
-    int rc = ESPANK_SUCCESS;
     int status;
 
-    slurm_debug("%s: -> %s argc=%d", plugin_name, __FUNCTION__, argc);
+    slurm_debug("%s: -> %s argc=%d", plugin_name, __func__, argc);
     dump_argv(argc, argv);
 
     if (spank_get_item(spank_ctxt, S_TASK_EXIT_STATUS, &status) ==
@@ -358,8 +341,8 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
         slurm_debug("%s: S_TASK_EXIT_STATUS [%d]", plugin_name, status);
     }
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -371,14 +354,12 @@ int slurm_spank_task_exit(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -391,14 +372,12 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_job_epilog(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -411,12 +390,10 @@ int slurm_spank_job_epilog(spank_t spank_ctxt, int argc, char **argv)
  */
 int slurm_spank_slurmd_exit(spank_t spank_ctxt, int argc, char **argv)
 {
-    int rc = ESPANK_SUCCESS;
-
-    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __FUNCTION__, argc,
+    slurm_debug("%s: -> %s argc=%d remote=%d", plugin_name, __func__, argc,
             spank_remote(spank_ctxt));
     dump_argv(argc, argv);
 
-    slurm_debug("%s: <- %s rc=%d", plugin_name, __FUNCTION__, rc);
-    return rc;
+    slurm_debug("%s: <- %s", plugin_name, __func__);
+    return SLURM_SUCCESS;
 }

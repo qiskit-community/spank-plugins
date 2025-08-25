@@ -25,5 +25,5 @@ typedef struct {
 } buffer;
 
 extern int  qrmi_buf_init(buffer *, size_t);
-extern char* qrmi_buf_envvarname_for_res_create(buffer *, char*, char*);
+extern char* qrmi_buf_envvarname_for_res_create(buffer *, const char*, const char*);
 extern void qrmi_buf_free(buffer *);

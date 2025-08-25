@@ -51,7 +51,7 @@ static void _ensure_capacity(buffer *sb, size_t required)
     }
 }
 
-char* qrmi_buf_envvarname_for_res_create(buffer *sb, char* resource_id, char* envvar_name)
+char* qrmi_buf_envvarname_for_res_create(buffer *sb, const char* resource_id, const char* envvar_name)
 {
     sb->buffer[0] = '\0';
     size_t keylen = strlen(resource_id) + strlen(envvar_name) + 1;

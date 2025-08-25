@@ -51,7 +51,10 @@ int main(int argc, char** argv)
         goto error;
     }
 
-    printf("Valid Slurm plugin library. name=%s, type=%s, version=0x%x\n", name, type, version);
+    int major = (*version & 0x00ff0000) >> 16;
+    int minor = (*version & 0x0000ff00) >> 8;
+    int fix = (*version & 0x000000ff);
+    printf("Valid Slurm plugin library. name=%s, type=%s, version=%d.%d.%d\n", name, type, major, minor, fix);
     dlclose(handle);
 
     return 0;

@@ -27,6 +27,16 @@
 #define KEEP_IF_EXISTS 0
 
 /*
+ * max uint32_t value is (2147483647) = 10 chars
+ */
+#define MAX_INT_STRLEN 10
+
+/*
+ * Macro for unused parameters
+ */
+#define UNUSED_PARAM(x) (void)(x)
+
+/*
  * A record of acquired QPU resource.
  */
 typedef struct _qpu_resource {

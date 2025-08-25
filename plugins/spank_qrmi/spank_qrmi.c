@@ -45,6 +45,43 @@ static list_t *g_acquired_resources = NULL;
 static List g_acquired_resources = NULL;
 #endif /* !PRIOR_TO_V24_05_5_1 */
 
+
+typedef enum  {
+//System is doing something
+In_Use,
+//Some error occured
+Error_State,
+//System is not doing anything
+Not_In_Use
+} SystemState;
+
+typedef enum {
+//Time taken
+Calibration_Time,
+} Calibration;
+
+//Resource metadata for task and system
+typedef struct {
+//Utilization metric
+float utilization;
+//Energy Consumption
+double powerDraw;
+//Memory Used
+double memoryUse;
+//qubit usage
+int qubit_usage;
+} ResourceMetadataTask;
+
+typedef struct {
+//State of the system
+SystemState stateofSystem;
+//Calbration
+Calibration calibration;
+//How much of the system is in use
+float systemUtilization;
+//Energy consumption
+double powerDraw;
+} ResourceMetadataSystem;
 /*
  *  Forward declarations
  */

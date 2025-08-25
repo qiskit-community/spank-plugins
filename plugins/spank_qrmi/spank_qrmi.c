@@ -175,7 +175,8 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     QrmiConfig *cnf = qrmi_config_load(argv[0]);
     slurm_debug("%s, config: %p", plugin_name, (void *)cnf);
 
-    char *bufp = (char *)malloc(strlen(g_qpu_names_opt) + 1);
+    size_t buflen = strlen(g_qpu_names_opt) + 1;
+    char *bufp = (char *)malloc(buflen);
     char *rest = bufp;
     char *token;
     buffer keybuf;
@@ -185,8 +186,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
      * Copy option string to bufp because subsequent strtok_r will
      * modify the source buffer.
      */
-    strncpy(bufp, g_qpu_names_opt,
-            strlen(g_qpu_names_opt) + 1); /* ends with '\0' */
+    strncpy(bufp, g_qpu_names_opt, buflen);
 
     while ((token = strtok_r(rest, ",", &rest))) {
         QrmiResourceDef *res = qrmi_config_resource_def_get(cnf, token);

@@ -29,7 +29,7 @@
 /*
  * Spank plugin for QRMI.
  */
-SPANK_PLUGIN(spank_qrmi_c, 1)
+SPANK_PLUGIN(spank_qrmi, 1)
 
 /*
  * Copy of `--qpu` option value if specified, otherwise NULL.
@@ -60,18 +60,20 @@ static void _release_qpu(qpu_resource_t *res);
  * A callback function that is invoked when the `--qpu` plugin option is registered with Slurm.
  */
 static int _qpu_names_opt_cb(int val, const char *optarg, int remote) {
+    UNUSED_PARAM(val);
+    UNUSED_PARAM(remote);
     size_t buflen = strlen(optarg) + 1;
     g_qpu_names_opt = (char *)malloc(buflen);
     strncpy(g_qpu_names_opt, optarg, buflen);
     slurm_debug("%s: --qpu=[%s]", plugin_name, g_qpu_names_opt);
-    return ESPANK_SUCCESS;
+    return SLURM_SUCCESS;
 }
 
 /*
  * Options available to this spank plugin.
  */
 struct spank_option spank_qrmi_options[] = {
-    {"qpu", "names", "Comma separated list of QPU resources to use.",
+    {(char *)"qpu", (char *)"names", (char *)"Comma separated list of QPU resources to use.",
      1, /* argument is required */
      0, /* value to return using callback */
      (spank_opt_cb_f)_qpu_names_opt_cb},
@@ -86,13 +88,13 @@ struct spank_option spank_qrmi_options[] = {
  *
  */
 int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
-    int rc = ESPANK_SUCCESS;
+    UNUSED_PARAM(argv);
     struct spank_option *opts_to_register = NULL;
     int pid = (int)getpid();
     int uid = (int)getuid();
 
     slurm_debug("%s(%d, %d): -> %s argc=%d remote=%d", plugin_name, pid, uid,
-                __FUNCTION__, argc, spank_remote(spank_ctxt));
+                __func__, argc, spank_remote(spank_ctxt));
 
     g_acquired_resources = slurm_list_create(acquired_resource_destroy);
 
@@ -113,13 +115,15 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
         break;
     }
     if (opts_to_register) {
-        while (opts_to_register->name && (rc == ESPANK_SUCCESS)) {
-            rc = spank_option_register(spank_ctxt, opts_to_register++);
+        while (opts_to_register->name) {
+            if (spank_option_register(spank_ctxt, opts_to_register++) != ESPANK_SUCCESS) {
+                return SLURM_ERROR;
+            }
         }
     }
-    slurm_debug("%s(%d,%d): <- %s rc=%d", plugin_name, pid, uid, __FUNCTION__,
-                rc);
-    return rc;
+    slurm_debug("%s(%d,%d): <- %s", plugin_name, pid, uid, __func__);
+
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -135,18 +139,16 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
  *
  */
 int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
-    int rc = ESPANK_SUCCESS;
-    uint32_t job_id = 0;
     uint32_t job_stepid = 0;
     int pid = (int)getpid();
     int uid = (int)getuid();
 
     slurm_debug("%s(%d, %d): -> %s argc=%d remote=%d", plugin_name, pid, uid,
-                __FUNCTION__, argc, spank_remote(spank_ctxt));
+                __func__, argc, spank_remote(spank_ctxt));
 
     if (!spank_remote(spank_ctxt)) {
         /* never occurred. just for safe. */
-        return rc;
+        return SLURM_SUCCESS;
     }
 
     if (spank_get_item(spank_ctxt, S_JOB_STEPID, &job_stepid) ==
@@ -154,13 +156,13 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         /* skip if this is slurm task steps */
         slurm_debug("%s, %x", plugin_name, job_stepid);
         if (job_stepid != SLURM_BATCH_SCRIPT) {
-            return rc;
+            return SLURM_SUCCESS;
         }
     }
 
     if (g_qpu_names_opt == NULL) {
         /* noop if this is not QPU job */
-        return ESPANK_SUCCESS;
+        return SLURM_ERROR;
     }
 
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_RESOURCES", "", OVERWRITE);
@@ -171,9 +173,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     }
 
     QrmiConfig *cnf = qrmi_config_load(argv[0]);
-    slurm_debug("%s, config: %p", plugin_name, cnf);
+    slurm_debug("%s, config: %p", plugin_name, (void *)cnf);
 
-    char *bufp = (char *)malloc(strlen(g_qpu_names_opt) + 1);
+    size_t buflen = strlen(g_qpu_names_opt) + 1;
+    char *bufp = (char *)malloc(buflen);
     char *rest = bufp;
     char *token;
     buffer keybuf;
@@ -183,8 +186,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
      * Copy option string to bufp because subsequent strtok_r will
      * modify the source buffer.
      */
-    strncpy(bufp, g_qpu_names_opt,
-            strlen(g_qpu_names_opt) + 1); /* ends with '\0' */
+    strncpy(bufp, g_qpu_names_opt, buflen);
 
     while ((token = strtok_r(rest, ",", &rest))) {
         QrmiResourceDef *res = qrmi_config_resource_def_get(cnf, token);
@@ -216,7 +218,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
              * Next, set environment variables specified in config file.
              */
             QrmiEnvironmentVariables envvars = res->environments;
-            for (int j = 0; j < envvars.length; j++) {
+            for (size_t j = 0; j < envvars.length; j++) {
                 QrmiKeyValue envvar = envvars.variables[j];
                 /* set to the current process for subsequent QRMI.acquire() call
                  */
@@ -257,7 +259,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
     if (slurm_list_count(g_acquired_resources) == 0) {
         slurm_error("%s, No QPU resource available", plugin_name);
-        return ESPANK_ERROR;
+        return SLURM_ERROR;
     }
 
     string_buffer_t qpu_resources_envvar;
@@ -294,9 +296,8 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     strbuf_free(&qpu_resources_envvar);
     strbuf_free(&qpu_types_envvar);
 
-    slurm_debug("%s(%d,%d): <- %s rc=%d", plugin_name, pid, uid, __FUNCTION__,
-                rc);
-    return rc;
+    slurm_debug("%s(%d,%d): <- %s", plugin_name, pid, uid, __func__);
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -307,33 +308,32 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
  * context only)
  */
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
-    int rc = ESPANK_SUCCESS;
+    UNUSED_PARAM(argv);
     uint32_t job_id = 0;
     job_info_msg_t *job_info_msg = NULL;
     int pid = (int)getpid();
     int uid = (int)getuid();
 
     slurm_debug("%s(%d, %d): -> %s argc=%d remote=%d", plugin_name, pid, uid,
-                __FUNCTION__, argc, spank_remote(spank_ctxt));
+                __func__, argc, spank_remote(spank_ctxt));
 
     if (!spank_remote(spank_ctxt)) {
         /* never occurred. just for safe. */
-        return ESPANK_SUCCESS;
+        return SLURM_SUCCESS;
     }
 
     char *optargp = NULL;
-    rc = spank_option_getopt(spank_ctxt, &spank_qrmi_options[0], &optargp);
-    if (rc != ESPANK_SUCCESS) {
+    if (spank_option_getopt(spank_ctxt, &spank_qrmi_options[0], &optargp) != ESPANK_SUCCESS) {
         /* if spank_qrmi plugin is not registered, simply returns an error. */
-        return rc;
+        return SLURM_ERROR;
     }
     size_t optlen = strlen(optargp);
     if ((optargp == NULL) || optlen == 0) {
         /* noop if this is not QPU job */
-        return ESPANK_SUCCESS;
+        return SLURM_SUCCESS;
     }
 
-    char limit_as_str[11]; /* max uint32_t value is (2147483647) = 10 chars */
+    char limit_as_str[MAX_INT_STRLEN + 1]; /* max uint32_t value is (2147483647) = 10 chars */
     memset(limit_as_str, '\0', sizeof(limit_as_str));
     if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) == ESPANK_SUCCESS) {
         if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) ==
@@ -353,7 +353,7 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
 
     if (strlen(limit_as_str) == 0) {
         /* time limit should be there, somthing wrong in Slurm */
-        return ESPANK_ERROR;
+        return SLURM_ERROR;
     }
 
     /*
@@ -384,12 +384,12 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
      * Set environment variables for QRMI runtime logging.
      */
     buffer srun_debug;
-    qrmi_buf_init(&srun_debug, 256);
+    qrmi_buf_init(&srun_debug, MAX_INT_STRLEN + 1);
     if (spank_getenv(spank_ctxt, "SRUN_DEBUG", srun_debug.buffer,
-                     srun_debug.capacity) == ESPANK_SUCCESS) {
+                     MAX_INT_STRLEN + 1) == ESPANK_SUCCESS) {
         /* if failed, level=0 --> default level(info) */
         int level = atoi(srun_debug.buffer);
-        char *level_str = NULL;
+        const char *level_str = NULL;
         switch (level) {
         case 2:
             /* --quiet */
@@ -422,10 +422,9 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
     }
     qrmi_buf_free(&srun_debug);
 
-    slurm_debug("%s(%d,%d): <- %s rc=%d", plugin_name, pid, uid, __FUNCTION__,
-                rc);
+    slurm_debug("%s(%d,%d): <- %s", plugin_name, pid, uid, __func__);
 
-    return rc;
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -435,17 +434,17 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
  * context, called before srun exits.
  */
 int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
-    int rc = ESPANK_SUCCESS;
+    UNUSED_PARAM(argv);
     int pid = (int)getpid();
     int uid = (int)getuid();
 
     if (!spank_remote(spank_ctxt)) {
         /* never occurred. just for safe. */
-        return ESPANK_SUCCESS;
+        return SLURM_SUCCESS;
     }
 
     slurm_debug("%s(%d, %d): -> %s argc=%d remote=%d", plugin_name, pid, uid,
-                __FUNCTION__, argc, spank_remote(spank_ctxt));
+                __func__, argc, spank_remote(spank_ctxt));
 
 #ifndef PRIOR_TO_V24_05_5_1
     list_itr_t *resources_iter =
@@ -467,9 +466,9 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
         g_qpu_names_opt = NULL;
     }
 
-    slurm_debug("%s(%d,%d): <- %s rc=%d", plugin_name, pid, uid, __FUNCTION__,
-                rc);
-    return rc;
+    slurm_debug("%s(%d,%d): <- %s", plugin_name, pid, uid, __func__);
+
+    return SLURM_SUCCESS;
 }
 
 /*
@@ -543,7 +542,7 @@ static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type) {
         qrmi_resource_free(qrmi);
     } else {
         slurm_error("%s/%s: Unsupported resource type: %d", plugin_name,
-                    __FUNCTION__, type);
+                    __func__, type);
     }
 
     return record;

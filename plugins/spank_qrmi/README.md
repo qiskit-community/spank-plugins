@@ -70,8 +70,8 @@ If a user specifies a resource with the --qpu option that is not defined in the 
 If the user sets the necessary environment variables for job execution themselves, it is not required to specify them in this file. In this case, the environment property will be `{}`.
 
 > [!NOTE]
-> If you are using a QPU resource with the resource type `qiskit-runtime-service`, please use an account that supports session creation, such as a Premium plan.
-> If you are using an account that does not support session creation, such as an Open plan account, please add the following environment variable to the list in qrmi_config.json:
+> If you are using a QPU resource with the resource type `qiskit-runtime-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
+> If you are using an account that does not support opening a session, such as an Open plan account, add the following environment variable to the list in qrmi_config.json as workaround:
 > `QRMI_IBM_QRS_SESSION_MODE="batch"`
 
 ## Installation

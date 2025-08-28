@@ -14,7 +14,7 @@ Refer each README file to know pre-requisites.
 ## Steps
 
 
-### 1. Install SPANK Plugin
+### 1. Install QRMI
 
 Refer [How to build & install QRMI Python package](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md#how-to-build--install-qrmi-python-package) and create a wheel file for distribution. Then install.
 

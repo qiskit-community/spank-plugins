@@ -69,6 +69,11 @@ If a user specifies a resource with the --qpu option that is not defined in the 
 
 If the user sets the necessary environment variables for job execution themselves, it is not required to specify them in this file. In this case, the environment property will be `{}`.
 
+> [!NOTE]
+> If you are using a QPU resource with the resource type `qiskit-runtime-service`, please use an account that supports session creation, such as a Premium plan.
+> If you are using an account that does not support session creation, such as an Open plan account, please add the following environment variable to the list in qrmi_config.json:
+> `QRMI_IBM_QRS_SESSION_MODE="batch"`
+
 ## Installation
 
 If the above build step is successful, a Linux shared library named `spank_qrmi.so` will be created under the `build/` directory. 

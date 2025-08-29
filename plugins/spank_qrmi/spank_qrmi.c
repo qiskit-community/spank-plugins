@@ -64,7 +64,11 @@ static int _qpu_names_opt_cb(int val, const char *optarg, int remote) {
     UNUSED_PARAM(remote);
     size_t buflen = strlen(optarg) + 1;
     g_qpu_names_opt = (char *)malloc(buflen);
-    strncpy(g_qpu_names_opt, optarg, buflen);
+    /*
+     * use strcpy() to fix the error - ‘strncpy’ specified bound depends on the length of the
+     * source argument - caused by some C compilers.
+     */
+    (void)strcpy(g_qpu_names_opt, optarg);
     slurm_debug("%s: --qpu=[%s]", plugin_name, g_qpu_names_opt);
     return SLURM_SUCCESS;
 }
@@ -185,8 +189,11 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     /*
      * Copy option string to bufp because subsequent strtok_r will
      * modify the source buffer.
+     *
+     * use strcpy() to fix the error - ‘strncpy’ specified bound depends on the length of the
+     * source argument - caused by some C compilers.
      */
-    strncpy(bufp, g_qpu_names_opt, buflen);
+    (void)strcpy(bufp, g_qpu_names_opt);
 
     while ((token = strtok_r(rest, ",", &rest))) {
         QrmiResourceDef *res = qrmi_config_resource_def_get(cnf, token);
@@ -479,16 +486,20 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
  */
 static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType type,
                                                  const char *token) {
+    /*
+     * use strcpy() to fix the error - ‘strncpy’ specified bound depends on the length of the
+     * source argument - caused by some C compilers.
+     */
     qpu_resource_t *info = malloc(sizeof(qpu_resource_t));
     size_t buflen = strlen(name) + 1;
     char *bufp = (char *)malloc(buflen);
-    strncpy(bufp, name, buflen);
+    (void)strcpy(bufp, name);
     info->name = bufp;
     info->type = type;
 
     buflen = strlen(token) + 1;
     bufp = (char *)malloc(buflen);
-    strncpy(bufp, token, buflen);
+    (void)strcpy(bufp, token);
     info->acquisition_token = bufp;
 
     return info;
@@ -534,10 +545,6 @@ static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type) {
             slurm_debug("%s, acquisition_token: %s", plugin_name,
                         acquisition_token);
             record = _acquired_resource_create(name, type, acquisition_token);
-
-        } else {
-            slurm_error("%s, failed to acquire resource: %s", plugin_name,
-                        name);
         }
         qrmi_resource_free(qrmi);
     } else {

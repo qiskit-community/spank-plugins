@@ -16,12 +16,21 @@
 # along with this program.  If not, see <[https://www.gnu.org/licenses/gpl-3.0.txt]
 #
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 set(CMAKE_C_STANDARD 11)
 project (spank_qrmi C)
 
-include(ExternalProject)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
 
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  set(LIB_PATH debug)
+else()
+  set(LIB_PATH release)
+endif()
+
+include(ExternalProject)
 ExternalProject_Add(QRMI
     GIT_REPOSITORY https://github.com/qiskit-community/qrmi.git
     GIT_TAG main
@@ -30,12 +39,9 @@ ExternalProject_Add(QRMI
     BUILD_COMMAND cargo build --release
     BUILD_IN_SOURCE 1
     INSTALL_COMMAND ""
-)
-
-add_library(qrmi SHARED IMPORTED GLOBAL)
-add_dependencies(qrmi qrmi_project)
-set_target_properties(qrmi PROPERTIES
-    IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
+    BUILD_BYPRODUCTS
+        ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
+        ${CMAKE_BINARY_DIR}/deps/src/QRMI/qrmi.h
 )
 
 #
@@ -44,15 +50,8 @@ set_target_properties(qrmi PROPERTIES
 include(CheckIncludeFiles)
 include(FindPackageHandleStandardArgs)
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  set(LIB_PATH debug)
-else()
-  set(LIB_PATH release)
-endif()
-set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
-
 find_path(SLURM_INCLUDE_DIR NAMES slurm/slurm.h)
-find_library(SLURM_LIBRARY NAMES libslurm.so)
+find_library(SLURM_LIBRARY NAMES slurm)
 find_package_handle_standard_args(SLURM DEFAULT_MSG SLURM_LIBRARY SLURM_INCLUDE_DIR)
 if (NOT SLURM_FOUND)
   MESSAGE(FATAL_ERROR "SLURM library could not be found")
@@ -74,12 +73,15 @@ mark_as_advanced (SLURM_LIBRARIES SLURM_INCLUDE_DIRS)
 include_directories (BEFORE ${SLURM_INCLUDE_DIRS})
 
 add_library (spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
+add_dependencies(spank_qrmi QRMI)
 set_target_properties (spank_qrmi PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_qrmi.so")
-target_link_libraries(spank_qrmi PRIVATE qrmi)
-target_link_libraries(spank_qrmi PUBLIC "-lssl")
-target_link_libraries(spank_qrmi PUBLIC "-lcrypto")
-target_link_libraries(spank_qrmi PUBLIC "-ldl")
-target_link_libraries(spank_qrmi PUBLIC "-lpthread")
-target_link_libraries(spank_qrmi PUBLIC "-lm")
-target_include_directories(spank_qrmi PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI)
-target_compile_options(spank_qrmi PRIVATE -Wall -Wextra -Werror -O2 -pedantic -Wconversion -Wwrite-strings -Wfloat-equal)
+target_link_libraries(spank_qrmi
+    PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
+    PUBLIC ssl crypto dl pthread m
+)
+target_include_directories(spank_qrmi
+    PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI
+)
+target_compile_options(spank_qrmi
+    PRIVATE -Wall -Wextra -Werror -O2 -pedantic -Wconversion -Wwrite-strings -Wfloat-equal
+)

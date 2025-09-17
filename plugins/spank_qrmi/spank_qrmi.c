@@ -158,7 +158,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     if (spank_get_item(spank_ctxt, S_JOB_STEPID, &job_stepid) ==
         ESPANK_SUCCESS) {
         /* skip if this is slurm task steps */
-        slurm_debug("%s, %x", plugin_name, job_stepid);
+        slurm_debug("%s, job_stepid = %x", plugin_name, job_stepid);
         if (job_stepid != SLURM_BATCH_SCRIPT) {
             return SLURM_SUCCESS;
         }
@@ -176,7 +176,16 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
     }
 
+    if (argc == 0) {
+        slurm_error("%s, QRMI config file not specified to plugin args", plugin_name);
+        return SLURM_ERROR;
+    }
+
     QrmiConfig *cnf = qrmi_config_load(argv[0]);
+    if (cnf == NULL) {
+        slurm_error("%s, No QRMI config file (%s)", plugin_name, argv[0]);
+        return SLURM_ERROR;
+    }
     slurm_debug("%s, config: %p", plugin_name, (void *)cnf);
 
     size_t buflen = strlen(g_qpu_names_opt) + 1;

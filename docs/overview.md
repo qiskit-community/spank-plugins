@@ -20,7 +20,7 @@ Spank plugins for Slurm to support quantum resources
 - [Integration Flow](#integration-flow)
 - [High Level Flow of Quantum Plugin](#high-level-flow-of-quantum-plugin)
 - [General architecture](#general-architecture-of-plugin)
-- [Architectural Tenets](#architectural-tenents)
+- [Architectural Tenets](#architectural-tenets)
 
 See [UX](./ux.md) for HPC user experience, HPC developer experience and usage patterns.
 
@@ -134,7 +134,7 @@ Quantum plugin will be using Spank architecture events sequence of call during j
 
 ![general architecture](./images/general_architecture.png)
 
-## Architectural Tenents
+## Architectural Tenets
 
 * A Slurm-level QPU resource maps to physical resource of a Quantum Computer
   * Quantum backend selection is part of that Slurm resource definition and is considered configuration, not source code

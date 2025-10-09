@@ -223,8 +223,19 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                 while (job_argv[index] != NULL) {
                     if (strncmp(job_argv[index], keybuf.buffer,
                                 strlen(keybuf.buffer)) == 0) {
-                        putenv(job_argv[index]);
-                        slurm_debug("%s: putenv(%s)", plugin_name, job_argv[index]);
+                        const char *kv_text = job_argv[index];
+                        const char *eq = strchr(kv_text, '=');
+                        if (eq) {
+                            size_t key_len = (size_t)(eq - kv_text);
+                            size_t val_len = strlen(eq + 1);
+                            char key[key_len + 1];
+                            char value[val_len + 1];
+                            strncpy(key, kv_text, key_len);
+                            key[key_len] = '\0';
+                            strcpy(value, eq + 1);
+                            slurm_debug("%s: putenv(%s, %s)", plugin_name, key, value);
+                            setenv(key, value, OVERWRITE);
+                        }
                     }
                     index++;
                 }

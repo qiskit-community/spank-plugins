@@ -75,9 +75,16 @@ include_directories (BEFORE ${SLURM_INCLUDE_DIRS})
 add_library (spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
 add_dependencies(spank_qrmi QRMI)
 set_target_properties (spank_qrmi PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_qrmi.so")
+if(DEFINED ENV{OPENSSL_STATIC})
+    set(SSL_LIB "")
+    set(CRYPTO_LIB "")
+else()
+    set(SSL_LIB ssl)
+    set(CRYPTO_LIB crypto)
+endif()
 target_link_libraries(spank_qrmi
     PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
-    PUBLIC ssl crypto dl pthread m
+    PUBLIC ${SSL_LIB} ${CRYPTO_LIB} dl pthread m
 )
 target_include_directories(spank_qrmi
     PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI

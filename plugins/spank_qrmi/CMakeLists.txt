@@ -50,34 +50,29 @@ ExternalProject_Add(QRMI
 include(CheckIncludeFiles)
 include(FindPackageHandleStandardArgs)
 
-find_path(SLURM_INCLUDE_DIR NAMES slurm/slurm.h)
-find_library(SLURM_LIBRARY NAMES slurm)
-find_package_handle_standard_args(SLURM DEFAULT_MSG SLURM_LIBRARY SLURM_INCLUDE_DIR)
+# Check environment variables first
+if(DEFINED ENV{SLURM_INCLUDE_DIRS})
+  set(SLURM_INCLUDE_DIR $ENV{SLURM_INCLUDE_DIRS})
+endif()
+
+if(NOT SLURM_INCLUDE_DIR)
+  find_path(SLURM_INCLUDE_DIR NAMES slurm/slurm.h)
+endif()
+
+find_package_handle_standard_args(SLURM DEFAULT_MSG SLURM_INCLUDE_DIR)
 if (NOT SLURM_FOUND)
   MESSAGE(FATAL_ERROR "SLURM library could not be found")
-else (NOT SLURM_FOUND)
-  set (SLURM_LIBRARIES ${SLURM_LIBRARY})
-  set (SLURM_INCLUDE_DIRS ${SLURM_INCLUDE_DIR})
-  find_path(SLURM_MODULES_DIR NAMES slurm
-          PATHS
-          /lib64/slurm
-          /usr/lib64/slurm
-          /usr/lib/x86_64-linux-gnu/slurm
-          DOC "Directory containing SLURM extensions."
-  )
-  if (NOT SLURM_MODULES_DIR)
-    message(FATAL_ERROR "SLURM extensions directory could not be found")
-  endif (NOT SLURM_MODULES_DIR)
-endif (NOT SLURM_FOUND)
-mark_as_advanced (SLURM_LIBRARIES SLURM_INCLUDE_DIRS)
+else()
+  set(SLURM_INCLUDE_DIRS ${SLURM_INCLUDE_DIR})
+endif()
+mark_as_advanced (SLURM_INCLUDE_DIRS)
 include_directories (BEFORE ${SLURM_INCLUDE_DIRS})
 
 add_library (spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
 add_dependencies(spank_qrmi QRMI)
 set_target_properties (spank_qrmi PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_qrmi.so")
 target_link_libraries(spank_qrmi
-    PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
-    PUBLIC ssl crypto dl pthread m
+    PRIVATE ssl crypto dl pthread m ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
 )
 target_include_directories(spank_qrmi
     PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI

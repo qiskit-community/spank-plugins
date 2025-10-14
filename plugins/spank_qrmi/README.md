@@ -10,9 +10,7 @@ This is a [SPANK plugin](https://slurm.schedmd.com/spank.html) that configures a
   * make/cmake (make/cmake RPM for RHEL compatible OS
   * openssl (openssl-devel RPM for RHEL compatible OS)
   * zlib (zlib-devel RPM for RHEL compatible OS)
-  * Slurm header & library
-    * slurm/slurm.h must be available under /usr/include
-    * libslurm.so must be available under /usr/lib64 or /usr/lib/x86_64-linux-gnu
+  * Slurm header files(slurm/slurm.h etc.) must be available on your host
 
 * Runtime requires the following tools:
   * gcc (libgcc RPM for RHEL compatible OS)
@@ -30,6 +28,11 @@ cmake ..
 make
 ```
 
+By default, the [CMakeLists.txt](./CMakeLists.txt) file expects the Slurm header file (`slurm.h`) to be located in `/usr/include/slurm`, but this can be customized as shown below.
+
+```shell-session
+SLURM_INCLUDE_DIRS=<directory containing slurm/slurm.h> cmake ..
+```
 
 ## SBATCH option
 

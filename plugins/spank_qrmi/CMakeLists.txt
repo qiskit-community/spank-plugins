@@ -61,7 +61,7 @@ endif()
 
 find_package_handle_standard_args(SLURM DEFAULT_MSG SLURM_INCLUDE_DIR)
 if (NOT SLURM_FOUND)
-  MESSAGE(FATAL_ERROR "SLURM library could not be found")
+  MESSAGE(FATAL_ERROR "SLURM header files could not be found")
 else()
   set(SLURM_INCLUDE_DIRS ${SLURM_INCLUDE_DIR})
 endif()
@@ -71,8 +71,15 @@ include_directories (BEFORE ${SLURM_INCLUDE_DIRS})
 add_library (spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
 add_dependencies(spank_qrmi QRMI)
 set_target_properties (spank_qrmi PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_qrmi.so")
+if(DEFINED ENV{OPENSSL_STATIC})
+    set(SSL_LIB "")
+    set(CRYPTO_LIB "")
+else()
+    set(SSL_LIB ssl)
+    set(CRYPTO_LIB crypto)
+endif()
 target_link_libraries(spank_qrmi
-    PRIVATE ssl crypto dl pthread m ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
+    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} dl pthread m ${CMAKE_BINARY_DIR}/deps/src/QRMI/target/release/libqrmi.a
 )
 target_include_directories(spank_qrmi
     PRIVATE ${CMAKE_BINARY_DIR}/deps/src/QRMI

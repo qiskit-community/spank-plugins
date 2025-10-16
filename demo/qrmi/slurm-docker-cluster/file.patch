@@ -1,29 +1,21 @@
 diff -Naru slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
---- slurm-docker-cluster.orig/.env	2025-08-06 04:23:31
-+++ slurm-docker-cluster/.env	2025-08-06 04:14:35
-@@ -1,6 +1,6 @@
- # Slurm git repo tag. See https://github.com/SchedMD/slurm/tags
--SLURM_TAG=slurm-21-08-6-1
-+SLURM_TAG=slurm-25-05-3-1
+--- slurm-docker-cluster.orig/.env	2025-10-16 16:31:09
++++ slurm-docker-cluster/.env	2025-10-16 16:48:51
+@@ -3,4 +3,4 @@
  
  # Image version used to tag the container at build time (Typically matches the
  # Slurm tag in semantic version form)
--IMAGE_TAG=21.08.6
-+IMAGE_TAG=25.05.3.1-dev
+-IMAGE_TAG=25.05.3
++IMAGE_TAG=25.05.3-dev
 diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
---- slurm-docker-cluster.orig/Dockerfile	2025-08-06 04:23:31
-+++ slurm-docker-cluster/Dockerfile	2025-08-06 04:21:59
-@@ -1,8 +1,8 @@
+--- slurm-docker-cluster.orig/Dockerfile	2025-10-16 16:31:09
++++ slurm-docker-cluster/Dockerfile	2025-10-16 16:36:57
+@@ -1,4 +1,4 @@
 -FROM rockylinux:8
 +FROM rockylinux:9
  
  LABEL org.opencontainers.image.source="https://github.com/giovtorres/slurm-docker-cluster" \
        org.opencontainers.image.title="slurm-docker-cluster" \
--      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 8" \
-+      org.opencontainers.image.description="Slurm Docker cluster on Rocky Linux 9" \
-       org.label-schema.docker.cmd="docker-compose up -d" \
-       maintainer="Giovanni Torres"
- 
 @@ -10,7 +10,7 @@
      && yum makecache \
      && yum -y update \
@@ -45,7 +37,7 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
         mariadb-server \
         mariadb-devel \
         psmisc \
-@@ -32,13 +31,20 @@
+@@ -32,13 +31,27 @@
         vim-enhanced \
         http-parser-devel \
         json-c-devel \
@@ -54,6 +46,13 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
 +       procps \
 +       iputils \
 +       net-tools \
++       openblas-devel \
++       jq \
++       iputils \
++       net-tools \
++       libyaml-devel \
++       procps \
++       lua-devel \
      && yum clean all \
      && rm -rf /var/cache/yum
  
@@ -68,12 +67,14 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  ARG GOSU_VERSION=1.17
  
  RUN set -ex \
-@@ -88,9 +94,15 @@
+@@ -88,9 +101,17 @@
  
  COPY slurm.conf /etc/slurm/slurm.conf
  COPY slurmdbd.conf /etc/slurm/slurmdbd.conf
 +COPY cgroup.conf /etc/slurm/cgroup.conf
 +COPY plugstack.conf.example /etc/slurm/plugstack.conf.example
++COPY plugstack.conf /etc/slurm/plugstack.conf
++COPY qrmi_config.json /etc/slurm/qrmi_config.json
 +COPY qrmi_config.json.example /etc/slurm/qrmi_config.json.example
  RUN set -x \
      && chown slurm:slurm /etc/slurm/slurmdbd.conf \
@@ -85,9 +86,9 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
  
  COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 diff -Naru slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.conf
---- slurm-docker-cluster.orig/cgroup.conf	1970-01-01 09:00:00
-+++ slurm-docker-cluster/cgroup.conf	2025-08-06 04:14:35
-@@ -0,0 +1,20 @@
+--- slurm-docker-cluster.orig/cgroup.conf	2025-10-16 16:31:09
++++ slurm-docker-cluster/cgroup.conf	2025-10-16 16:33:24
+@@ -1 +1,18 @@
 +###
 +#
 +# Slurm cgroup support configuration file
@@ -100,26 +101,33 @@ diff -Naru slurm-docker-cluster.orig/cgroup.conf slurm-docker-cluster/cgroup.con
 +ConstrainRAMSpace=yes
 +ConstrainSwapSpace=yes
 +
-+CgroupAutomount=yes
-+CgroupPlugin=cgroup/v1
+ CgroupPlugin=cgroup/v1
 +
-+ConstrainRAMSpace=yes
 +MaxRAMPercent=98
 +AllowedSwapSpace=0
 +AllowedRAMSpace=100
 +MemorySwappiness=0
 diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/docker-compose.yml
---- slurm-docker-cluster.orig/docker-compose.yml	2025-08-06 04:23:31
-+++ slurm-docker-cluster/docker-compose.yml	2025-08-06 04:17:01
-@@ -10,6 +10,7 @@
+--- slurm-docker-cluster.orig/docker-compose.yml	2025-10-16 16:31:09
++++ slurm-docker-cluster/docker-compose.yml	2025-10-16 16:57:12
+@@ -10,22 +10,20 @@
        MYSQL_PASSWORD: password
      volumes:
-       - var_lib_mysql:/var/lib/mysql
+       - var_lib_mysql:/var_lib/mysql
 +      - ./shared:/shared
      networks:
        - slurm-network
  
-@@ -25,7 +26,8 @@
+   slurmdbd:
+-    image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
+-    build:
+-      context: .
+-      args:
+-        SLURM_TAG: ${SLURM_TAG:-slurm-25-05-3-1}
++    image: slurm-docker-cluster:${IMAGE_TAG}
+     command: ["slurmdbd"]
+     container_name: slurmdbd
+     hostname: slurmdbd
      volumes:
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
@@ -129,41 +137,86 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
      expose:
        - "6819"
      depends_on:
-@@ -42,7 +44,8 @@
+@@ -34,11 +32,7 @@
+       - slurm-network
+ 
+   slurmctld:
+-    image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
+-    build:
+-      context: .
+-      args:
+-        SLURM_TAG: ${SLURM_TAG:-slurm-25-05-3-1}
++    image: slurm-docker-cluster:${IMAGE_TAG}
+     command: ["slurmctld"]
+     container_name: slurmctld
+     hostname: slurmctld
+@@ -46,8 +40,9 @@
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
 -      - var_log_slurm:/var/log/slurm
+-      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
 +      - var_log_slurmctld:/var/log/slurm
++      - ./cgroup.conf:/etc/slurm/cgroup.conf
 +      - ./shared:/shared
      expose:
        - "6817"
      depends_on:
-@@ -59,7 +62,8 @@
+@@ -56,11 +51,7 @@
+       - slurm-network
+ 
+   c1:
+-    image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
+-    build:
+-      context: .
+-      args:
+-        SLURM_TAG: ${SLURM_TAG:-slurm-25-05-3-1}
++    image: slurm-docker-cluster:${IMAGE_TAG}
+     command: ["slurmd"]
+     hostname: c1
+     container_name: c1
+@@ -68,8 +59,9 @@
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
 -      - var_log_slurm:/var/log/slurm
+-      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
 +      - var_log_c1:/var/log/slurm
++      - ./cgroup.conf:/etc/slurm/cgroup.conf
 +      - ./shared:/shared
      expose:
        - "6818"
      depends_on:
-@@ -76,7 +80,8 @@
+@@ -78,11 +70,7 @@
+       - slurm-network
+ 
+   c2:
+-    image: slurm-docker-cluster:${SLURM_VERSION:-25.05.3}
+-    build:
+-      context: .
+-      args:
+-        SLURM_TAG: ${SLURM_TAG:-slurm-25-05-3-1}
++    image: slurm-docker-cluster:${IMAGE_TAG}
+     command: ["slurmd"]
+     hostname: c2
+     container_name: c2
+@@ -90,8 +78,9 @@
        - etc_munge:/etc/munge
        - etc_slurm:/etc/slurm
        - slurm_jobdir:/data
 -      - var_log_slurm:/var/log/slurm
+-      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
 +      - var_log_c2:/var/log/slurm
++      - ./cgroup.conf:/etc/slurm/cgroup.conf
 +      - ./shared:/shared
      expose:
        - "6818"
      depends_on:
-@@ -84,12 +89,34 @@
+@@ -99,12 +88,34 @@
      networks:
        - slurm-network
  
-+  login:
++  slurm-login:
 +    image: slurm-docker-cluster:${IMAGE_TAG}
 +    command: ["login"]
 +    hostname: login
@@ -196,8 +249,8 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
  networks:
    slurm-network:
 diff -Naru slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/docker-entrypoint.sh
---- slurm-docker-cluster.orig/docker-entrypoint.sh	2025-08-06 04:23:31
-+++ slurm-docker-cluster/docker-entrypoint.sh	2025-08-06 04:17:49
+--- slurm-docker-cluster.orig/docker-entrypoint.sh	2025-10-16 16:31:09
++++ slurm-docker-cluster/docker-entrypoint.sh	2025-10-16 16:34:25
 @@ -61,4 +61,11 @@
      exec /usr/sbin/slurmd -Dvvv
  fi
@@ -210,13 +263,34 @@ diff -Naru slurm-docker-cluster.orig/docker-entrypoint.sh slurm-docker-cluster/d
 +fi
 +
  exec "$@"
+diff -Naru slurm-docker-cluster.orig/login.sh slurm-docker-cluster/login.sh
+--- slurm-docker-cluster.orig/login.sh	1970-01-01 09:00:00
++++ slurm-docker-cluster/login.sh	2025-10-16 16:55:27
+@@ -0,0 +1 @@
++docker exec -it login bash
+diff -Naru slurm-docker-cluster.orig/login_c1.sh slurm-docker-cluster/login_c1.sh
+--- slurm-docker-cluster.orig/login_c1.sh	1970-01-01 09:00:00
++++ slurm-docker-cluster/login_c1.sh	2025-10-16 16:55:32
+@@ -0,0 +1 @@
++docker exec -it c1 bash
+diff -Naru slurm-docker-cluster.orig/login_c2.sh slurm-docker-cluster/login_c2.sh
+--- slurm-docker-cluster.orig/login_c2.sh	1970-01-01 09:00:00
++++ slurm-docker-cluster/login_c2.sh	2025-10-16 16:55:35
+@@ -0,0 +1 @@
++docker exec -it c2 bash
+diff -Naru slurm-docker-cluster.orig/plugstack.conf slurm-docker-cluster/plugstack.conf
+--- slurm-docker-cluster.orig/plugstack.conf	1970-01-01 09:00:00
++++ slurm-docker-cluster/plugstack.conf	2025-10-16 16:37:30
+@@ -0,0 +1 @@
++optional /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
 diff -Naru slurm-docker-cluster.orig/plugstack.conf.example slurm-docker-cluster/plugstack.conf.example
 --- slurm-docker-cluster.orig/plugstack.conf.example	1970-01-01 09:00:00
-+++ slurm-docker-cluster/plugstack.conf.example	2025-08-06 04:14:35
++++ slurm-docker-cluster/plugstack.conf.example	2025-10-16 16:38:18
+@@ -0,0 +1 @@
 +optional /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
-diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
---- slurm-docker-cluster.orig/qrmi_config.json.example	1970-01-01 09:00:00
-+++ slurm-docker-cluster/qrmi_config.json.example	2025-08-06 04:14:35
+diff -Naru slurm-docker-cluster.orig/qrmi_config.json slurm-docker-cluster/qrmi_config.json
+--- slurm-docker-cluster.orig/qrmi_config.json	1970-01-01 09:00:00
++++ slurm-docker-cluster/qrmi_config.json	2025-10-16 16:38:00
 @@ -0,0 +1,36 @@
 +{
 +  "resources": [
@@ -242,7 +316,47 @@ diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-clust
 +        "QRMI_IBM_QRS_ENDPOINT": "https://quantum.cloud.ibm.com/api/v1",
 +        "QRMI_IBM_QRS_IAM_ENDPOINT": "https://iam.cloud.ibm.com",
 +        "QRMI_IBM_QRS_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
-+        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>"
++        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>",
++      }
++    },
++    {
++      "name": "pasqal",
++      "type": "pasqal-cloud",
++      "environment": {
++        "QRMI_PASQAL_CLOUD_ENDPOINT": "http://"
++      }
++    }
++  ]
++}
+diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
+--- slurm-docker-cluster.orig/qrmi_config.json.example	1970-01-01 09:00:00
++++ slurm-docker-cluster/qrmi_config.json.example	2025-10-16 16:37:47
+@@ -0,0 +1,36 @@
++{
++  "resources": [
++    {
++      "name": "test_eagle",
++      "type": "direct-access",
++      "environment": {
++        "QRMI_IBM_DA_ENDPOINT": "http://",
++        "QRMI_IBM_DA_IAM_ENDPOINT": "https://",
++        "QRMI_IBM_DA_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
++        "QRMI_IBM_DA_SERVICE_CRN": "<YOUR DIRECT ACCESS INSTANCE CRN>",
++        "QRMI_IBM_DA_AWS_ACCESS_KEY_ID": "<YOUR AWS ACCESS KEY TO ACCESS S3 BUCKET>",
++        "QRMI_IBM_DA_AWS_SECRET_ACCESS_KEY": "<YOUR AWS SECRET ACCESS KEY TO ACCESS S3 BUCKET>",
++        "QRMI_IBM_DA_S3_ENDPOINT": "<YOUR S3 ENDPOINT>",
++        "QRMI_IBM_DA_S3_BUCKET": "<YOUR S3 BUCKET NAME>",
++        "QRMI_IBM_DA_S3_REGION": "<YOUR S3 BUCKET REGION>"
++      }
++    },
++    {
++      "name": "alt_marrakesh",
++      "type": "qiskit-runtime-service",
++      "environment": {
++        "QRMI_IBM_QRS_ENDPOINT": "https://quantum.cloud.ibm.com/api/v1",
++        "QRMI_IBM_QRS_IAM_ENDPOINT": "https://iam.cloud.ibm.com",
++        "QRMI_IBM_QRS_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
++        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>",
 +      }
 +    },
 +    {
@@ -255,20 +369,32 @@ diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-clust
 +  ]
 +}
 diff -Naru slurm-docker-cluster.orig/slurm.conf slurm-docker-cluster/slurm.conf
---- slurm-docker-cluster.orig/slurm.conf	2025-08-06 04:23:31
-+++ slurm-docker-cluster/slurm.conf	2025-08-06 04:14:35
-@@ -56,7 +56,7 @@
- #SchedulerAuth=
- #SchedulerPort=
- #SchedulerRootFilter=
--SelectType=select/cons_res
-+SelectType=select/cons_tres
- SelectTypeParameters=CR_CPU_Memory
- FastSchedule=1
- #PriorityType=priority/multifactor
+--- slurm-docker-cluster.orig/slurm.conf	2025-10-16 16:31:09
++++ slurm-docker-cluster/slurm.conf	2025-10-16 16:42:46
+@@ -73,6 +73,7 @@
+ SlurmctldLogFile=/var/log/slurm/slurmctld.log
+ SlurmdDebug=3
+ SlurmdLogFile=/var/log/slurm/slurmd.log
++DebugFlags=GRES
+ JobCompType=jobcomp/filetxt
+ JobCompLoc=/var/log/slurm/jobcomp.log
+ #
+@@ -89,9 +90,8 @@
+ #
+ # COMPUTE NODES
+ # MODIFICAÇÃO 3: Nós definidos explicitamente para robustez na rede Docker e contagem de CPUs
+-NodeName=c1 NodeAddr=c1 CPUs=2 RealMemory=1000 State=UNKNOWN
+-NodeName=c2 NodeAddr=c2 CPUs=2 RealMemory=1000 State=UNKNOWN
++NodeName=c[1-2] CPUs=6 RealMemory=1000 State=UNKNOWN
++
+ #
+ # PARTITIONS
+-#PartitionName=normal Default=yes Nodes=c1,c2 Priority=50 DefMemPerCPU=500 Shared=NO MaxNodes=2 MaxTime=5-00:00:00 DefaultTime=5-00:00:00 State=UP
+-PartitionName=normal Nodes=c1,c2 Default=YES MaxTime=INFINITE State=UP
++PartitionName=normal Default=yes Nodes=c[1-2] Priority=50 DefMemPerCPU=500 Shared=NO MaxNodes=5 MaxTime=5-00:00:00 DefaultTime=5-00:00:00 State=UP
 diff -Naru slurm-docker-cluster.orig/update_slurmfiles.sh slurm-docker-cluster/update_slurmfiles.sh
---- slurm-docker-cluster.orig/update_slurmfiles.sh	2025-08-06 04:23:31
-+++ slurm-docker-cluster/update_slurmfiles.sh	2025-08-06 04:14:35
+--- slurm-docker-cluster.orig/update_slurmfiles.sh	2025-10-16 16:31:09
++++ slurm-docker-cluster/update_slurmfiles.sh	2025-10-16 16:38:40
 @@ -6,7 +6,7 @@
  
  for var in "$@"

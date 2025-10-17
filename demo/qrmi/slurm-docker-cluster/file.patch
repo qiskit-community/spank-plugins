@@ -6,7 +6,7 @@ diff -Naru slurm-docker-cluster.orig/.env slurm-docker-cluster/.env
  # Image version used to tag the container at build time (Typically matches the
  # Slurm tag in semantic version form)
 -IMAGE_TAG=25.05.3
-+IMAGE_TAG=25.05.3-dev-tmp
++IMAGE_TAG=25.05.3-dev
 diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
 --- slurm-docker-cluster.orig/Dockerfile	2025-10-16 16:31:09
 +++ slurm-docker-cluster/Dockerfile	2025-10-16 16:36:57

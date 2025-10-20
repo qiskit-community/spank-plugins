@@ -278,7 +278,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             }
             qrmi_config_resource_def_free(res);
         } else {
-            slurm_debug("resource %s not found.", token);
+            slurm_error("resource %s not found in qrmi_config.json.", token);
         }
     }
     free(bufp);
@@ -549,8 +549,9 @@ static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type) {
     char *acquisition_token = NULL;
     bool is_accessible = false;
     QrmiReturnCode rc;
+    char *error = NULL;
 
-    void *qrmi = qrmi_resource_new(name, type);
+    void *qrmi = qrmi_resource_new(name, type, &error);
     if (qrmi != NULL) {
         slurm_debug("%s, qrmi: %p", plugin_name, qrmi);
         rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
@@ -568,8 +569,8 @@ static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type) {
         }
         qrmi_resource_free(qrmi);
     } else {
-        slurm_error("%s/%s: Unsupported resource type: %d", plugin_name,
-                    __func__, type);
+        slurm_error("%s/%s: %s", plugin_name, __func__, error);
+	qrmi_string_free(error);
     }
 
     return record;
@@ -588,7 +589,13 @@ static void _release_qpu(qpu_resource_t *res) {
     }
     slurm_debug("%s: releasing name(%s), type(%d), token(%s)", plugin_name,
                 res->name, res->type, res->acquisition_token);
-    void *qrmi = qrmi_resource_new(res->name, res->type);
+    char *error = NULL;
+    void *qrmi = qrmi_resource_new(res->name, res->type, &error);
+    if (qrmi == NULL) {
+        slurm_error("%s/%s: %s", plugin_name, __func__, error);
+	qrmi_string_free(error);
+        return;
+    }
     rc = qrmi_resource_release(qrmi, res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
         slurm_error("%s: Failed to release acquired resource: name(%s), type(%d), token(%s)",

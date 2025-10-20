@@ -51,8 +51,8 @@ static List g_acquired_resources = NULL;
 static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType type,
                                                  const char *token);
 static void acquired_resource_destroy(void *object);
-static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type);
-static void _release_qpu(qpu_resource_t *res);
+static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type);
+static void _release_qpu(spank_t spank_ctxt, qpu_resource_t *res);
 
 /*
  * @function _qpu_names_opt_cb
@@ -261,7 +261,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             /*
              * Acquire QPU resource.
              */
-            qpu_resource_t *acquired = _acquire_qpu(res->name, res->type);
+            qpu_resource_t *acquired = _acquire_qpu(spank_ctxt, res->name, res->type);
             if (acquired != NULL) {
                 slurm_list_append(g_acquired_resources, acquired);
                 qrmi_buf_envvarname_for_res_create(&keybuf, res->name,
@@ -481,7 +481,7 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
         slurm_list_iterator_create(g_acquired_resources);
     void *x = NULL;
     while ((x = slurm_list_next(resources_iter)) != NULL) {
-        _release_qpu((qpu_resource_t *)x);
+        _release_qpu(spank_ctxt, (qpu_resource_t *)x);
     }
     slurm_list_iterator_destroy(resources_iter);
     slurm_list_destroy(g_acquired_resources);
@@ -544,7 +544,7 @@ static void acquired_resource_destroy(void *object) {
  * Acquire QPU resource specified by `name` and `type`. Returns
  * qpu_resource_t object if succeeded.
  */
-static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type) {
+static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type) {
     qpu_resource_t *record = NULL;
     char *acquisition_token = NULL;
     bool is_accessible = false;
@@ -570,6 +570,7 @@ static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type) {
         qrmi_resource_free(qrmi);
     } else {
         slurm_error("%s/%s: %s", plugin_name, __func__, error);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, OVERWRITE);
 	qrmi_string_free(error);
     }
 
@@ -581,7 +582,7 @@ static qpu_resource_t *_acquire_qpu(char *name, QrmiResourceType type) {
  *
  * Release QPU resource which was acquired by _acquired_qpu().
  */
-static void _release_qpu(qpu_resource_t *res) {
+static void _release_qpu(spank_t spank_ctxt, qpu_resource_t *res) {
     QrmiReturnCode rc;
 
     if (res == NULL) {
@@ -593,6 +594,7 @@ static void _release_qpu(qpu_resource_t *res) {
     void *qrmi = qrmi_resource_new(res->name, res->type, &error);
     if (qrmi == NULL) {
         slurm_error("%s/%s: %s", plugin_name, __func__, error);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, OVERWRITE);
 	qrmi_string_free(error);
         return;
     }

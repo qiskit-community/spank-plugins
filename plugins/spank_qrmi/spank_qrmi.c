@@ -557,7 +557,6 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
         rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
         if ((rc != QRMI_RETURN_CODE_SUCCESS) || (is_accessible == false)) {
             slurm_error("%s, %s is not accessible", plugin_name, name);
-            //functbl->free(qrmi);
             qrmi_resource_free(qrmi);
             return NULL;
         }
@@ -570,7 +569,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
         qrmi_resource_free(qrmi);
     } else {
         slurm_error("%s/%s: %s", plugin_name, __func__, error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, OVERWRITE);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, KEEP_IF_EXISTS);
 	qrmi_string_free(error);
     }
 
@@ -594,7 +593,7 @@ static void _release_qpu(spank_t spank_ctxt, qpu_resource_t *res) {
     void *qrmi = qrmi_resource_new(res->name, res->type, &error);
     if (qrmi == NULL) {
         slurm_error("%s/%s: %s", plugin_name, __func__, error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, OVERWRITE);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, KEEP_IF_EXISTS);
 	qrmi_string_free(error);
         return;
     }

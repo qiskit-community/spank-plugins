@@ -52,7 +52,7 @@ static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType ty
                                                  const char *token);
 static void acquired_resource_destroy(void *object);
 static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type);
-static void _release_qpu(spank_t spank_ctxt, qpu_resource_t *res);
+static void _release_qpu(qpu_resource_t *res);
 
 /*
  * @function _qpu_names_opt_cb
@@ -481,7 +481,7 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
         slurm_list_iterator_create(g_acquired_resources);
     void *x = NULL;
     while ((x = slurm_list_next(resources_iter)) != NULL) {
-        _release_qpu(spank_ctxt, (qpu_resource_t *)x);
+        _release_qpu((qpu_resource_t *)x);
     }
     slurm_list_iterator_destroy(resources_iter);
     slurm_list_destroy(g_acquired_resources);
@@ -568,7 +568,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
         }
         qrmi_resource_free(qrmi);
     } else {
-        slurm_error("%s/%s: %s", plugin_name, __func__, error);
+        slurm_error("%s, %s", plugin_name, error);
         spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, KEEP_IF_EXISTS);
 	qrmi_string_free(error);
     }
@@ -581,7 +581,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
  *
  * Release QPU resource which was acquired by _acquired_qpu().
  */
-static void _release_qpu(spank_t spank_ctxt, qpu_resource_t *res) {
+static void _release_qpu(qpu_resource_t *res) {
     QrmiReturnCode rc;
 
     if (res == NULL) {
@@ -592,26 +592,25 @@ static void _release_qpu(spank_t spank_ctxt, qpu_resource_t *res) {
     char *error = NULL;
     void *qrmi = qrmi_resource_new(res->name, res->type, &error);
     if (qrmi == NULL) {
-        slurm_error("%s/%s: %s", plugin_name, __func__, error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, KEEP_IF_EXISTS);
+        slurm_error("%s, %s", plugin_name, error);
 	qrmi_string_free(error);
         return;
     }
     rc = qrmi_resource_release(qrmi, res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s: Failed to release acquired resource: name(%s), type(%d), token(%s)",
+        slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), token(%s)",
                     plugin_name,
                     res->name, res->type, res->acquisition_token);
     }
     rc = qrmi_string_free(res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s: Failed to free acquisition token string: (%s)",
+        slurm_error("%s, Failed to free acquisition token string: (%s)",
                     plugin_name,
                     res->acquisition_token);
     }
     rc = qrmi_resource_free(qrmi);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s: Failed to free QrmiQuantumResource handle: (%p)",
+        slurm_error("%s, Failed to free QrmiQuantumResource handle: (%p)",
                     plugin_name,
                     qrmi);
     }

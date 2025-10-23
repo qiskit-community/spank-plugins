@@ -545,35 +545,41 @@ static void acquired_resource_destroy(void *object) {
  * qpu_resource_t object if succeeded.
  */
 static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type) {
-    qpu_resource_t *record = NULL;
     char *acquisition_token = NULL;
     bool is_accessible = false;
     QrmiReturnCode rc;
-    char *error = NULL;
+    const char* last_error = NULL;
 
-    void *qrmi = qrmi_resource_new(name, type, &error);
-    if (qrmi != NULL) {
-        slurm_debug("%s, qrmi: %p", plugin_name, qrmi);
-        rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
-        if ((rc != QRMI_RETURN_CODE_SUCCESS) || (is_accessible == false)) {
-            slurm_error("%s, %s is not accessible", plugin_name, name);
-            qrmi_resource_free(qrmi);
-            return NULL;
-        }
-        rc = qrmi_resource_acquire(qrmi, &acquisition_token);
-        if ((rc == QRMI_RETURN_CODE_SUCCESS) && (acquisition_token != NULL)) {
-            slurm_debug("%s, acquisition_token: %s", plugin_name,
-                        acquisition_token);
-            record = _acquired_resource_create(name, type, acquisition_token);
-        }
-        qrmi_resource_free(qrmi);
-    } else {
-        slurm_error("%s, %s", plugin_name, error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", error, KEEP_IF_EXISTS);
-	qrmi_string_free(error);
+    void *qrmi = qrmi_resource_new(name, type);
+    if (qrmi == NULL) {
+        last_error = qrmi_get_last_error();
+        slurm_error("%s, %s", plugin_name, last_error);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
+        qrmi_string_free((char*)last_error);
+        return NULL;
     }
 
-    return record;
+    slurm_debug("%s, qrmi: %p", plugin_name, qrmi);
+    rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
+    if ((rc != QRMI_RETURN_CODE_SUCCESS) || (is_accessible == false)) {
+        last_error = qrmi_get_last_error();
+        slurm_error("%s, %s is not accessible. %s", plugin_name, name, last_error);
+        qrmi_string_free((char*)last_error);
+        qrmi_resource_free(qrmi);
+        return NULL;
+    }
+    rc = qrmi_resource_acquire(qrmi, &acquisition_token);
+    qrmi_resource_free(qrmi);
+    if ((rc != QRMI_RETURN_CODE_SUCCESS) || (acquisition_token == NULL)) {
+        last_error = qrmi_get_last_error();
+        slurm_error("%s, resource acquisition failed: %s. %s", plugin_name, name, last_error);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
+        qrmi_string_free((char*)last_error);
+    }
+
+    slurm_debug("%s, acquisition_token: %s", plugin_name,
+                acquisition_token);
+    return _acquired_resource_create(name, type, acquisition_token);
 }
 
 /*
@@ -589,18 +595,20 @@ static void _release_qpu(qpu_resource_t *res) {
     }
     slurm_debug("%s: releasing name(%s), type(%d), token(%s)", plugin_name,
                 res->name, res->type, res->acquisition_token);
-    char *error = NULL;
-    void *qrmi = qrmi_resource_new(res->name, res->type, &error);
+    void *qrmi = qrmi_resource_new(res->name, res->type);
     if (qrmi == NULL) {
-        slurm_error("%s, %s", plugin_name, error);
-	qrmi_string_free(error);
+        const char* last_error = qrmi_get_last_error();
+        slurm_error("%s, %s", plugin_name, last_error);
+        qrmi_string_free((char*)last_error);
         return;
     }
     rc = qrmi_resource_release(qrmi, res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), token(%s)",
+        const char* last_error = qrmi_get_last_error();
+        slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), token(%s), %s",
                     plugin_name,
-                    res->name, res->type, res->acquisition_token);
+                    res->name, res->type, res->acquisition_token, last_error);
+        qrmi_string_free((char*)last_error);
     }
     rc = qrmi_string_free(res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {

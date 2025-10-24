@@ -207,8 +207,8 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     while ((token = strtok_r(rest, ",", &rest))) {
         QrmiResourceDef *res = qrmi_config_resource_def_get(cnf, token);
         if (res != NULL) {
-            slurm_debug("%s: name(%s), type(%d) found in qrmi_config",
-                        plugin_name, res->name, res->type);
+            slurm_debug("%s: name(%s), type(%d) found in %s",
+                        plugin_name, res->name, res->type, argv[0]);
             /*
              * If user specifies access details in environment variables,
              * these are available as job environment variables. Reads through
@@ -278,7 +278,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             }
             qrmi_config_resource_def_free(res);
         } else {
-            slurm_error("resource %s not found in qrmi_config.json.", token);
+            slurm_error("resource %s not found in %s", token, argv[0]);
         }
     }
     free(bufp);

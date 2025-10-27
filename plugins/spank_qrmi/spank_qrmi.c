@@ -26,6 +26,8 @@
 #include "qrmi.h"
 #include "spank_qrmi.h"
 
+extern char **environ;
+
 /*
  * Spank plugin for QRMI.
  */
@@ -53,6 +55,18 @@ static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType ty
 static void acquired_resource_destroy(void *object);
 static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type);
 static void _release_qpu(qpu_resource_t *res);
+
+
+static void dump_environ() {
+    char **s = environ;
+    int pid = (int)getpid();
+    int uid = (int)getuid();
+
+    slurm_debug("%s(%d, %d): environment variables ---", plugin_name, pid, uid);
+    for (; *s; s++) {
+        slurm_debug("%s(%d, %d): %s", plugin_name, pid, uid, *s);
+    }
+}
 
 /*
  * @function _qpu_names_opt_cb
@@ -183,7 +197,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
     QrmiConfig *cnf = qrmi_config_load(argv[0]);
     if (cnf == NULL) {
-        slurm_error("%s, No QRMI config file (%s)", plugin_name, argv[0]);
+        const char* last_error = qrmi_get_last_error();
+        slurm_error("%s, Failed to load QRMI config file(%s). %s", plugin_name, argv[0], last_error);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
+        qrmi_string_free((char*)last_error);
         return SLURM_ERROR;
     }
     slurm_debug("%s, config: %p", plugin_name, (void *)cnf);
@@ -257,6 +274,8 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                 spank_setenv(spank_ctxt, keybuf.buffer, envvar.value,
                              KEEP_IF_EXISTS);
             }
+
+            dump_environ();
 
             /*
              * Acquire QPU resource.
@@ -564,6 +583,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     if ((rc != QRMI_RETURN_CODE_SUCCESS) || (is_accessible == false)) {
         last_error = qrmi_get_last_error();
         slurm_error("%s, %s is not accessible. %s", plugin_name, name, last_error);
+        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
         qrmi_string_free((char*)last_error);
         qrmi_resource_free(qrmi);
         return NULL;

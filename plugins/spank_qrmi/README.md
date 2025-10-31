@@ -88,6 +88,12 @@ Note that administrator needs to create `qrmi_config.json` file and specify the 
 optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
+> [!NOTE]
+> There are optional argumentis available. It allows you to add environment variables to the Slurm process where the SPANK plugin is loaded. For example, when interacting with Quantum resources via an HTTP proxy, the environment variables `http_proxy`, `https_proxy`, and `no_proxy` are required. These can be added as shown below.
+> ```bash
+> optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:http_proxy=http://192.168.1.128:3128 --env:https_proxy=http://192.168.1.128:3128
+> ```
+
 For allocator node, your don't need to specify the path to qrmi_config.json like below.
 
 ```bash

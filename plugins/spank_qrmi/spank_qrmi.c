@@ -68,6 +68,11 @@ static void dump_environ() {
     }
 }
 
+static bool starts_with(const char *str, const char *prefix)
+{
+    return strncmp(prefix, str, strlen(prefix)) == 0;
+}
+
 /*
  * @function _qpu_names_opt_cb
  *
@@ -204,6 +209,22 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_ERROR;
     }
     slurm_debug("%s, config: %p", plugin_name, (void *)cnf);
+
+    for (int i = 1; i < argc; i++) {
+        if (starts_with(argv[i], "--env:")) {
+            const char *input = &argv[i][strlen("--env:")];
+            const char *delimiter = strchr(input, '=');
+            if (delimiter != NULL) {
+                size_t key_len = (size_t)(delimiter - input);
+                char env_name[key_len + 1];
+                strncpy(env_name, input, key_len);
+                env_name[key_len] = '\0';
+                const char *env_value = delimiter + 1;;
+                setenv(env_name, env_value, OVERWRITE);
+                spank_setenv(spank_ctxt, env_name, env_value, OVERWRITE);
+            }
+        }
+    }
 
     size_t buflen = strlen(g_qpu_names_opt) + 1;
     char *bufp = (char *)malloc(buflen);

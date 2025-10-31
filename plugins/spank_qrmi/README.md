@@ -89,9 +89,9 @@ optional /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
 > [!NOTE]
-> There are optional argumentis available. It allows you to add environment variables to the Slurm process where the SPANK plugin is loaded.
+> There are optional argumentis available. It allows you to add environment variables to the Slurm process where the SPANK plugin is loaded. The format for specifying environment variables is defined as follows.
 > ```bash
-> --env:{environment variable name}={environment variable value}
+> --env:{variable name}={value}
 > ```
 >
 > For example, when interacting with Quantum resources via an HTTP proxy, the environment variables `http_proxy`, `https_proxy`, and `no_proxy` are required. These can be added as shown below.

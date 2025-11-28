@@ -110,6 +110,7 @@ Slurm Cluster is now set up as shown.
 
 ```bash
 [root@c1 /]# python3.12 -m venv /shared/pyenv
+[root@c1 /]# source /shared/pyenv/bin/activate
 [root@c1 /]# pip install --upgrade pip
 ```
 
@@ -123,7 +124,7 @@ Slurm Cluster is now set up as shown.
 [root@c1 /]# cd /shared/qrmi
 [root@c1 /]# pip install -r requirements-dev.txt
 [root@c1 /]# maturin build --release
-[root@c1 /]# pip install /shared/qrmi/target/wheels/qrmi-0.8.0-cp312-abi3-manylinux_2_34_aarch64.whl
+[root@c1 /]# pip install /shared/qrmi/target/wheels/qrmi-*.whl
 ```
 
 4. Building [SPANK Plugin](../../../plugins/spank_qrmi/README.md)

@@ -116,8 +116,6 @@ docker exec -it c1 bash
 3. Building and installing [QRMI](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md)
 
 ```bash
-% docker exec -it c1 bash
-
 [root@c1 /]# pip install --upgrade pip
 [root@c1 /]# source ~/.cargo/env
 [root@c1 /]# cd /shared/qrmi

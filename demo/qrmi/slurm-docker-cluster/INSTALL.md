@@ -103,7 +103,7 @@ Slurm Cluster is now set up as shown.
 
 1. Login to c1 container
 ```bash
-% docker exec -it c1 bash
+docker exec -it c1 bash
 ```
 
 2. Creating python virtual env under shared volume

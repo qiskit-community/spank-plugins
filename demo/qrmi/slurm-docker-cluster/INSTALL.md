@@ -30,8 +30,7 @@ cd <YOUR WORKSPACE>
 #### 2. Cloning Slurm Docker Cluster git repository 
 
 ```bash
-git clone https://github.com/giovtorres/slurm-docker-cluster.git
-git checkout 0.9.0
+git clone -b 0.9.0 https://github.com/giovtorres/slurm-docker-cluster.git
 cd slurm-docker-cluster
 ```
 

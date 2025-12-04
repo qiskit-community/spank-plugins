@@ -30,7 +30,7 @@ cd <YOUR WORKSPACE>
 #### 2. Cloning Slurm Docker Cluster git repository 
 
 ```bash
-git clone https://github.com/giovtorres/slurm-docker-cluster.git
+git clone -b 0.9.0 https://github.com/giovtorres/slurm-docker-cluster.git
 cd slurm-docker-cluster
 ```
 
@@ -39,8 +39,8 @@ cd slurm-docker-cluster
 ```bash
 mkdir shared
 pushd shared
-git clone git@github.com:qiskit-community/spank-plugins.git
-git clone git@github.com:qiskit-community/qrmi.git
+git clone https://github.com/qiskit-community/spank-plugins.git
+git clone https://github.com/qiskit-community/qrmi.git
 popd
 ```
 
@@ -117,10 +117,7 @@ Slurm Cluster is now set up as shown.
 3. Building and installing [QRMI](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md)
 
 ```bash
-% docker exec -it c1 bash
-
 [root@c1 /]# source ~/.cargo/env
-[root@c1 /]# source /shared/pyenv/bin/activate
 [root@c1 /]# cd /shared/qrmi
 [root@c1 /]# pip install -r requirements-dev.txt
 [root@c1 /]# maturin build --release

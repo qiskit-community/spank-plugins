@@ -30,7 +30,7 @@ cd <YOUR WORKSPACE>
 #### 2. Cloning Slurm Docker Cluster git repository 
 
 ```bash
-git clone https://github.com/giovtorres/slurm-docker-cluster.git
+git clone -b 0.9.0 https://github.com/giovtorres/slurm-docker-cluster.git
 cd slurm-docker-cluster
 ```
 
@@ -39,8 +39,8 @@ cd slurm-docker-cluster
 ```bash
 mkdir shared
 pushd shared
-git clone git@github.com:qiskit-community/spank-plugins.git
-git clone git@github.com:qiskit-community/qrmi.git
+git clone https://github.com/qiskit-community/spank-plugins.git
+git clone https://github.com/qiskit-community/qrmi.git
 popd
 ```
 
@@ -110,20 +110,18 @@ Slurm Cluster is now set up as shown.
 
 ```bash
 [root@c1 /]# python3.12 -m venv /shared/pyenv
+[root@c1 /]# source /shared/pyenv/bin/activate
 [root@c1 /]# pip install --upgrade pip
 ```
 
 3. Building and installing [QRMI](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md)
 
 ```bash
-% docker exec -it c1 bash
-
 [root@c1 /]# source ~/.cargo/env
-[root@c1 /]# source /shared/pyenv/bin/activate
 [root@c1 /]# cd /shared/qrmi
 [root@c1 /]# pip install -r requirements-dev.txt
 [root@c1 /]# maturin build --release
-[root@c1 /]# pip install /shared/qrmi/target/wheels/qrmi-0.8.0-cp312-abi3-manylinux_2_34_aarch64.whl
+[root@c1 /]# pip install /shared/qrmi/target/wheels/qrmi-*.whl
 ```
 
 4. Building [SPANK Plugin](../../../plugins/spank_qrmi/README.md)

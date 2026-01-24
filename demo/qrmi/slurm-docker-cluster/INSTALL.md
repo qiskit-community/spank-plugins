@@ -69,6 +69,8 @@ patch -p1 < ./shared/spank-plugins/demo/qrmi/slurm-docker-cluster/centos10.patch
 ```bash
 docker compose build --no-cache
 ```
+* Need to install `docker-compose` for the `podman` users.
+* For example, `brew install docker-compose` for a MAC user
 
 #### 6. Starting a cluster
 

@@ -24,11 +24,10 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  set(LIB_PATH debug)
-else()
-  set(LIB_PATH release)
-endif()
+# Switches:
+#   -DUSE_LOCAL_QRMI=ON   Use local QRMI checkout at QRMI_ROOT.
+#   -DUSE_LOCAL_QRMI=OFF  Fetch/build QRMI via ExternalProject (default).
+option(USE_LOCAL_QRMI "Use local QRMI checkout instead of fetching from GitHub" OFF)
 
 # Switch:
 #   -DQRMI_ROOT=/path/to/qrmi   Use local QRMI code.
@@ -112,12 +111,34 @@ else()
     set(SSL_LIB ssl)
     set(CRYPTO_LIB crypto)
 endif()
+
+# -----------------------
+# Build spank_qrmi module
+# -----------------------
+add_library(spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
+
+set_target_properties(spank_qrmi PROPERTIES
+  PREFIX ""
+  SUFFIX ""
+  OUTPUT_NAME "spank_qrmi.so"
+)
+
 target_link_libraries(spank_qrmi
     PRIVATE ${SSL_LIB} ${CRYPTO_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
 )
 target_include_directories(spank_qrmi
     PRIVATE ${QRMI_SOURCE_DIR}
 )
+
+add_dependencies(spank_qrmi ${QRMI_TARGET})
+
+# Ensure libqrmi.so is found at runtime when using local shared library.
+if(QRMI_RPATH)
+  set_target_properties(spank_qrmi PROPERTIES
+    BUILD_RPATH "${QRMI_RPATH}"
+  )
+endif()
+
 target_compile_options(spank_qrmi
     PRIVATE -Wall -Wextra -Werror -O2 -pedantic -Wconversion -Wwrite-strings -Wfloat-equal
 )

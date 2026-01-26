@@ -32,6 +32,13 @@
         "QRMI_PASQAL_CLOUD_PROJECT_ID": "",
         "QRMI_PASQAL_CLOUD_AUTH_TOKEN": ""
       }
+    },
+    {
+      "name": "PASQAL_LOCAL",
+      "type": "pasqal-local",
+      "environment": {
+        "QRMI_URL": "http://localhost:4207"
+      }
     }
   ]
 }

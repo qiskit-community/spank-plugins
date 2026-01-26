@@ -32,6 +32,7 @@ diff -Naru slurm-docker-cluster.orig/Dockerfile slurm-docker-cluster/Dockerfile
 -       python3-devel \
 -       python3-pip \
 -       python3 \
++       munge-libs \
 +       python3.12-devel \
 +       python3.12-pip \
         mariadb-server \

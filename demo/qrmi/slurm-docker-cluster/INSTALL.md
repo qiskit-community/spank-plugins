@@ -137,7 +137,7 @@ Slurm Cluster is now set up as shown.
 ```
 Which will install the QRMI from the [GitHub repo](https://github.com/qiskit-community/qrmi).
 
-If you are building locally for development it may be easier to build from source
+If you are building locally for development it may be easier to build the QRMI from source, mounted at `/shared/qrmi` as per this guide.
 ```bash
 [root@c1 /]# cd /shared/spank-plugins/plugins/spank_qrmi
 [root@c1 /]# mkdir build
@@ -152,7 +152,7 @@ If you are building locally for development it may be easier to build from sourc
 Refer [this example](https://github.com/qiskit-community/spank-plugins/blob/main/plugins/spank_qrmi/qrmi_config.json.example) and describe your environment. #
 Then, create a file under `/etc/slurm` or another location accessible to the Slurm daemons can access.
 
-1. Installing SPANK Plugins
+6. Installing SPANK Plugins
 
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
 ```bash

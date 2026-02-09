@@ -21,6 +21,7 @@
 #define _SPANK_QRMI_H
 
 #include "buf.h"
+#include "qrmi.h"
 #include "strbuf.h"
 
 #define OVERWRITE 1

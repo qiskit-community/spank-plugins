@@ -197,6 +197,19 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_ERROR;
     }
 
+  /*
+   * Set environment variable for slurm job UID.
+   */
+  uid_t job_uid;
+  if (spank_get_item(spank_ctxt, S_JOB_UID, &job_uid) != ESPANK_SUCCESS) {
+    slurm_error("%s, unable to get job UID", plugin_name);
+    return SLURM_ERROR;
+  }
+  char uid_str[16];
+  snprintf(uid_str, sizeof(uid_str), "%u", job_uid);
+  spank_setenv(spank_ctxt, "QRMI_JOB_UID", uid_str, OVERWRITE);
+  setenv("QRMI_JOB_UID", uid_str, 1);
+
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_RESOURCES", "", OVERWRITE);
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_TYPES", "", OVERWRITE);
 

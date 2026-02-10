@@ -9,6 +9,10 @@ This document describes how to use IBM Cloud COS as S3-compatible storage, speci
 
 Refer [this guide](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-uhc-hmac-credentials-main&locale=en) to obtain AWS Access Key ID and Secret Access Key.
 
+`IBM Cloud -> Infrastructure -> Storage -> Objective Storage` in order to navigate IBM Cloud website. 
+
+Then, `Create Instance` and `Create Bucket` in your instance, accordingly. After the bucket is created, navigate to your instance, and click `Service credentials` and Click `New Credentials` to create your credential with HMAC. 
+
 HMAC credentials consist of an Access Key and Secret Key paired for use with S3-compatible tools and libraries that require authentication. Users can create a set of HMAC credentials as part of a Service Credential by switching the `Include HMAC Credential` to `On` during credential creation in the console. 
 
 ![include_HMAC_credential](https://cloud.ibm.com/docs-content/v4/content/3842758572478f973a02d6e5afad955eb1a777d2/cloud-object-storage/images/hmac-credential-dialog.jpg)

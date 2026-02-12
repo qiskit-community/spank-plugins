@@ -24,19 +24,16 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-# Switches:
-#   -DUSE_LOCAL_QRMI=ON   Use local QRMI checkout at QRMI_ROOT.
-#   -DUSE_LOCAL_QRMI=OFF  Fetch/build QRMI via ExternalProject (default).
-option(USE_LOCAL_QRMI "Use local QRMI checkout instead of fetching from GitHub" OFF)
+# Switch:
+#   -DQRMI_ROOT=/path/to/qrmi   Use local QRMI code.
+#   unset/empty QRMI_ROOT       Fetch QRMI via ExternalProject on GitHub (default).
+set(QRMI_ROOT "" CACHE PATH "Path to local qrmi checkout; leave empty to fetch from GitHub")
 
 # -------------------------
 # QRMI dependency selection
 # -------------------------
-if(USE_LOCAL_QRMI)
-  MESSAGE(STATUS "Using local QRMI")
-
-  # Path to the QRMI repo (directory containing Cargo.toml and qrmi.h).
-  set(QRMI_ROOT "/shared/qrmi" CACHE PATH "Path to local qrmi checkout")
+if(NOT "${QRMI_ROOT}" STREQUAL "")
+  MESSAGE(STATUS "Using local QRMI at ${QRMI_ROOT}")
 
   # Map CMake build type to Cargo profile.
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")

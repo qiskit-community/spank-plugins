@@ -1,7 +1,7 @@
 #
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2025
+# (C) Copyright IBM, Pasqal 2025, 2026
 #
 # This program and the accompanying materials are made available under the
 # terms of the GNU General Public License version 3, as published by the
@@ -20,10 +20,15 @@ cmake_minimum_required(VERSION 3.15)
 set(CMAKE_C_STANDARD 11)
 project (spank_qrmi C)
 
-# Switches:
-#   -DUSE_LOCAL_QRMI=ON   Use local QRMI checkout at QRMI_ROOT.
-#   -DUSE_LOCAL_QRMI=OFF  Fetch/build QRMI via ExternalProject (default).
-option(USE_LOCAL_QRMI "Use local QRMI checkout instead of fetching from GitHub" OFF)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  set(LIB_PATH debug)
+else()
+  set(LIB_PATH release)
+endif()
 
 # Switch:
 #   -DQRMI_ROOT=/path/to/qrmi   Use local QRMI code.
@@ -66,49 +71,9 @@ else()
   )
 endif()
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  set(LIB_PATH debug)
-else()
-  set(LIB_PATH release)
-endif()
-
-include(ExternalProject)
-
-if(USE_LOCAL_QRMI)
-    set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
-    set(QRMI_SOURCE_DIR ${PROJECT_ROOT}/qrmi)
-    
-    ExternalProject_Add(QRMI
-        SOURCE_DIR ${QRMI_SOURCE_DIR}
-        PREFIX ${CMAKE_BINARY_DIR}/deps
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND cargo build --release
-        BUILD_IN_SOURCE 1
-        INSTALL_COMMAND ""
-        BUILD_BYPRODUCTS
-            ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
-            ${QRMI_SOURCE_DIR}/qrmi.h
-    )
-else()
-    set(QRMI_SOURCE_DIR ${CMAKE_BINARY_DIR}/deps/src/QRMI)
-    
-    ExternalProject_Add(QRMI
-        GIT_REPOSITORY https://github.com/qiskit-community/qrmi.git
-        GIT_TAG main
-        PREFIX ${CMAKE_BINARY_DIR}/deps
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND cargo build --release
-        BUILD_IN_SOURCE 1
-        INSTALL_COMMAND ""
-        BUILD_BYPRODUCTS
-            ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
-            ${QRMI_SOURCE_DIR}/qrmi.h
-    )
-endif()
-
-#
-# For finding packages:
-#
+# --------------------------------
+# Find SLURM headers
+# --------------------------------
 include(CheckIncludeFiles)
 include(FindPackageHandleStandardArgs)
 
@@ -147,16 +112,12 @@ else()
     set(SSL_LIB ssl)
     set(CRYPTO_LIB crypto)
 endif()
-
-find_library(MUNGE_LIB NAMES munge REQUIRED)
 target_link_libraries(spank_qrmi
-    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} ${MUNGE_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
+    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
 )
-
 target_include_directories(spank_qrmi
     PRIVATE ${QRMI_SOURCE_DIR}
 )
-
 target_compile_options(spank_qrmi
     PRIVATE -Wall -Wextra -Werror -O2 -pedantic -Wconversion -Wwrite-strings -Wfloat-equal
 )

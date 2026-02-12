@@ -149,8 +149,8 @@ If you are building locally for development it may be easier to build the QRMI f
 
 5. Creating qrmi_config.json
 
-Refer [this example](https://github.com/qiskit-community/spank-plugins/blob/main/plugins/spank_qrmi/qrmi_config.json.example) and describe your environment. #
-Then, create a file under `/etc/slurm` or another location accessible to the Slurm daemons can access.
+Refer to [this example](https://github.com/qiskit-community/spank-plugins/blob/main/plugins/spank_qrmi/qrmi_config.json.example) and describe your environment.
+Then, create a file under `/etc/slurm` or another location accessible to the Slurm daemons.
 
 6. Installing SPANK Plugins
 

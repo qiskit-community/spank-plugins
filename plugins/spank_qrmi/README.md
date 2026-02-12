@@ -28,6 +28,13 @@ cmake ..
 make
 ```
 
+To build against a local QRMI checkout instead of fetching from GitHub:
+
+```shell-session
+cmake -DQRMI_ROOT=/shared/qrmi ..
+make
+```
+
 By default, the [CMakeLists.txt](./CMakeLists.txt) file expects the Slurm header file (`slurm.h`) to be located in `/usr/include/slurm`, but this can be customized as shown below.
 
 ```shell-session

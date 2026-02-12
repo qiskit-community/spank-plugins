@@ -142,7 +142,7 @@ If you are building locally for development it may be easier to build the QRMI f
 [root@c1 /]# cd /shared/spank-plugins/plugins/spank_qrmi
 [root@c1 /]# mkdir build
 [root@c1 /]# cd build
-[root@c1 /]# cmake -DUSE_LOCAL_QRMI=ON ..
+[root@c1 /]# cmake -DQRMI_ROOT=/shared/qrmi ..
 [root@c1 /]# make
 ```
 

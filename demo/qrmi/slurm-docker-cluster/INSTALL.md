@@ -205,9 +205,31 @@ sbatch /shared/spank-plugins/demo/qrmi/jobs/run_estimator.sh
 sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_qrmi.sh
 ```
 
-5. Checking primitive results
+5. Running Pasqal Qiskit Provider `SamplerV2` job on the **login node**
 
-You should find `slurm-{job_id}.out` files in the current directory. For example,
+Install the [Pasqal sampler dependencies](https://github.com/qiskit-community/qrmi/tree/main/examples/qiskit_primitives/pasqal) in the Python environment used by the job. Both scripts below use `python` from the job's `PATH`. If using a virtual environment, activate it before submitting and make sure it is accessible on the compute nodes. `/shared/pyenv` from the development setup above is one option, not a requirement.
+
+```bash
+sbatch /shared/spank-plugins/demo/qrmi/jobs/run_qpp_sampler.sh
+```
+
+The script selects `EMU_FREE` and prints the measurement counts in `/data/job_<id>.out`.
+
+6. Running CUDA-Q Pasqal Cloud QRMI job on the **login node**
+
+Install CUDA-Q with the Pasqal QRMI connector in the Python environment used by the job on all execution nodes. See the [QRMI CUDA-Q example and build instructions](https://github.com/qiskit-community/qrmi/tree/main/examples/qrmi/python/cudaq). When building CUDA-Q from source, enable `CUDAQ_ENABLE_PASQAL_QRMI_CONNECTOR` and point `QRMI_INSTALL_PREFIX` at the QRMI installation. Use matching QRMI headers and runtime libraries. The connector requires Linux and QRMI 0.12.0 or later.
+
+For both cloud examples, configure `EMU_FREE` as a `pasqal-cloud` resource in `qrmi_config.json`, including the Pasqal Cloud project ID and credentials. Credentials may also come from the submitting user's `~/.pasqal/config`, accessible on the compute node; see the [Pasqal Cloud configuration](https://github.com/qiskit-community/qrmi/tree/main/examples/qrmi/python/pasqal_cloud).
+
+```bash
+sbatch /shared/spank-plugins/demo/qrmi/jobs/run_cudaq_pasqal.sh
+```
+
+The Python example uses `cudaq.set_target("pasqal", machine="qrmi")`. The SPANK plugin supplies the resource selected by `--qpu`; no resource environment variables need to be set manually. Results are written to `/data/job_<id>.out` as bitstring counts totaling 100 shots.
+
+7. Checking primitive results
+
+The IBM scripts write `slurm-{job_id}.out` in the current directory. The Pasqal scripts write `/data/job_<id>.out`. For example,
 
 ```bash
 cat slurm-81.out # Assuming job_id is 81
@@ -237,6 +259,6 @@ cat slurm-81.out # Assuming job_id is 81
 
 ### Running Serialized Jobs Using the QRMI Task Runner
 
-It is possible to run JSON-serialized jobs directly using a commandline utility called qrmi_task_runner. See the [task_runner examples](https://github.com/qiskit-community/qrmi/python/qrmi/tools/README.md) for details.
+It is possible to run JSON-serialized jobs directly using a commandline utility called `qrmi_task_runner`. See the [task_runner examples](https://github.com/qiskit-community/qrmi/blob/main/python/qrmi/tools/task_runner/README.md) for details.
 
 ## END OF DOCUMENT

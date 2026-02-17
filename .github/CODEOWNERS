@@ -1,1 +1,2 @@
-#TODO: Do we need to add a CODEOWNERS file?
+# Global owner for all files in the repository
+*       @ohtanim @awennersteen @OkuyanBoga

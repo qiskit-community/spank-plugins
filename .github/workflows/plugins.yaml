@@ -81,7 +81,7 @@ jobs:
           ref: main
           path: external/qrmi
 
-      - name: QRMI Local: Build spank_qrmi
+      - name: Build spank_qrmi (QRMI Local)
         working-directory: plugins/spank_qrmi
         run: |
           pushd build
@@ -90,7 +90,7 @@ jobs:
           make
           popd
 
-      - name: QRMI Local: Test (loading plugin and fetching SPANK plugin metadata)
+      - name: Test (QRMI Local) (loading plugin and fetching SPANK plugin metadata)
         working-directory: plugins/tests/metadata
         run: |
           pushd build

@@ -73,18 +73,20 @@ jobs:
           make
           echo "ldd libqrmi.so .."
           ldd ../../../spank_qrmi/build/deps/src/QRMI/target/release/libqrmi.so
-          echo "nm -D .."
-          nm -D ../../../spank_qrmi/build/deps/src/QRMI/target/release/libqrmi.so | grep EVP_bf_ecb
+
           echo "ldd spank_qrmi.so .."
           ldd ../../../spank_qrmi/build/spank_qrmi.so
+
           echo "ldd test .."
           ldd test
+
           echo "nm -D .."
           nm -D ../../../spank_qrmi/build/spank_qrmi.so | grep EVP_bf_ecb
           echo "readelf .."
           readelf -d ../../../spank_qrmi/build/spank_qrmi.so | grep NEEDED
           echo "lddtree .."
           lddtree ../../../spank_qrmi/build/spank_qrmi.so
+
           echo "run test .."
           ./test ../../../spank_qrmi/build/spank_qrmi.so
           popd

@@ -15,6 +15,9 @@ set(CMAKE_C_STANDARD 11)
 SET(CMAKE_OSX_DEPLOYMENT_TARGET 15.2)
 include (FindPackageHandleStandardArgs)
 
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
+
 project("test" LANGUAGES C)
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")

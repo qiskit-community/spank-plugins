@@ -23,6 +23,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-tidy
+          sudo apt-get install -y libssl3 libssl-dev libzip-dev pax-utils
           sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
 
       - name: Install pkg-config
@@ -63,16 +64,38 @@ jobs:
         run: |
           clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.* -- -Ibuild/deps/src/QRMI
 
-      - name: Test (loading plugin and fetching SPANK plugin metadata)
+      - name: Test spank_qrmi
         working-directory: plugins/tests/metadata
         run: |
           mkdir build
           pushd build
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           make
-          ldd ../../../spank_qrmi/build/deps/src/QRMI/target/release/libqrmi.so
-          ldd ../../../spank_qrmi/build/spank_qrmi.so
-          ldd test
           ./test ../../../spank_qrmi/build/spank_qrmi.so
           popd
 
+      - name: Checkout QRMI repository
+        uses: actions/checkout@v4.1.4
+        with:
+          repository: qiskit-community/qrmi
+          ref: main
+          path: external/qrmi
+
+      - name: Build spank_qrmi (w/QRMI_ROOT)
+        working-directory: plugins/spank_qrmi
+        run: |
+          pushd build
+          rm -rf *
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DQRMI_ROOT=$GITHUB_WORKSPACE/external/qrmi
+          make
+          popd
+
+      - name: Test spank_qrmi (w/QRMI_ROOT)
+        working-directory: plugins/tests/metadata
+        run: |
+          pushd build
+          rm -rf *
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
+          ./test ../../../spank_qrmi/build/spank_qrmi.so
+          popd

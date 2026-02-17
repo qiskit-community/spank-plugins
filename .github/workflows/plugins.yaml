@@ -78,11 +78,11 @@ jobs:
           echo "ldd test .."
           ldd test
           echo "nm -D .."
-          nm -D spank_qrmi.so | grep EVP_bf_ecb
+          nm -D ../../../spank_qrmi/build/spank_qrmi.so | grep EVP_bf_ecb
           echo "readelf .."
-          readelf -d spank_qrmi.so | grep NEEDED
+          readelf -d ../../../spank_qrmi/build/spank_qrmi.so | grep NEEDED
           echo "lddtree .."
-          lddtree spank_qrmi.so
+          lddtree ../../../spank_qrmi/build/spank_qrmi.so
           echo "run test .."
           ./test ../../../spank_qrmi/build/spank_qrmi.so
           popd

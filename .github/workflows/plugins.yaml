@@ -74,7 +74,7 @@ jobs:
           ./test ../../../spank_qrmi/build/spank_qrmi.so
           popd
 
-      - name: QRMI Local: Checkout QRMI repository
+      - name: Checkout QRMI repository (QRMI Local)
         uses: actions/checkout@v4.1.4
         with:
           repository: qiskit-community/qrmi

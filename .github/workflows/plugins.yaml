@@ -74,14 +74,14 @@ jobs:
           ./test ../../../spank_qrmi/build/spank_qrmi.so
           popd
 
-      - name: [-DQRMI_ROOT=] Checkout QRMI repository
+      - name: QRMI Local: Checkout QRMI repository
         uses: actions/checkout@v4.1.4
         with:
           repository: qiskit-community/qrmi
           ref: main
           path: external/qrmi
 
-      - name: [-DQRMI_ROOT=] Build spank_qrmi
+      - name: QRMI Local: Build spank_qrmi
         working-directory: plugins/spank_qrmi
         run: |
           pushd build
@@ -90,7 +90,7 @@ jobs:
           make
           popd
 
-      - name: [-DQRMI_ROOT=] Test (loading plugin and fetching SPANK plugin metadata)
+      - name: QRMI Local: Test (loading plugin and fetching SPANK plugin metadata)
         working-directory: plugins/tests/metadata
         run: |
           pushd build

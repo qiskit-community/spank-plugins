@@ -41,6 +41,7 @@ jobs:
           mkdir build
           pushd build
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
           popd
 
       - name: Run clang-tidy (skeleton)
@@ -55,6 +56,7 @@ jobs:
           mkdir build
           pushd build
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
           popd
 
       - name: Run clang-tidy (spank_qrmi)

@@ -55,7 +55,11 @@ function(add_example TARGET_NAME C_FILE)
 
   add_executable(${TARGET_NAME} ${SRC_FILE})
 
-  target_link_libraries(${TARGET_NAME} PUBLIC "-ldl -m -lssl -lcrypto")
+  target_link_libraries(${TARGET_NAME} PUBLIC "-lssl")
+  target_link_libraries(${TARGET_NAME} PUBLIC "-lcrypto")
+  target_link_libraries(${TARGET_NAME} PUBLIC "-ldl")
+  target_link_libraries(${TARGET_NAME} PUBLIC "-lpthread")
+  target_link_libraries(${TARGET_NAME} PUBLIC "-lm")
   target_compile_options(${TARGET_NAME}
 	  PRIVATE
 	  -Wall -Wextra -Werror -O2 -pedantic -Wconversion -Wwrite-strings

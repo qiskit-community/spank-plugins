@@ -23,6 +23,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-tidy
+          sudo apt-get install -y openssl-devel zlib-devel
           sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
 
       - name: Install pkg-config
@@ -70,9 +71,13 @@ jobs:
           pushd build
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           make
+          echo "ldd libqrmi.so .."
           ldd ../../../spank_qrmi/build/deps/src/QRMI/target/release/libqrmi.so
+          echo "ldd spank_qrmi.so .."
           ldd ../../../spank_qrmi/build/spank_qrmi.so
+          echo "ldd test .."
           ldd test
+          echo "run test .."
           ./test ../../../spank_qrmi/build/spank_qrmi.so
           popd
 

@@ -45,7 +45,6 @@ jobs:
           popd
 
       - name: Run clang-tidy (skeleton)
-        continue-on-error: true
         working-directory: plugins/skeleton
         run: |
           clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.*
@@ -60,7 +59,17 @@ jobs:
           popd
 
       - name: Run clang-tidy (spank_qrmi)
-        continue-on-error: true
         working-directory: plugins/spank_qrmi
         run: |
           clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.* -- -Ibuild/deps/src/QRMI
+
+      - name: Test (loading plugin and fetching SPANK plugin metadata)
+        working-directory: plugins/tests/metadata
+        run: |
+          mkdir build
+          pushd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
+          ./test ../../../spank_qrmi/build/spank_qrmi.so
+          popd
+

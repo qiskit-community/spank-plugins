@@ -28,8 +28,8 @@ typedef struct {
     size_t length;
 } string_buffer_t;
 
-extern int  strbuf_init(string_buffer_t *);
-extern void strbuf_append_str(string_buffer_t *, const char *);
-extern void strbuf_free(string_buffer_t *);
+extern int  strbuf_init(string_buffer_t *sb);
+extern void strbuf_append_str(string_buffer_t *sb, const char *str);
+extern void strbuf_free(string_buffer_t *sb);
 
 #endif /* !_STRBUF_H */

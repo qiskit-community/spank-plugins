@@ -1,7 +1,7 @@
 /*
  * This code is part of Qiskit.
  *
- * (C) Copyright IBM 2025
+ * (C) Copyright IBM 2025, 2026
  *
  * This program and the accompanying materials are made available under the
  * terms of the GNU General Public License version 3, as published by the
@@ -24,6 +24,6 @@ typedef struct {
     size_t capacity;
 } buffer;
 
-extern int  qrmi_buf_init(buffer *, size_t);
-extern char* qrmi_buf_envvarname_for_res_create(buffer *, const char*, const char*);
-extern void qrmi_buf_free(buffer *);
+extern int  qrmi_buf_init(buffer *sb, size_t size);
+extern char* qrmi_buf_envvarname_for_res_create(buffer *sb, const char* resource_id, const char* envvar_name);
+extern void qrmi_buf_free(buffer *sb);

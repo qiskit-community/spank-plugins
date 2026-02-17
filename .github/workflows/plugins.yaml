@@ -23,7 +23,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-tidy
-          sudo apt-get install -y libssl-dev libzip-dev
+          sudo apt-get install -y libssl3 libssl-dev libzip-dev pax-utils
           sudo apt-get install -y slurm-wlm slurm-wlm-basic-plugins libslurm-dev
 
       - name: Install pkg-config

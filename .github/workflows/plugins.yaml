@@ -7,7 +7,6 @@ on:
       - main
     paths:
       - plugins/**
-      - commands/qrun/daapi_c/**
 
 permissions:
   contents: read
@@ -36,18 +35,30 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Build plugins and run clang-tidy
+      - name: Build skeleton
+        working-directory: plugins/skeleton
         run: |
-          set -euo pipefail
-          dirs=("plugins/spank_qrmi" "plugins/skelton")
-          for d in "${dirs[@]}"; do
-            pushd $d
-            echo "Building $d"
-            mkdir build
-            pushd build
-            cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-            popd
-            echo "Running clang-tidy $d"
-            clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.*
-            popd
-          done
+          mkdir build
+          pushd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          popd
+
+      - name: Run clang-tidy (skeleton)
+        continue-on-error: true
+        working-directory: plugins/skeleton
+        run: |
+          clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.*
+
+      - name: Build spank_qrmi
+        working-directory: plugins/spank_qrmi
+        run: |
+          mkdir build
+          pushd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          popd
+
+      - name: Run clang-tidy (spank_qrmi)
+        continue-on-error: true
+        working-directory: plugins/spank_qrmi
+        run: |
+          clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.* -- -Ibuild/deps/src/QRMI

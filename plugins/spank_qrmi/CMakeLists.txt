@@ -112,8 +112,10 @@ else()
     set(SSL_LIB ssl)
     set(CRYPTO_LIB crypto)
 endif()
+
+find_library(MUNGE_LIB NAMES munge REQUIRED)
 target_link_libraries(spank_qrmi
-    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
+    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} ${MUNGE_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
 )
 target_include_directories(spank_qrmi
     PRIVATE ${QRMI_SOURCE_DIR}

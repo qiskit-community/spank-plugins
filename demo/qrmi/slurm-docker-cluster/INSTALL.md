@@ -146,6 +146,15 @@ If you are building locally for development it may be easier to build the QRMI f
 [root@c1 /]# make
 ```
 
+For pasqal-local resources make sure to build the spank plugin with munge support:
+```bash
+[root@c1 /]# cd /shared/spank-plugins/plugins/spank_qrmi
+[root@c1 /]# mkdir build
+[root@c1 /]# cd build
+[root@c1 /]# cmake -DENABLE_MUNGE=ON ..
+[root@c1 /]# make
+```
+
 
 5. Creating qrmi_config.json
 

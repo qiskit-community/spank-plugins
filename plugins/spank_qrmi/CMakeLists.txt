@@ -34,6 +34,16 @@ endif()
 #   -DQRMI_ROOT=/path/to/qrmi   Use local QRMI code.
 #   unset/empty QRMI_ROOT       Fetch QRMI via ExternalProject on GitHub (default).
 set(QRMI_ROOT "" CACHE PATH "Path to local qrmi checkout; leave empty to fetch from GitHub")
+# Option to enable/disable Munge (required for pasqal-local usage)
+option(ENABLE_MUNGE "Enable Munge support for Pasqal Local client" OFF)
+
+if(ENABLE_MUNGE)
+  message(STATUS "Building QRMI with Munge support")
+  set(QRMI_BUILD_CMD cargo build --release --features munge)
+else()
+  message(STATUS "Building QRMI WITHOUT Munge support")
+  set(QRMI_BUILD_CMD cargo build --release)
+endif()
 
 # -------------------------
 # QRMI build type local vs GitHub
@@ -47,7 +57,7 @@ if(NOT "${QRMI_ROOT}" STREQUAL "")
     SOURCE_DIR "${QRMI_SOURCE_DIR}"
     PREFIX "${CMAKE_BINARY_DIR}/deps"
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND cargo build --release
+    BUILD_COMMAND ${QRMI_BUILD_CMD}
     BUILD_IN_SOURCE 1
     INSTALL_COMMAND ""
     BUILD_BYPRODUCTS
@@ -62,7 +72,7 @@ else()
     GIT_TAG main
     PREFIX ${CMAKE_BINARY_DIR}/deps
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND cargo build --release
+    BUILD_COMMAND ${QRMI_BUILD_CMD}
     BUILD_IN_SOURCE 1
     INSTALL_COMMAND ""
     BUILD_BYPRODUCTS
@@ -112,8 +122,16 @@ else()
     set(SSL_LIB ssl)
     set(CRYPTO_LIB crypto)
 endif()
+
+if(ENABLE_MUNGE)
+    find_library(MUNGE_LIB NAMES munge REQUIRED)
+    set(MUNGE_LINK_LIB ${MUNGE_LIB})
+else()
+    set(MUNGE_LINK_LIB "")
+endif()
+
 target_link_libraries(spank_qrmi
-    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
+    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} ${MUNGE_LINK_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
 )
 target_include_directories(spank_qrmi
     PRIVATE ${QRMI_SOURCE_DIR}

@@ -1,6 +1,14 @@
 Quantum spank plugins for Slurm
 ===============================
 
+[![License](https://img.shields.io/github/license/qiskit-community/spank-plugins.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Current Release](https://img.shields.io/github/release/qiskit-community/spank-plugins.svg?logo=Qiskit)](https://github.com/qiskit-community/spank-plugins/releases)
+[![Build Status](https://github.com/qiskit-community/spank-plugins/actions/workflows/main.yml/badge.svg)](https://github.com/qiskit-community/spank-plugins/actions?query=workflow%3A"CI"+branch%3Amain+event%3Apush)
+[![Total downloads](https://static.pepy.tech/badge/spank-plugins)](https://pepy.tech/project/spank-plugins)
+[![Slack Organisation](https://img.shields.io/badge/slack-chat-blueviolet.svg?label=Qiskit%20Slack&logo=slack)](https://slack.qiskit.org)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.10052-b31b1b.svg)](https://arxiv.org/abs/2506.10052)
+
+
 This is repository with Slurm Spank plugins for Quantum resources and jobs support.
 
 ### Table of Contents

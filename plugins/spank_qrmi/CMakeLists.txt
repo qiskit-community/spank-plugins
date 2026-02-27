@@ -112,16 +112,8 @@ add_library (spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
 add_dependencies(spank_qrmi QRMI)
 set_target_properties (spank_qrmi PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_qrmi.so")
 
-
-if(ENABLE_MUNGE)
-    find_library(MUNGE_LIB NAMES munge REQUIRED)
-    set(MUNGE_LINK_LIB ${MUNGE_LIB})
-else()
-    set(MUNGE_LINK_LIB "")
-endif()
-
 target_link_libraries(spank_qrmi
-    PRIVATE dl pthread m ${MUNGE_LINK_LIB} ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
+    PRIVATE dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
 )
 target_include_directories(spank_qrmi
     PRIVATE ${QRMI_SOURCE_DIR}

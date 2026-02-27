@@ -177,15 +177,6 @@ Options provided by plugins:
 
 ### Running examples of primitive job in Slurm Cluster
 
-> [!NOTE]
-> The CUDA-Q Pasqal QRMI example below requires:
-> - CUDA-Q installed in `/shared/pyenv` with `libcudaq-pasqal-qpu.so`
-> - QRMI built at `/shared/qrmi/target/release/libqrmi.so`
-> - Pasqal cloud credentials configured (for example `/root/.pasqal/config`)
-> - `qrmi_config.json` resource name matching `--qpu=EMU_FREE`
-> - Optional per-resource override in `qrmi_config.json` `environment`:
->   `CUDAQ_QRMI_RESOURCE_TYPE=pasqal-cloud`
-
 1. Loging in to login node
 
 ```bash
@@ -211,6 +202,8 @@ Options provided by plugins:
 ```
 
 5. Running CUDA-Q Pasqal Cloud QRMI job
+
+Requires additionally installing CUDA-Q with QRMI support.
 
 ```bash
 [root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_cudaq_pasqal.sh

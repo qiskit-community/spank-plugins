@@ -201,7 +201,15 @@ Options provided by plugins:
 [root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_backend.sh
 ```
 
-5. Checking primitive results
+5. Running CUDA-Q Pasqal Cloud QRMI job
+
+Requires additionally installing CUDA-Q with QRMI support.
+
+```bash
+[root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_cudaq_pasqal.sh
+```
+
+6. Checking primitive results
 
 Once above scripts are completed, you must find `slurm-{job_id}.out` in the current directory.
 

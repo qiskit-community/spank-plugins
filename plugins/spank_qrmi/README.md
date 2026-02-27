@@ -8,12 +8,10 @@ This is a [SPANK plugin](https://slurm.schedmd.com/spank.html) that configures a
   * Rust compiler 1.86 or above [Link](https://www.rust-lang.org/tools/install)
   * A C compiler: for example, GCC(gcc) on Linux and Clang(clang-tools-extra) for Rust unknown targets/cross compilations. QRMI and its Spank plugin are compatible with a compiler conforming to the C11 standard.
   * make/cmake (make/cmake RPM for RHEL compatible OS)
-  * zlib (zlib-devel RPM for RHEL compatible OS)
   * Slurm header files(slurm/slurm.h etc.) must be available on your host
 
 * Runtime requires the following tools:
   * gcc (libgcc RPM for RHEL compatible OS)
-  * zlib (zlib RPM for RHEL compatible OS)
 
 
 ## How to build

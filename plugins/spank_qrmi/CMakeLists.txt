@@ -102,18 +102,8 @@ add_library (spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
 add_dependencies(spank_qrmi QRMI)
 set_target_properties (spank_qrmi PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_qrmi.so")
 
-# -----------------------
-# OpenSSL selection logic
-# -----------------------
-if(DEFINED ENV{OPENSSL_STATIC})
-    set(SSL_LIB "")
-    set(CRYPTO_LIB "")
-else()
-    set(SSL_LIB ssl)
-    set(CRYPTO_LIB crypto)
-endif()
 target_link_libraries(spank_qrmi
-    PRIVATE ${SSL_LIB} ${CRYPTO_LIB} dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
+    PRIVATE dl pthread m ${QRMI_SOURCE_DIR}/target/release/libqrmi.a
 )
 target_include_directories(spank_qrmi
     PRIVATE ${QRMI_SOURCE_DIR}

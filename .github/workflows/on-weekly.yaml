@@ -1,0 +1,21 @@
+---
+# Weekly complete matrix tests.
+# specified schedule below.
+name: Weekly main tests
+on:
+  schedule:
+    - cron: "20 6 * * 0" # Runs every week at 06:20 AM UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.ref }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  weekly-linux:
+    uses: ./.github/workflows/plugins.yaml
+    strategy:
+      matrix:
+        runner: ["ubuntu-latest", "ubuntu-24.04-arm"]
+    with:
+      runner: ${{ matrix.runner }}

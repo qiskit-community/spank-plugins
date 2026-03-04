@@ -111,3 +111,15 @@ target_include_directories(spank_qrmi
 target_compile_options(spank_qrmi
     PRIVATE -Wall -Wextra -Werror -O2 -pedantic -Wconversion -Wwrite-strings -Wfloat-equal
 )
+
+option(BUILD_TESTING "Build the project tests" OFF)
+if(BUILD_TESTING)
+  enable_testing()
+  add_executable(base_test ../tests/metadata/src/test.c)
+  add_test(NAME "Library availability test" COMMAND base_test $<TARGET_FILE:spank_qrmi>)
+  add_executable(unit_test ../tests/unit/src/unit_test.c)
+  add_test(NAME "Symbol(function) availability test" COMMAND unit_test $<TARGET_FILE:spank_qrmi>)
+else()
+    message(STATUS "Tests disabled by option 'BUILD_TESTING' set to OFF")
+endif()
+

@@ -1,0 +1,134 @@
+---
+name: Check QRMI Slurm Plugins for RHEL
+on:
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+  pull_request:
+    branches:
+      - main
+    paths:
+      - plugins/**
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build_lint_test:
+    name: RHEL Build, Lint & Test
+    runs-on: rhel-ek-cloud
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.4
+
+      - name: Install Dependencies
+        run: |
+          #sudo dnf update -y
+          sudo dnf install -y clang-tools-extra
+          sudo dnf install -y epel-release
+          sudo dnf install -y openssl-libs openssl-devel libzip-devel pax-utils
+
+      - name: Install Build Dependencies
+        run: |
+          sudo dnf makecache
+          sudo dnf install -y clang-tools-extra
+          sudo dnf -y install dnf-plugins-core epel-release
+          #sudo dnf config-manager --set-enabled crb
+          sudo dnf makecache
+          sudo dnf -y install --nobest --exclude='*.i686' autoconf automake autoconf bzip2 freeipmi-devel dbus-devel gcc gcc-c++ git gtk2-devel hdf5-devel http-parser-devel hwloc-devel json-c-devel libcurl-devel libyaml-devel lua-devel lz4-devel make man2html mariadb-devel munge munge-devel ncurses-devel numactl-devel openssl-devel pam-devel perl python3.12 python3.12-devel readline-devel rpm-build rpmdevtools rrdtool-devel wget libjwt libjwt-devel
+          sudo dnf clean all
+          sudo rm -rf /var/cache/dnf
+          sudo rpmdev-setuptree
+
+      - name: Build Slurm (RPM) (Native RHEL support is limited)
+        run: |
+          wget https://download.schedmd.com/slurm/slurm-25.05.3.tar.bz2
+          sudo rpmbuild -ta slurm-25.05.3.tar.bz2
+
+      - name: Install Slurm
+        run: |
+          sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-devel-*.rpm --nogpgcheck'
+          #sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-[0-9]*.rpm --nogpgcheck'
+          #sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-perlapi-*.rpm --nogpgcheck'
+          #sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-slurmctld-*.rpm --nogpgcheck'
+          #sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-slurmd-*.rpm --nogpgcheck'
+          #sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-slurmdbd-*.rpm --nogpgcheck'
+          #sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-slurmrestd-*.rpm --nogpgcheck'
+          #sudo bash -c 'dnf -y install /root/rpmbuild/RPMS/x86_64/slurm-contribs-*.rpm --nogpgcheck'
+
+      - name: Install pkg-config
+        run: sudo dnf install -y pkg-config
+
+      - name: Set Toolchain
+        # https://github.com/dtolnay/rust-toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Build skeleton
+        working-directory: plugins/skeleton
+        run: |
+          mkdir build
+          pushd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
+          popd
+
+      - name: Run clang-tidy (skeleton)
+        working-directory: plugins/skeleton
+        run: |
+          clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.*
+
+      - name: Build spank_qrmi
+        working-directory: plugins/spank_qrmi
+        run: |
+          mkdir build
+          pushd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
+          popd
+
+      - name: Run clang-tidy (spank_qrmi)
+        working-directory: plugins/spank_qrmi
+        run: |
+          clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.* -- -Ibuild/deps/src/QRMI
+
+      - name: Test spank_qrmi
+        working-directory: plugins/tests/metadata
+        run: |
+          mkdir build
+          pushd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
+          ./test ../../../spank_qrmi/build/spank_qrmi.so
+          popd
+
+      - name: Checkout QRMI repository
+        uses: actions/checkout@v4.1.4
+        with:
+          repository: qiskit-community/qrmi
+          ref: main
+          path: external/qrmi
+
+      - name: Build spank_qrmi (w/QRMI_ROOT)
+        working-directory: plugins/spank_qrmi
+        run: |
+          pushd build
+          rm -rf *
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DQRMI_ROOT=$GITHUB_WORKSPACE/external/qrmi
+          make
+          popd
+
+      - name: Test spank_qrmi (w/QRMI_ROOT)
+        working-directory: plugins/tests/metadata
+        run: |
+          pushd build
+          rm -rf *
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          make
+          ./test ../../../spank_qrmi/build/spank_qrmi.so
+          popd

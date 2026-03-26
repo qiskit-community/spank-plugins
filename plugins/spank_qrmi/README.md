@@ -68,12 +68,18 @@ The `resources` array contains a set of available Quantum Resources which can be
 | properties | descriptions |
 | ---- | ---- |
 | name | Quantum resource name. e.g. Quantum backend name. |
-| type | Resource type (`direct-access`, `qiskit-runtime-service` and `pasqal-cloud`) |
+| type | Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`) |
 | environment | A set of environment variables to work with QRMI. Current implementations assume API endpoint and credentials are specified via environment variable setting. |
 
 If a user specifies a resource with the --qpu option that is not defined in the qrmi_config.json file, the specification will be ignored.
 
 If the user sets the necessary environment variables for job execution themselves, it is not required to specify them in this file. In this case, the environment property will be `{}`.
+
+> [!IMPORTANT]
+> The IBM Direct Access API has been renamed to the IBM Quantum System API.
+> As part of this change, the previously available resource type name has been updated from `direct-access` to `ibm-quantum-system`.
+> During a transition period, both `direct-access` and `ibm-quantum-system` resource type names will be supported.
+> After the transition period ends, support for the `direct-access` resource type name will be discontinued. 
 
 > [!NOTE]
 > If you are using a QPU resource with the resource type `qiskit-runtime-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
@@ -168,8 +174,8 @@ srun -vv python /shared/qrmi/examples/qiskit_primitives/ibm/sampler.py
 At runtime, each QRMI instance is linked to a single QPU resource. To enable the use of multiple Quantum resources within a single job script, this plugin sets environment variables with the resource name as a prefix. For example, if `--qpu=qpu1,qpu2` is specified, the environment variables will be set as follows:
 
 ```bash
-qpu1_QRMI_IBM_DA_ENDPOINT=http://test1
-qpu2_QRMI_IBM_DA_ENDPOINT=http://test2
+qpu1_QRMI_IBM_QS_ENDPOINT=http://test1
+qpu2_QRMI_IBM_QS_ENDPOINT=http://test2
 ```
 
 This ensures that each QRMI instance operates with the configuration parameters set for its respective resource during the execution of the Slurm job.
@@ -181,7 +187,13 @@ This plugin also set the following 2 environment variables which will be referre
 | environment varilables | descriptions |
 | ---- | ---- |
 | SLURM_JOB_QPU_RESOURCES | Comma separated list of QPU resources to use at runtime. Undocumented resources will be filtered out. For example, `qpu1,qpu2`. |
-| SLURM_JOB_QPU_TYPES | Comma separated list of Resource type (`direct-access`, `qiskit-runtime-service` and `pasqal-cloud`). For example, `direct-access,direct-access` |
+| SLURM_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
+
+> [!IMPORTANT]
+> The IBM Direct Access API has been renamed to the IBM Quantum System API.
+> As part of this change, the previously available resource type name has been updated from `direct-access` to `ibm-quantum-system`.
+> During a transition period, both `direct-access` and `ibm-quantum-system` resource type names will be supported.
+> After the transition period ends, support for the `direct-access` resource type name will be discontinued. 
 
 ## License
 

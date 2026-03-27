@@ -1,7 +1,7 @@
 /*
  * This code is part of Qiskit.
  *
- * (C) Copyright IBM 2025
+ * (C) Copyright IBM, Pasqal 2026
  *
  * This program and the accompanying materials are made available under the
  * terms of the GNU General Public License version 3, as published by the

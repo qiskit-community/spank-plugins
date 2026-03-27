@@ -1,7 +1,7 @@
 # SPANK Plugin for QRMI
 
 > [!IMPORTANT]
-> **New Deprecations(Since 0.13.0)**
+> **New Deprecations(Since 0.5.1)**
 >
 > The **IBM Direct Access API** has been renamed to the **IBM Quantum System API**.
 > 

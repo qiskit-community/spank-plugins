@@ -638,6 +638,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
         slurm_error("%s, resource acquisition failed: %s. %s", plugin_name, name, last_error);
         spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
         qrmi_string_free((char *)last_error);
+        return NULL;
     }
 
     slurm_debug("%s, acquisition_token: %s", plugin_name, acquisition_token);

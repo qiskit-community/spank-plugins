@@ -114,7 +114,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
        MYSQL_PASSWORD: password
      volumes:
        - var_lib_mysql:/var_lib/mysql
-+      - ./shared:/shared
++      - ./shared:/shared:z
      networks:
        - slurm-network
  
@@ -134,7 +134,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
        - etc_slurm:/etc/slurm
 -      - var_log_slurm:/var/log/slurm
 +      - var_log_slurmdbd:/var/log/slurm
-+      - ./shared:/shared
++      - ./shared:/shared:z
      expose:
        - "6819"
      depends_on:
@@ -159,8 +159,8 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
 -      - var_log_slurm:/var/log/slurm
 -      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
 +      - var_log_slurmctld:/var/log/slurm
-+      - ./cgroup.conf:/etc/slurm/cgroup.conf
-+      - ./shared:/shared
++      - ./cgroup.conf:/etc/slurm/cgroup.conf:z
++      - ./shared:/shared:z
      expose:
        - "6817"
      depends_on:
@@ -185,8 +185,8 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
 -      - var_log_slurm:/var/log/slurm
 -      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
 +      - var_log_c1:/var/log/slurm
-+      - ./cgroup.conf:/etc/slurm/cgroup.conf
-+      - ./shared:/shared
++      - ./cgroup.conf:/etc/slurm/cgroup.conf:z
++      - ./shared:/shared:z
      expose:
        - "6818"
      depends_on:
@@ -211,8 +211,8 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
 -      - var_log_slurm:/var/log/slurm
 -      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
 +      - var_log_c2:/var/log/slurm
-+      - ./cgroup.conf:/etc/slurm/cgroup.conf
-+      - ./shared:/shared
++      - ./cgroup.conf:/etc/slurm/cgroup.conf:z
++      - ./shared:/shared:z
      expose:
        - "6818"
      depends_on:
@@ -235,7 +235,7 @@ diff -Naru slurm-docker-cluster.orig/docker-compose.yml slurm-docker-cluster/doc
 +      - etc_munge:/etc/munge
 +      - etc_slurm:/etc/slurm
 +      - slurm_jobdir:/data
-+      - ./shared:/shared
++      - ./shared:/shared:z
 +    expose:
 +      - "6818"
 +    depends_on:

@@ -1,10 +1,11 @@
 #!/bin/bash
 
 #SBATCH --job-name=pasqal_job
+#SBATCH --output=/data/job_%j.out
+#SBATCH --error=/data/job_%j.out
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --qpu=FRESNEL
+#SBATCH --qpu=EMU_FREE
 
-# Your script goes here
 source /shared/pyenv/bin/activate
-srun python /shared/qrmi/examples/pulser_backend/pasqal/pulser_backend.py
+srun python /shared/qrmi/examples/pulser/pasqal/pulser.py

@@ -210,7 +210,18 @@ Options provided by plugins:
 [root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_backend.sh
 ```
 
-5. Running CUDA-Q Pasqal Cloud QRMI job
+5. Running Pasqal Qiskit Provider `SamplerV2` job via QRMI
+
+```bash
+[root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pasqal_qpp_sampler_v2.sh
+```
+
+Expected output in `/data/job_<id>.out` includes final counts, e.g.:
+```text
+{'100010': 10, '000100': 2, ...}
+```
+
+6. Running CUDA-Q Pasqal Cloud QRMI job
 
 Requires additionally installing CUDA-Q with QRMI support.
 
@@ -218,7 +229,7 @@ Requires additionally installing CUDA-Q with QRMI support.
 [root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_cudaq_pasqal.sh
 ```
 
-6. Checking primitive results
+7. Checking primitive results
 
 Once above scripts are completed, you must find `slurm-{job_id}.out` in the current directory.
 
@@ -251,8 +262,8 @@ For example,
 
 ### Running serialized jobs using the qrmi_task_runner Slurm Cluster
 
-It is possible to run JSON-serialized jobs directly using a commandline utility called qrmi_task runner.
-See [the docs](https://github.com/qiskit-community/qrmi/blob/main/bin/task_runner/README.md) for that tool for details.
+It is possible to run JSON-serialized jobs directly using a commandline utility called `qrmi_task_runner`.
+See [the docs](https://github.com/qiskit-community/qrmi/blob/main/python/qrmi/tools/task_runner/README.md) for that tool for details.
 
 ```bash
 [root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_task.sh

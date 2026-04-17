@@ -9,4 +9,4 @@
 
 # Your script goes here
 source /shared/pyenv/bin/activate
-python /shared/qrmi/examples/pulser_backend/pasqal/send_pasqal_job_local.py
+python /shared/qrmi/examples/pulser/pasqal/send_pasqal_job_local.py

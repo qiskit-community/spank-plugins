@@ -213,7 +213,7 @@ Options provided by plugins:
 5. Running Pasqal Qiskit Provider `SamplerV2` job via QRMI
 
 ```bash
-[root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pasqal_qpp_sampler_v2.sh
+[root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_qpp_sampler.sh
 ```
 
 Expected output in `/data/job_<id>.out` includes final counts, e.g.:

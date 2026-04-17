@@ -8,7 +8,5 @@
 #SBATCH --qpu=EMU_FREE
 
 source /shared/pyenv/bin/activate
-source /root/.cudaq/set_env.sh
-export PYTHONPATH="/root/.cudaq${PYTHONPATH:+:${PYTHONPATH}}"
 
 srun python /shared/qrmi/examples/qrmi/python/cudaq/pasqal.py

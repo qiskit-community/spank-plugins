@@ -46,6 +46,13 @@ cmake -DQRMI_ROOT=/shared/qrmi ..
 make
 ```
 
+To build against a specific QRMI tag, branch, or commit hash instead of the default `main` branch:
+
+```shell-session
+cmake -DQRMI_GIT_TAG=v0.13.2 ..
+make
+```
+
 By default, the [CMakeLists.txt](./CMakeLists.txt) file expects the Slurm header file (`slurm.h`) to be located in `/usr/include/slurm`, but this can be customized as shown below.
 
 ```shell-session

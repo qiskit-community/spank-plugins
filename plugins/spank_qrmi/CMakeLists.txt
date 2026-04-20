@@ -34,6 +34,8 @@ endif()
 #   -DQRMI_ROOT=/path/to/qrmi   Use local QRMI code.
 #   unset/empty QRMI_ROOT       Fetch QRMI via ExternalProject on GitHub (default).
 set(QRMI_ROOT "" CACHE PATH "Path to local qrmi checkout; leave empty to fetch from GitHub")
+# Option to target a specific QRMI git tag/branch/commit when fetching from GitHub
+set(QRMI_GIT_TAG "main" CACHE STRING "QRMI git tag, branch, or commit hash to fetch from GitHub")
 # Option to enable/disable Munge (required for pasqal-local usage)
 option(ENABLE_MUNGE "Enable Munge support for Pasqal Local client" OFF)
 
@@ -69,7 +71,7 @@ else()
   set(QRMI_SOURCE_DIR "${CMAKE_BINARY_DIR}/deps/src/QRMI")
   ExternalProject_Add(QRMI
     GIT_REPOSITORY https://github.com/qiskit-community/qrmi.git
-    GIT_TAG main
+    GIT_TAG ${QRMI_GIT_TAG}
     PREFIX ${CMAKE_BINARY_DIR}/deps
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ${QRMI_BUILD_CMD}

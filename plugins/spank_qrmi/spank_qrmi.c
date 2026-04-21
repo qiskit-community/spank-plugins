@@ -57,22 +57,6 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
 static void _release_qpu(qpu_resource_t *res);
 
 /*
- * @function _dump_environ
- *
- * Dumps all environment variables set for the current process.
- */
-static void _dump_environ() {
-    char **s = environ;
-    int pid = (int)getpid();
-    int uid = (int)getuid();
-
-    slurm_debug("%s(%d, %d): environment variables ---", plugin_name, pid, uid);
-    for (; *s; s++) {
-        slurm_debug("%s(%d, %d): %s", plugin_name, pid, uid, *s);
-    }
-}
-
-/*
  * @function _starts_with
  *
  * Tests if this string(`str`) starts with the specified `prefix`.
@@ -192,7 +176,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
     if (g_qpu_names_opt == NULL) {
         /* noop if this is not QPU job */
-        return SLURM_ERROR;
+        return SLURM_SUCCESS;
     }
 
     /*
@@ -329,8 +313,6 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                 spank_setenv(spank_ctxt, keybuf.buffer, envvar.value, KEEP_IF_EXISTS);
             }
 
-            _dump_environ();
-
             /*
              * Acquire QPU resource.
              */
@@ -419,11 +401,15 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
 
     char *optargp = NULL;
     if (spank_option_getopt(spank_ctxt, &spank_qrmi_options[0], &optargp) != ESPANK_SUCCESS) {
-        /* if spank_qrmi plugin is not registered, simply returns an error. */
-        return SLURM_ERROR;
+        /* noop if this is not QPU job */
+        return SLURM_SUCCESS;
+    }
+    if (optargp == NULL) {
+        /* noop if this is not QPU job */
+        return SLURM_SUCCESS;
     }
     size_t optlen = strlen(optargp);
-    if ((optargp == NULL) || optlen == 0) {
+    if (optlen == 0) {
         /* noop if this is not QPU job */
         return SLURM_SUCCESS;
     }
@@ -568,6 +554,9 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
  */
 static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType type,
                                                  const char *token) {
+    if (token == NULL) {
+        return NULL;
+    }
     /*
      * use strcpy() to fix the error - ‘strncpy’ specified bound depends on the length of the
      * source argument - caused by some C compilers.

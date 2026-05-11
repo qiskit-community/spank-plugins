@@ -17,8 +17,11 @@
  * <[https://www.gnu.org/licenses/gpl-3.0.txt]
  */
 #include <stdlib.h>
+#include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "slurm/slurm.h"
 #include "slurm/spank.h"
@@ -39,12 +42,24 @@ SPANK_PLUGIN(spank_qrmi, 1)
 static char *g_qpu_names_opt = NULL;
 
 /*
- * List of the acquired QPU resources.
+ * This flag indicates whether an error occurred in slurm_spank_init_post_opt().
+ * Returning SLURM_ERROR from slurm_spank_init_post_opt() does not cancel the job;
+ * instead, it causes the node to be drained. To cancel the job and report errors
+ * to the user, errors are deferred and logged in slurm_spank_task_init(), which
+ * then returns SLURM_ERROR to trigger job cancellation.
  */
+static bool g_init_post_opt_failed = false;
+
 #ifndef PRIOR_TO_V24_05_5_1
+/* List of acquired QPU resources. */
 static list_t *g_acquired_resources = NULL;
+/* List of errors deferred from slurm_spank_init_post_opt(). */
+static list_t *g_init_post_opt_errors = NULL;
 #else
+/* List of acquired QPU resources. */
 static List g_acquired_resources = NULL;
+/* List of errors deferred from slurm_spank_init_post_opt(). */
+static List g_init_post_opt_errors = NULL;
 #endif /* !PRIOR_TO_V24_05_5_1 */
 
 /*
@@ -55,13 +70,15 @@ static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType ty
 static void acquired_resource_destroy(void *object);
 static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type);
 static void _release_qpu(qpu_resource_t *res);
+static qrmi_error_t *_qrmi_error_create(char* message);
+static void qrmi_error_destroy(void *object);
 
 /*
  * @function _dump_environ
  *
  * Dumps all environment variables set for the current process.
  */
-static void _dump_environ() {
+static void _dump_environ(void) {
     char **s = environ;
     int pid = (int)getpid();
     int uid = (int)getuid();
@@ -89,13 +106,11 @@ static bool _starts_with(const char *str, const char *prefix) {
 static int _qpu_names_opt_cb(int val, const char *optarg, int remote) {
     UNUSED_PARAM(val);
     UNUSED_PARAM(remote);
-    size_t buflen = strlen(optarg) + 1;
-    g_qpu_names_opt = (char *)malloc(buflen);
-    /*
-     * use strcpy() to fix the error - ‘strncpy’ specified bound depends on the length of the
-     * source argument - caused by some C compilers.
-     */
-    (void)strcpy(g_qpu_names_opt, optarg);
+    g_qpu_names_opt = strdup(optarg);
+    if (g_qpu_names_opt == NULL) {
+        slurm_error("%s, Failed to duplicate '--qpu' option value", plugin_name);
+        return SLURM_ERROR;
+    }
     slurm_debug("%s: --qpu=[%s]", plugin_name, g_qpu_names_opt);
     return SLURM_SUCCESS;
 }
@@ -109,6 +124,30 @@ struct spank_option spank_qrmi_options[] = {
      0, /* value to return using callback */
      (spank_opt_cb_f)_qpu_names_opt_cb},
     SPANK_OPTIONS_TABLE_END};
+
+/*
+ * @function slurm_qrmi_error
+ *
+ * Formats an error message using printf-style format and variable arguments,
+ * appends it to the global error list (g_init_post_opt_errors), and reports it
+ * via slurm_error().
+ *
+ * Note: Messages exceeding 4095 bytes will be silently truncated.
+ */
+__attribute__((format(printf, 1, 2)))
+static void slurm_qrmi_error(const char *format, ...) {
+    char buf[MAX_ERROR_STRLEN+1];
+    va_list args;
+    va_start(args, format);
+
+    vsnprintf(buf, sizeof(buf), format, args);
+    va_end(args);
+    qrmi_error_t *qrmi_err = _qrmi_error_create(buf);
+    if (qrmi_err) {
+        slurm_list_append(g_init_post_opt_errors, qrmi_err);
+    }
+    slurm_error("%s", buf);
+}
 
 /*
  * @function slurm_spank_init
@@ -128,6 +167,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
                 spank_remote(spank_ctxt));
 
     g_acquired_resources = slurm_list_create(acquired_resource_destroy);
+    g_init_post_opt_errors = slurm_list_create(qrmi_error_destroy);
 
     /*
      * Get any options registered for this context:
@@ -145,6 +185,7 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
     default:
         break;
     }
+
     if (opts_to_register) {
         while (opts_to_register->name) {
             if (spank_option_register(spank_ctxt, opts_to_register++) != ESPANK_SUCCESS) {
@@ -192,7 +233,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
     if (g_qpu_names_opt == NULL) {
         /* noop if this is not QPU job */
-        return SLURM_ERROR;
+        return SLURM_SUCCESS;
     }
 
     /*
@@ -200,23 +241,25 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
      */
     uid_t job_uid;
     if (spank_get_item(spank_ctxt, S_JOB_UID, &job_uid) != ESPANK_SUCCESS) {
-        slurm_error("%s, unable to get job UID", plugin_name);
-        return SLURM_ERROR;
+        slurm_qrmi_error("%s, unable to get job UID", plugin_name);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
     }
     char uid_str[16];
     snprintf(uid_str, sizeof(uid_str), "%u", job_uid);
     spank_setenv(spank_ctxt, "QRMI_JOB_UID", uid_str, OVERWRITE);
-    setenv("QRMI_JOB_UID", uid_str, 1);
+    setenv("QRMI_JOB_UID", uid_str, OVERWRITE);
 
     uint32_t job_id;
     if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) != ESPANK_SUCCESS) {
-        slurm_error("%s, unable to get job ID", plugin_name);
-        return SLURM_ERROR;
+        slurm_qrmi_error("%s, unable to get job ID", plugin_name);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
     }
     char id_str[12];
     snprintf(id_str, sizeof(id_str), "%u", job_id);
     spank_setenv(spank_ctxt, "QRMI_JOB_ID", id_str, OVERWRITE);
-    setenv("QRMI_JOB_ID", id_str, 1);
+    setenv("QRMI_JOB_ID", id_str, OVERWRITE);
 
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_RESOURCES", "", OVERWRITE);
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_TYPES", "", OVERWRITE);
@@ -226,18 +269,19 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     }
 
     if (argc == 0) {
-        slurm_error("%s, QRMI config file not specified to plugin args", plugin_name);
-        return SLURM_ERROR;
+        slurm_qrmi_error("%s, QRMI config file not specified to plugin args", plugin_name);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
     }
 
     QrmiConfig *cnf = qrmi_config_load(argv[0]);
     if (cnf == NULL) {
         const char *last_error = qrmi_get_last_error();
-        slurm_error("%s, Failed to load QRMI config file(%s). %s", plugin_name, argv[0],
+        slurm_qrmi_error("%s, Failed to load QRMI config file(%s). %s", plugin_name, argv[0],
                     last_error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
         qrmi_string_free((char *)last_error);
-        return SLURM_ERROR;
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
     }
     slurm_debug("%s, config: %p", plugin_name, (void *)cnf);
 
@@ -248,37 +292,40 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
      * --env:{variable name}={value} are supported.
      */
     for (int i = 1; i < argc; i++) {
-        if (_starts_with(argv[i], "--env:")) {
-            const char *input = &argv[i][strlen("--env:")];
-            const char *delimiter = strchr(input, '=');
-            if (delimiter != NULL) {
-                size_t key_len = (size_t)(delimiter - input);
-                char env_name[key_len + 1];
-                strncpy(env_name, input, key_len);
-                env_name[key_len] = '\0';
-                const char *env_value = delimiter + 1;
-                ;
-                setenv(env_name, env_value, OVERWRITE);
-                spank_setenv(spank_ctxt, env_name, env_value, OVERWRITE);
-            }
+        if (!_starts_with(argv[i], "--env:")) {
+            /* ignored. */
+            continue;
         }
+        const char *input = &argv[i][strlen("--env:")];
+        const char *delimiter = strchr(input, '=');
+        if (delimiter == NULL) {
+            slurm_qrmi_error("%s, Invalid --env: argument. '=' delimiter not found in %s", plugin_name, argv[i]);
+            g_init_post_opt_failed = true;
+            return SLURM_SUCCESS;
+        }
+        size_t env_name_len = (size_t)(delimiter - input);
+        char *env_name = strndup(input, env_name_len);
+        if (env_name == NULL) {
+            slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld", plugin_name, env_name_len);
+            g_init_post_opt_failed = true;
+            return SLURM_SUCCESS;
+        }
+        const char *env_value = delimiter + 1;
+        setenv(env_name, env_value, OVERWRITE);
+        spank_setenv(spank_ctxt, env_name, env_value, OVERWRITE);
+        free(env_name);
     }
 
-    size_t buflen = strlen(g_qpu_names_opt) + 1;
-    char *bufp = (char *)malloc(buflen);
+    char *bufp = strdup(g_qpu_names_opt);
+    if (bufp == NULL) {
+        slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld", plugin_name, strlen(g_qpu_names_opt));
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
+    }
     char *rest = bufp;
     char *token;
     buffer keybuf;
     qrmi_buf_init(&keybuf, 1024);
-
-    /*
-     * Copy option string to bufp because subsequent strtok_r will
-     * modify the source buffer.
-     *
-     * use strcpy() to fix the error - ‘strncpy’ specified bound depends on the length of the
-     * source argument - caused by some C compilers.
-     */
-    (void)strcpy(bufp, g_qpu_names_opt);
 
     while ((token = strtok_r(rest, ",", &rest))) {
         QrmiResourceDef *res = qrmi_config_resource_def_get(cnf, token);
@@ -300,15 +347,18 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                         const char *kv_text = job_argv[index];
                         const char *eq = strchr(kv_text, '=');
                         if (eq) {
-                            size_t key_len = (size_t)(eq - kv_text);
-                            size_t val_len = strlen(eq + 1);
-                            char key[key_len + 1];
-                            char value[val_len + 1];
-                            strncpy(key, kv_text, key_len);
-                            key[key_len] = '\0';
-                            strcpy(value, eq + 1);
+                            char *key = strndup(kv_text, (size_t)(eq - kv_text));
+                            if (key == NULL) {
+                                slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld", plugin_name, eq - kv_text);
+                                g_init_post_opt_failed = true;
+                                free(bufp);
+                                qrmi_buf_free(&keybuf);
+                                return SLURM_SUCCESS;
+                            }
+                            const char *value = eq + 1;
                             slurm_debug("%s: putenv(%s, %s)", plugin_name, key, value);
                             setenv(key, value, OVERWRITE);
+                            free(key);
                         }
                     }
                     index++;
@@ -345,19 +395,20 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                 spank_setenv(spank_ctxt, keybuf.buffer, acquired->acquisition_token,
                              KEEP_IF_EXISTS);
             } else {
-                slurm_error("%s, failed to acquire resource: %s", plugin_name, res->name);
+                slurm_qrmi_error("%s, failed to acquire resource: %s", plugin_name, res->name);
             }
             qrmi_config_resource_def_free(res);
         } else {
-            slurm_error("resource %s not found in %s", token, argv[0]);
+            slurm_qrmi_error("resource %s not found in %s", token, argv[0]);
         }
     }
     free(bufp);
     qrmi_buf_free(&keybuf);
 
     if (slurm_list_count(g_acquired_resources) == 0) {
-        slurm_error("%s, No QPU resource available", plugin_name);
-        return SLURM_ERROR;
+        slurm_qrmi_error("%s, No QPU resource available", plugin_name);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
     }
 
     string_buffer_t qpu_resources_envvar;
@@ -417,19 +468,37 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
 
-    char *optargp = NULL;
-    if (spank_option_getopt(spank_ctxt, &spank_qrmi_options[0], &optargp) != ESPANK_SUCCESS) {
-        /* if spank_qrmi plugin is not registered, simply returns an error. */
+    if (g_init_post_opt_failed == true) {
+        /* g_init_post_opt_failed is set, meaning an error occurred in
+         * slurm_spank_init_post_opt(). Log the deferred errors and return
+         * SLURM_ERROR to cancel the job and notify the user of the failure reason.
+         */
+#ifndef PRIOR_TO_V24_05_5_1
+        list_itr_t *errors_iter =
+#else
+        ListIterator errors_iter =
+#endif /* !PRIOR_TO_V24_05_5_1 */
+            slurm_list_iterator_create(g_init_post_opt_errors);
+        void *e = NULL;
+        while ((e = slurm_list_next(errors_iter)) != NULL) {
+            qrmi_error_t *item = (qrmi_error_t *)e;
+            slurm_error("%s", item->message);
+        }
+        slurm_list_iterator_destroy(errors_iter);
         return SLURM_ERROR;
     }
-    size_t optlen = strlen(optargp);
-    if ((optargp == NULL) || optlen == 0) {
+
+    char *optargp = NULL;
+    if (spank_option_getopt(spank_ctxt, &spank_qrmi_options[0], &optargp) != ESPANK_SUCCESS) {
+        /* noop if this is not QPU job */
+        return SLURM_SUCCESS;
+    }
+    if (optargp == NULL || strlen(optargp) == 0) {
         /* noop if this is not QPU job */
         return SLURM_SUCCESS;
     }
 
-    char limit_as_str[MAX_INT_STRLEN + 1]; /* max uint32_t value is (2147483647) = 10 chars */
-    memset(limit_as_str, '\0', sizeof(limit_as_str));
+    char limit_as_str[MAX_INT_STRLEN + 1] = {0}; /* max uint32_t value is (2147483647) = 10 chars */
     if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) == ESPANK_SUCCESS) {
         if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) == SLURM_SUCCESS) {
             /*
@@ -439,13 +508,17 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
             /*
              * Convert minutes to seconds, uint32_t to char*
              */
-            memset(limit_as_str, '\0', sizeof(limit_as_str));
-            snprintf(limit_as_str, sizeof(limit_as_str), "%u", time_limit_mins * 60);
+            if (time_limit_mins != INFINITE && time_limit_mins <= (UINT32_MAX / 60)) {
+                snprintf(limit_as_str, sizeof(limit_as_str), "%u", time_limit_mins * 60);
+            } else {
+                /* time limit too large or INFINITE; clamp to max or handle as error */
+                snprintf(limit_as_str, sizeof(limit_as_str), "%u", UINT32_MAX);
+            }
         }
     }
 
     if (strlen(limit_as_str) == 0) {
-        /* time limit should be there, somthing wrong in Slurm */
+        /* time limit should be there, something wrong in Slurm */
         return SLURM_ERROR;
     }
 
@@ -550,6 +623,9 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
 
     g_acquired_resources = NULL;
 
+    slurm_list_destroy(g_init_post_opt_errors);
+    g_init_post_opt_errors = NULL;
+
     if (g_qpu_names_opt != NULL) {
         free(g_qpu_names_opt);
         g_qpu_names_opt = NULL;
@@ -561,34 +637,59 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
 }
 
 /*
- * @function acquired_resource_rec
+ * @function _acquired_resource_create
  *
  * Constructs an acquired QPU resource record. See
  * acquired_resource_destroy() to free allocated memory.
  */
 static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType type,
                                                  const char *token) {
-    /*
-     * use strcpy() to fix the error - ‘strncpy’ specified bound depends on the length of the
-     * source argument - caused by some C compilers.
-     */
+    /* Copies name, type, and token into a newly allocated qpu_resource_t. */
     qpu_resource_t *info = malloc(sizeof(qpu_resource_t));
-    size_t buflen = strlen(name) + 1;
-    char *bufp = (char *)malloc(buflen);
-    (void)strcpy(bufp, name);
-    info->name = bufp;
+    if (info == NULL) {
+        return NULL;
+    }
+
+    info->name = strdup(name);
+    if (info->name == NULL) {
+        free(info);
+        return NULL;
+    }
+
     info->type = type;
 
-    buflen = strlen(token) + 1;
-    bufp = (char *)malloc(buflen);
-    (void)strcpy(bufp, token);
-    info->acquisition_token = bufp;
-
+    info->acquisition_token = strdup(token);
+    if (info->acquisition_token == NULL) {
+        free(info->name);
+        free(info);
+        return NULL;
+    }
     return info;
 }
 
 /*
- * @function qrmiacquired_resource_destroy
+ * @function _qrmi_error_create
+ *
+ * Constructs a record of error occurred in init_post_opt(). See
+ * qrmi_error_destroy() to free allocated memory.
+ */
+static qrmi_error_t *_qrmi_error_create(char *message) {
+    /* Copies message into a newly allocated qrmi_error_t. */
+    qrmi_error_t *err = malloc(sizeof(qrmi_error_t));
+    if (err == NULL) {
+        return NULL;
+    }
+
+    err->message = strdup(message);
+    if (err->message == NULL) {
+        free(err);
+        return NULL;
+    }
+    return err;
+}
+
+/*
+ * @function acquired_resource_destroy
  *
  * Destroy an acquired QPU resource record.
  */
@@ -598,6 +699,18 @@ static void acquired_resource_destroy(void *object) {
     free(info->name);
     free(info->acquisition_token);
     free(info);
+}
+
+/*
+ * @function qrmi_error_destroy
+ *
+ * Destroy a QRMI error record.
+ */
+static void qrmi_error_destroy(void *object) {
+    qrmi_error_t *err = (qrmi_error_t *)object;
+
+    free(err->message);
+    free(err);
 }
 
 /*
@@ -611,12 +724,12 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     bool is_accessible = false;
     QrmiReturnCode rc;
     const char *last_error = NULL;
+    UNUSED_PARAM(spank_ctxt);
 
     void *qrmi = qrmi_resource_new(name, type);
     if (qrmi == NULL) {
         last_error = qrmi_get_last_error();
-        slurm_error("%s, %s", plugin_name, last_error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
+        slurm_qrmi_error("%s, %s", plugin_name, last_error);
         qrmi_string_free((char *)last_error);
         return NULL;
     }
@@ -625,8 +738,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
     if ((rc != QRMI_RETURN_CODE_SUCCESS) || (is_accessible == false)) {
         last_error = qrmi_get_last_error();
-        slurm_error("%s, %s is not accessible. %s", plugin_name, name, last_error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
+        slurm_qrmi_error("%s, %s is not accessible. %s", plugin_name, name, last_error);
         qrmi_string_free((char *)last_error);
         qrmi_resource_free(qrmi);
         return NULL;
@@ -635,20 +747,24 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     qrmi_resource_free(qrmi);
     if ((rc != QRMI_RETURN_CODE_SUCCESS) || (acquisition_token == NULL)) {
         last_error = qrmi_get_last_error();
-        slurm_error("%s, resource acquisition failed: %s. %s", plugin_name, name, last_error);
-        spank_setenv(spank_ctxt, "QRMI_PLUGIN_ERROR", last_error, KEEP_IF_EXISTS);
+        slurm_qrmi_error("%s, resource acquisition failed: %s. %s", plugin_name, name, last_error);
         qrmi_string_free((char *)last_error);
         return NULL;
     }
 
     slurm_debug("%s, acquisition_token: %s", plugin_name, acquisition_token);
-    return _acquired_resource_create(name, type, acquisition_token);
+    qpu_resource_t *res =_acquired_resource_create(name, type, acquisition_token);
+    qrmi_string_free(acquisition_token);
+    return res;
 }
 
 /*
  * @function _release_qpu
  *
  * Release QPU resource which was acquired by _acquired_qpu().
+ *
+ * This function is called in the exit phase, so deferring errors to the list via
+ * slurm_qrmi_error() is not needed here - use slurm_error() as usual.
  */
 static void _release_qpu(qpu_resource_t *res) {
     QrmiReturnCode rc;

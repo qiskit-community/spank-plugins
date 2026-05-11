@@ -165,7 +165,7 @@ Then, create a file under `/etc/slurm` or another location accessible to the Slu
 
 Create `/etc/slurm/plugstack.conf` if not exists and add the following lines:
 ```bash
-optional /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
+required /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
 Above example assumes you create `qrmi_config.json` under `/etc/slurm` directory.

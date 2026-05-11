@@ -279,7 +279,6 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         const char *last_error = qrmi_get_last_error();
         slurm_qrmi_error("%s, Failed to load QRMI config file(%s). %s", plugin_name, argv[0],
                     last_error);
-        qrmi_string_free((char *)last_error);
         g_init_post_opt_failed = true;
         return SLURM_SUCCESS;
     }
@@ -730,7 +729,6 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     if (qrmi == NULL) {
         last_error = qrmi_get_last_error();
         slurm_qrmi_error("%s, %s", plugin_name, last_error);
-        qrmi_string_free((char *)last_error);
         return NULL;
     }
 
@@ -739,7 +737,6 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     if ((rc != QRMI_RETURN_CODE_SUCCESS) || (is_accessible == false)) {
         last_error = qrmi_get_last_error();
         slurm_qrmi_error("%s, %s is not accessible. %s", plugin_name, name, last_error);
-        qrmi_string_free((char *)last_error);
         qrmi_resource_free(qrmi);
         return NULL;
     }
@@ -748,7 +745,6 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     if ((rc != QRMI_RETURN_CODE_SUCCESS) || (acquisition_token == NULL)) {
         last_error = qrmi_get_last_error();
         slurm_qrmi_error("%s, resource acquisition failed: %s. %s", plugin_name, name, last_error);
-        qrmi_string_free((char *)last_error);
         return NULL;
     }
 
@@ -778,7 +774,6 @@ static void _release_qpu(qpu_resource_t *res) {
     if (qrmi == NULL) {
         const char *last_error = qrmi_get_last_error();
         slurm_error("%s, %s", plugin_name, last_error);
-        qrmi_string_free((char *)last_error);
         return;
     }
     rc = qrmi_resource_release(qrmi, res->acquisition_token);
@@ -786,7 +781,6 @@ static void _release_qpu(qpu_resource_t *res) {
         const char *last_error = qrmi_get_last_error();
         slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), token(%s), %s",
                     plugin_name, res->name, res->type, res->acquisition_token, last_error);
-        qrmi_string_free((char *)last_error);
     }
     rc = qrmi_string_free(res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {

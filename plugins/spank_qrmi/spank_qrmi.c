@@ -748,7 +748,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
         return NULL;
     }
 
-    slurm_debug("%s, acquisition_token: %s", plugin_name, acquisition_token);
+    slurm_debug("%s, acquisition_token: %s(%s)", plugin_name, acquisition_token, name);
     qpu_resource_t *res =_acquired_resource_create(name, type, acquisition_token);
     qrmi_string_free(acquisition_token);
     return res;

@@ -43,6 +43,30 @@
 #define UNUSED_PARAM(x) (void)(x)
 
 /*
+ * Log a debug message when entering a SPANK hook.
+ * Emits the plugin name, PID, UID, function name, argument count,
+ * and whether the hook is running in the remote (slurmd) context.
+ *
+ * Usage: place at the top of a spank hook function, before any logic.
+ *   SPANK_DEBUG_ENTER(spank_ctxt, argc);
+ */
+#define SPANK_DEBUG_ENTER(ctxt, argc) \
+    slurm_debug("%s(%d, %d): -> %s argc=%d remote=%d", \
+                plugin_name, (int)getpid(), (int)getuid(), \
+                __func__, (argc), spank_remote(ctxt))
+
+/*
+ * Log a debug message when leaving a SPANK hook.
+ * Emits the plugin name, PID, UID, and function name.
+ *
+ * Usage: place just before the final return statement of a spank hook.
+ *   SPANK_DEBUG_LEAVE();
+ */
+#define SPANK_DEBUG_LEAVE() \
+    slurm_debug("%s(%d,%d): <- %s", \
+                plugin_name, (int)getpid(), (int)getuid(), __func__)
+
+/*
  * A record of acquired QPU resource.
  */
 typedef struct _qpu_resource {

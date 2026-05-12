@@ -445,6 +445,23 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 }
 
 /*
+ * @function _report_deferred_errors
+ *
+ * Log all errors deferred from slurm_spank_init_post_opt().
+ */
+static void _report_deferred_errors(void) {
+#ifndef PRIOR_TO_V24_05_5_1
+    list_itr_t *it = slurm_list_iterator_create(g_init_post_opt_errors);
+#else
+    ListIterator it = slurm_list_iterator_create(g_init_post_opt_errors);
+#endif
+    qrmi_error_t *item;
+    while ((item = slurm_list_next(it)) != NULL)
+        slurm_error("%s", item->message);
+    slurm_list_iterator_destroy(it);   
+}
+
+/*
  * @function _set_rust_loglevel
  *
  * Set environment variables for QRMI runtime logging, based on SRUN_DEBUG.
@@ -516,18 +533,7 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
          * slurm_spank_init_post_opt(). Log the deferred errors and return
          * SLURM_ERROR to cancel the job and notify the user of the failure reason.
          */
-#ifndef PRIOR_TO_V24_05_5_1
-        list_itr_t *errors_iter =
-#else
-        ListIterator errors_iter =
-#endif /* !PRIOR_TO_V24_05_5_1 */
-            slurm_list_iterator_create(g_init_post_opt_errors);
-        void *e = NULL;
-        while ((e = slurm_list_next(errors_iter)) != NULL) {
-            qrmi_error_t *item = (qrmi_error_t *)e;
-            slurm_error("%s", item->message);
-        }
-        slurm_list_iterator_destroy(errors_iter);
+        _report_deferred_errors();
         return SLURM_ERROR;
     }
 

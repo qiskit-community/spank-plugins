@@ -67,11 +67,11 @@ static List g_init_post_opt_errors = NULL;
  */
 static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType type,
                                                  const char *token);
-static void acquired_resource_destroy(void *object);
+static void _acquired_resource_destroy(void *object);
 static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type);
 static void _release_qpu(qpu_resource_t *res);
 static qrmi_error_t *_qrmi_error_create(char* message);
-static void qrmi_error_destroy(void *object);
+static void _qrmi_error_destroy(void *object);
 
 /*
  * @function _dump_environ
@@ -166,8 +166,8 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
     slurm_debug("%s(%d, %d): -> %s argc=%d remote=%d", plugin_name, pid, uid, __func__, argc,
                 spank_remote(spank_ctxt));
 
-    g_acquired_resources = slurm_list_create(acquired_resource_destroy);
-    g_init_post_opt_errors = slurm_list_create(qrmi_error_destroy);
+    g_acquired_resources = slurm_list_create(_acquired_resource_destroy);
+    g_init_post_opt_errors = slurm_list_create(_qrmi_error_destroy);
 
     /*
      * Get any options registered for this context:
@@ -638,7 +638,7 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
  * @function _acquired_resource_create
  *
  * Constructs an acquired QPU resource record. See
- * acquired_resource_destroy() to free allocated memory.
+ * _acquired_resource_destroy() to free allocated memory.
  */
 static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType type,
                                                  const char *token) {
@@ -669,7 +669,7 @@ static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType ty
  * @function _qrmi_error_create
  *
  * Constructs a record of error occurred in init_post_opt(). See
- * qrmi_error_destroy() to free allocated memory.
+ * _qrmi_error_destroy() to free allocated memory.
  */
 static qrmi_error_t *_qrmi_error_create(char *message) {
     /* Copies message into a newly allocated qrmi_error_t. */
@@ -687,26 +687,24 @@ static qrmi_error_t *_qrmi_error_create(char *message) {
 }
 
 /*
- * @function acquired_resource_destroy
+ * @function _acquired_resource_destroy
  *
  * Destroy an acquired QPU resource record.
  */
-static void acquired_resource_destroy(void *object) {
+static void _acquired_resource_destroy(void *object) {
     qpu_resource_t *info = (qpu_resource_t *)object;
-
     free(info->name);
     free(info->acquisition_token);
     free(info);
 }
 
 /*
- * @function qrmi_error_destroy
+ * @function _qrmi_error_destroy
  *
  * Destroy a QRMI error record.
  */
-static void qrmi_error_destroy(void *object) {
+static void _qrmi_error_destroy(void *object) {
     qrmi_error_t *err = (qrmi_error_t *)object;
-
     free(err->message);
     free(err);
 }
@@ -747,7 +745,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     }
 
     slurm_debug("%s, acquisition_token: %s(%s)", plugin_name, acquisition_token, name);
-    qpu_resource_t *res =_acquired_resource_create(name, type, acquisition_token);
+    qpu_resource_t *res = _acquired_resource_create(name, type, acquisition_token);
     qrmi_string_free(acquisition_token);
     return res;
 }

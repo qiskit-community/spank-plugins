@@ -666,6 +666,18 @@ static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType ty
 }
 
 /*
+ * @function _acquired_resource_destroy
+ *
+ * Destroy an acquired QPU resource record.
+ */
+static void _acquired_resource_destroy(void *object) {
+    qpu_resource_t *info = (qpu_resource_t *)object;
+    free(info->name);
+    free(info->acquisition_token);
+    free(info);
+}
+
+/*
  * @function _qrmi_error_create
  *
  * Constructs a record of error occurred in init_post_opt(). See
@@ -684,18 +696,6 @@ static qrmi_error_t *_qrmi_error_create(char *message) {
         return NULL;
     }
     return err;
-}
-
-/*
- * @function _acquired_resource_destroy
- *
- * Destroy an acquired QPU resource record.
- */
-static void _acquired_resource_destroy(void *object) {
-    qpu_resource_t *info = (qpu_resource_t *)object;
-    free(info->name);
-    free(info->acquisition_token);
-    free(info);
 }
 
 /*

@@ -20,6 +20,8 @@
 #ifndef _SPANK_QRMI_H
 #define _SPANK_QRMI_H
 
+#include <unistd.h>
+#include <sys/types.h>
 #include "buf.h"
 #include "qrmi.h"
 #include "strbuf.h"

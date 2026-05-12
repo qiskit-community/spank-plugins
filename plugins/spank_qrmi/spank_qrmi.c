@@ -456,8 +456,9 @@ static void _report_deferred_errors(void) {
     ListIterator it = slurm_list_iterator_create(g_init_post_opt_errors);
 #endif
     qrmi_error_t *item;
-    while ((item = slurm_list_next(it)) != NULL)
+    while ((item = slurm_list_next(it)) != NULL) {
         slurm_error("%s", item->message);
+    }
     slurm_list_iterator_destroy(it);   
 }
 

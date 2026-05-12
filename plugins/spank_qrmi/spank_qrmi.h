@@ -26,8 +26,10 @@
 #include "qrmi.h"
 #include "strbuf.h"
 
-#define OVERWRITE 1
-#define KEEP_IF_EXISTS 0
+typedef enum {
+    KEEP_IF_EXISTS = 0,
+    OVERWRITE      = 1,
+} setenv_flags_t;
 
 /*
  * max uint32_t value is (2147483647) = 10 chars
@@ -41,6 +43,9 @@
 
 /*
  * Macro for unused parameters
+ *
+ * Usage:
+ *   UNUSED_PARAM(argv);
  */
 #define UNUSED_PARAM(x) (void)(x)
 

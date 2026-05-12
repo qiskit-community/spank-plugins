@@ -132,7 +132,7 @@ struct spank_option spank_qrmi_options[] = {
  * appends it to the global error list (g_init_post_opt_errors), and reports it
  * via slurm_error().
  *
- * Note: Messages exceeding 4095 bytes will be silently truncated.
+ * Note: Messages exceeding 4096 bytes will be silently truncated.
  */
 __attribute__((format(printf, 1, 2)))
 static void slurm_qrmi_error(const char *format, ...) {

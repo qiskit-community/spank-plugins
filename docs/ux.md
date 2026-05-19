@@ -9,7 +9,7 @@ HPC user experience, HPC developer experience and usage patterns
   - [HPC user scope](#hpc-user-scope)
   - [HPC application scope](#hpc-application-scope)
   - [Backend specifics](#backend-specifics)
-    - [IBM Direct Access API](#ibm-direct-access-api)
+    - [IBM Quantum System API](#ibm-quantum-system-api)
     - [Qiskit Runtime Service](#qiskit-runtime-service)
 - [Examples](#examples)
   - [Running jobs with dependencies](#running-jobs-with-dependencies)
@@ -25,8 +25,8 @@ Slurm QPU resource definitions determine what physical resources can be used by 
 User source code should be agnostic to specific backend instances and even backend types as far as possible.
 This keeps source code portable while the QPU selection criteria are part of the resource definition (which is considered configuration as opposed to source code).
 The source code does not have to take care resp. is not involved in resource reservation handling (that is done when Slurm jobs are assigned QPU resources and start running, if applicable on the backend) or execution modes like sessions (these are automatically in place while the job is running, if applicable on the backend).
-This makes the source code more portable between similar QPU resource types through different backend access methods (such as IBM's Direct Access API and IBM's Qiskit Runtime service through IBM Quantum Platform).
-All backend types (such as IBM's Direct Access API, IBM's Qiskit Runtime service, or Pasqal's backends) follow these principles.
+This makes the source code more portable between similar QPU resource types through different backend access methods (such as IBM's Quantum System API and IBM's Qiskit Runtime service through IBM Quantum Platform).
+All backend types (such as IBM's Quantum System API, IBM's Qiskit Runtime service, or Pasqal's backends) follow these principles.
 
 ## Connecting physical resources to Slurm resources and how to use them
 
@@ -132,13 +132,13 @@ print(f">>> {result}")
 See [examples directory](https://github.com/qiskit-community/qrmi/tree/main/examples/qiskit_primitives/) for example files.
 
 ### Backend specifics
-#### IBM Direct Access API
+#### IBM Quantum System API
 ##### HPC admin scope
-Configuration of Direct Access API backends (HPC admin scope) includes endpoints and credentials to the Direct Access endpoint, authentication services as well as the S3 endpoint.
+Configuration of Quantum System API backends (HPC admin scope) includes endpoints and credentials to the Quantum System endpoint, authentication services as well as the S3 endpoint.
 Specifically, this includes:
 
 * IBM Cloud API key for creating bearer tokens
-* endpoint of Direct Access API
+* endpoint of Quantum System API
 * S3 bucket and access details
 
 Access credentials should not be visible to HPC users or other non-privileged users on the system.

@@ -141,6 +141,16 @@ cmake -DQRMI_ROOT=/shared/qrmi ..
 make
 ```
 
+For pasqal-local resources make sure to build the spank plugin with munge support:
+```bash
+[root@c1 /]# cd /shared/spank-plugins/plugins/spank_qrmi
+[root@c1 /]# mkdir build
+[root@c1 /]# cd build
+[root@c1 /]# cmake -DENABLE_MUNGE=ON ..
+[root@c1 /]# make
+```
+
+
 5. Creating qrmi_config.json
 
 Modify [this example](https://github.com/qiskit-community/spank-plugins/blob/main/plugins/spank_qrmi/qrmi_config.json.example) to fit your environment and add it to `/etc/slurm` or another location accessible to the Slurm daemons on each compute node you intend to use.

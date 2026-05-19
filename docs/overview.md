@@ -13,7 +13,7 @@ Spank plugins for Slurm to support quantum resources
 - [Vendor-Specific Context: IBM](#vendor-specific-context-ibm)
 - [Vendor-Specific Definitions: IBM](#vendor-specific-definitions-ibm)
   - [IBM Quantum Platform](#ibm-quantum-platform)
-  - [Direct Access API](#direct-access-api) 
+  - [Quantum System API](#quantum-system-api) 
 - [High Level Structure](#high-level-structure) 
 - [Quantum resource for workload management systems](#quantum-resource-for-workload-management-system)
 - [Quantum resource API](#quantum-resource-api)
@@ -62,8 +62,8 @@ Extension of the context overview of involved components, personas and backend s
 ### IBM Quantum Platform
 Cloud-based quantum computing service providing access to IBM's fleet of quantum backends. Sometimes abbreviated as IQP.
 
-### Direct Access API
-Local interface to am IBM Quantum Computer. Sometimes abbreviated as DA API. Below the Direct Access API, classical preparation of jobs prior to the actual quantum execution can run in parallel (called *lanes* in the API definition).
+### Quantum System API
+Local interface to a IBM Quantum Computer. Below the Quantum System API, classical preparation of jobs prior to the actual quantum execution can run in parallel (called *lanes* in the API definition).
 
 ## Vendor-Specific Definitions: Pasqal
 
@@ -90,7 +90,7 @@ Additional resource definition might be needed depending on implementation from 
 
 ![resource definition](./images/resource_definition.png)
 
-The QPU resource definition does not expose individual parallelism abstracts. Each backend flavor can have specific qualifiers how to use backend specific capabilities (e.g. for common use case: if a user wants to exclusively use a backend, all parallel job preparation units will be available for use -- if not, several users could submit jobs and share these units. As execution lanes in DA API do not have any identities that could be managed explicitly, only quantities resp. exclusive/shared use should be user controlled).
+The QPU resource definition does not expose individual parallelism abstracts. Each backend flavor can have specific qualifiers how to use backend specific capabilities (e.g. for common use case: if a user wants to exclusively use a backend, all parallel job preparation units will be available for use -- if not, several users could submit jobs and share these units. As execution lanes in IBM Quantum System API do not have any identities that could be managed explicitly, only quantities resp. exclusive/shared use should be user controlled).
 
 ![resource mapping](./images/resource_mapping.png)
 

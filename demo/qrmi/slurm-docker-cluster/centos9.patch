@@ -5,8 +5,8 @@ diff -Naru slurm-docker-cluster/.env slurm-docker-cluster.centos9/.env
  
  # Image version used to tag the container at build time (Typically matches the
  # Slurm tag in semantic version form)
--IMAGE_TAG=25.05.3-dev-tmp
-+IMAGE_TAG=25.05.3-centos9-dev
+-IMAGE_TAG=25.11.4-dev
++IMAGE_TAG=25.11.4-centos9-dev
 diff -Naru slurm-docker-cluster/Dockerfile slurm-docker-cluster.centos9/Dockerfile
 --- slurm-docker-cluster/Dockerfile	2025-10-16 16:36:57
 +++ slurm-docker-cluster.centos9/Dockerfile	2025-10-16 17:13:57

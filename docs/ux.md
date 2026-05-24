@@ -11,6 +11,8 @@ HPC user experience, HPC developer experience and usage patterns
   - [Backend specifics](#backend-specifics)
     - [IBM Quantum System API](#ibm-quantum-system-api)
     - [Qiskit Runtime Service](#qiskit-runtime-service)
+    - [IQM Server API](#iqm-server-api)
+    - [Pasqal](#pasqal)
 - [Examples](#examples)
   - [Running jobs with dependencies](#running-jobs-with-dependencies)
   - [Running a job with several Slurm QPU resources](#running-a-job-with-several-slurm-qpu-resources)

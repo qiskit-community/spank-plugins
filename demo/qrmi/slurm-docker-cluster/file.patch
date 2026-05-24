@@ -393,7 +393,7 @@ diff -Naru slurm-docker-cluster.orig/qrmi_config.json slurm-docker-cluster/qrmi_
 diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-cluster/qrmi_config.json.example
 --- slurm-docker-cluster.orig/qrmi_config.json.example	1970-01-01 09:00:00
 +++ slurm-docker-cluster/qrmi_config.json.example	2026-04-02 18:42:32
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,44 @@
 +{
 +  "resources": [
 +    {
@@ -426,6 +426,14 @@ diff -Naru slurm-docker-cluster.orig/qrmi_config.json.example slurm-docker-clust
 +      "type": "pasqal-cloud",
 +      "environment": {
 +        "QRMI_PASQAL_CLOUD_ENDPOINT": "http://"
++      }
++    },
++    {
++      "name": "garnet_mock",
++      "type": "iqm-server",
++      "environment": {
++        "QRMI_IQM_ISA_ENDPOINT": "https://resonance.meetiqm.com",
++        "QRMI_IQM_ISA_TOKEN": "<YOUR API TOKEN>"
 +      }
 +    }
 +  ]

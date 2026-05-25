@@ -207,7 +207,7 @@ Options provided by plugins:
 4. Running Pasqal job
 
 ```bash
-[root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_backend.sh
+[root@login /]# sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_qrmi.sh
 ```
 
 5. Checking primitive results

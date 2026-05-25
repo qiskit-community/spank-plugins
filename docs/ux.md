@@ -11,6 +11,8 @@ HPC user experience, HPC developer experience and usage patterns
   - [Backend specifics](#backend-specifics)
     - [IBM Quantum System API](#ibm-quantum-system-api)
     - [Qiskit Runtime Service](#qiskit-runtime-service)
+    - [IQM Server API](#iqm-server-api)
+    - [Pasqal](#pasqal)
 - [Examples](#examples)
   - [Running jobs with dependencies](#running-jobs-with-dependencies)
   - [Running a job with several Slurm QPU resources](#running-a-job-with-several-slurm-qpu-resources)
@@ -26,7 +28,7 @@ User source code should be agnostic to specific backend instances and even backe
 This keeps source code portable while the QPU selection criteria are part of the resource definition (which is considered configuration as opposed to source code).
 The source code does not have to take care resp. is not involved in resource reservation handling (that is done when Slurm jobs are assigned QPU resources and start running, if applicable on the backend) or execution modes like sessions (these are automatically in place while the job is running, if applicable on the backend).
 This makes the source code more portable between similar QPU resource types through different backend access methods (such as IBM's Quantum System API and IBM's Qiskit Runtime service through IBM Quantum Platform).
-All backend types (such as IBM's Quantum System API, IBM's Qiskit Runtime service, or Pasqal's backends) follow these principles.
+All backend types (such as IBM's Quantum System API, IBM's Qiskit Runtime service, IQM Server API, or Pasqal's backends) follow these principles.
 
 ## Connecting physical resources to Slurm resources and how to use them
 
@@ -173,6 +175,17 @@ This determines under which user and service instance the Qiskit Runtime service
 Accordingly, IBM Quantum Platform's scheduling considers the user's and service instance's capabilities for scheduling.
 
 At this time, users have to provide the above details (no shared cluster-wide Quantum access).
+
+#### IQM Server API
+##### HPC admin scope
+Configuration of IQM Server API (HPC admin scope) includes endpoints and credentials to the IQM Server API endpoint.
+Specifically, this includes:
+
+* Endpoint for IQM Server API
+* API token for accessing IQM quantum computers via the IQM Server API.
+ 
+##### HPC user scope
+HPC users are expected to generate their own API tokens rather than using a shared token.
 
 #### Pasqal
 

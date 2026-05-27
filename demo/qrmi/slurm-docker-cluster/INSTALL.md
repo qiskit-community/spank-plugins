@@ -202,7 +202,7 @@ sbatch /shared/spank-plugins/demo/qrmi/jobs/run_estimator.sh
 4. Running Pasqal job on the **login node**
 
 ```bash
-sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_backend.sh
+sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_qrmi.sh
 ```
 
 5. Checking primitive results

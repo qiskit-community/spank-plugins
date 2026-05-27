@@ -39,6 +39,14 @@
       "environment": {
         "QRMI_URL": "http://localhost:4207"
       }
+    },
+    {
+      "name": "garnet_mock",
+      "type": "iqm-server",
+      "environment": {
+        "QRMI_IQM_ISA_ENDPOINT": "https://resonance.meetiqm.com",
+        "QRMI_IQM_ISA_TOKEN": "<YOUR API TOKEN>"
+      }
     }
   ]
 }

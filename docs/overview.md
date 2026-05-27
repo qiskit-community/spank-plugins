@@ -65,6 +65,11 @@ Cloud-based quantum computing service providing access to IBM's fleet of quantum
 ### Quantum System API
 Local interface to a IBM Quantum Computer. Below the Quantum System API, classical preparation of jobs prior to the actual quantum execution can run in parallel (called *lanes* in the API definition).
 
+## Vendor-Specific Definitions: IQM
+
+### IQM Resonance
+Cloud-based quantum computing service providing access to IQM quantum computers and mock backends via the IQM Server API.
+
 ## Vendor-Specific Definitions: Pasqal
 
 ### Pasqal Cloud Service

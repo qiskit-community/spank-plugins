@@ -47,6 +47,14 @@
         "QRMI_IQM_ISA_ENDPOINT": "https://resonance.meetiqm.com",
         "QRMI_IQM_ISA_TOKEN": "<YOUR API TOKEN>"
       }
+    },
+    {
+      "name": "ab_emu_1q_lescanne_2020",
+      "type": "alice-bob-felis",
+      "environment": {
+        "QRMI_AB_FELIS_BASE_ENDPOINT": "<FELIS URL>",
+        "QRMI_AB_FELIS_API_KEY": "<FELIS API KEY>"
+      }
     }
   ]
 }

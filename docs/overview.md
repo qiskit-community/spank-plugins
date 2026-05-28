@@ -78,6 +78,11 @@ Cloud-based quantum computing service providing access to Pasqal QPU's and emula
 ### Pulser
 Pasqal's native programming library [GitHub](https://github.com/pasqal-io/pulser). Supported in the low-level interfaces such as the QRMI.
 
+## Vendor-Specific Definitions: Alice & Bob
+
+### Alice & Bob Felis
+Cloud-based quantum computing service providing access to Alice & Bob quantum computers and emulator backends via the Felis API.
+
 ## High Level Structure
 
 At large, there are three domains:

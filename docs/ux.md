@@ -13,6 +13,7 @@ HPC user experience, HPC developer experience and usage patterns
     - [Qiskit Runtime Service](#qiskit-runtime-service)
     - [IQM Server API](#iqm-server-api)
     - [Pasqal](#pasqal)
+    - [Alice and Bob Felis API](#alice-and-bob-felis-api)
 - [Examples](#examples)
   - [Running jobs with dependencies](#running-jobs-with-dependencies)
   - [Running a job with several Slurm QPU resources](#running-a-job-with-several-slurm-qpu-resources)
@@ -202,6 +203,17 @@ Specifically, this currently includes
 
 #### Pasqal on-prem devices
 TBD.
+
+#### Alice and Bob Felis API
+##### HPC admin scope
+Configuration of Felis API (HPC admin scope) includes endpoints and API key to the Felis Cloud endpoint.
+Specifically, this includes:
+
+* Endpoint for Felis API
+* API key for accessing Felis Cloud quantum computers and emulators via the Felis API.
+ 
+##### HPC user scope
+HPC users are expected to generate their own API key rather than using a shared token.
 
 ## Examples
 

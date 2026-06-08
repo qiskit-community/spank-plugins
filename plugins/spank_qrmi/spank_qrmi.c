@@ -218,6 +218,8 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     spank_setenv(spank_ctxt, "QRMI_JOB_ID", id_str, OVERWRITE);
     setenv("QRMI_JOB_ID", id_str, 1);
 
+    spank_setenv(spank_ctxt, "QRMI_JOB_QPU_RESOURCES", "", OVERWRITE);
+    spank_setenv(spank_ctxt, "QRMI_JOB_QPU_TYPES", "", OVERWRITE);
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_RESOURCES", "", OVERWRITE);
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_TYPES", "", OVERWRITE);
 
@@ -383,6 +385,11 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     }
     slurm_list_iterator_destroy(sessions_iter);
 
+    spank_setenv(spank_ctxt, "QRMI_JOB_QPU_RESOURCES", qpu_resources_envvar.buffer, OVERWRITE);
+    slurm_debug("%s: setenv(%s, %s)", plugin_name, "QRMI_JOB_QPU_RESOURCES",
+                qpu_resources_envvar.buffer);
+    spank_setenv(spank_ctxt, "QRMI_JOB_QPU_TYPES", qpu_types_envvar.buffer, OVERWRITE);
+    slurm_debug("%s: setenv(%s, %s)", plugin_name, "QRMI_JOB_QPU_TYPES", qpu_types_envvar.buffer);
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_RESOURCES", qpu_resources_envvar.buffer, OVERWRITE);
     slurm_debug("%s: setenv(%s, %s)", plugin_name, "SLURM_JOB_QPU_RESOURCES",
                 qpu_resources_envvar.buffer);

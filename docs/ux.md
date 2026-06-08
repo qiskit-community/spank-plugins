@@ -87,7 +87,7 @@ srun ...
 
 HPC applications use the Slurm QPU resources assigned to the Slurm job.
 
-Environment variables provide more details for use by the appliction, e.g. `SLURM_JOB_QPU_RESOURCES` listing the quantum resource names (comma separated if there are several provided).
+Environment variables provide more details for use by the appliction, e.g. `QRMI_JOB_QPU_RESOURCES` listing the quantum resource names (comma separated if there are several provided). `SLURM_JOB_QPU_RESOURCES` is still exported as a legacy alias.
 These variables will be used by QRMI.
 See the README files in the various QRMI flavor directories ([ibm](https://github.com/qiskit-community/qrmi/blob/main/examples/qiskit_primitives/ibm/README.md), [pasqal](https://github.com/qiskit-community/qrmi/blob/main/examples/qiskit_primitives/pasqal/README.md)) for details.
 

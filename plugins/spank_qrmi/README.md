@@ -208,8 +208,10 @@ This plugin also set the following 2 environment variables which will be referre
 
 | environment varilables | descriptions |
 | ---- | ---- |
-| SLURM_JOB_QPU_RESOURCES | Comma separated list of QPU resources to use at runtime. Undocumented resources will be filtered out. For example, `qpu1,qpu2`. |
-| SLURM_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
+| QRMI_JOB_QPU_RESOURCES | Comma separated list of QPU resources to use at runtime. Undocumented resources will be filtered out. For example, `qpu1,qpu2`. |
+| QRMI_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
+| SLURM_JOB_QPU_RESOURCES | Legacy alias for `QRMI_JOB_QPU_RESOURCES`. |
+| SLURM_JOB_QPU_TYPES | Legacy alias for `QRMI_JOB_QPU_TYPES`. |
 
 > [!IMPORTANT]
 > The IBM Direct Access API has been renamed to the IBM Quantum System API.

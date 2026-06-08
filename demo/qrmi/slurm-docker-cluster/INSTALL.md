@@ -162,7 +162,7 @@ IBM Quantum Platform (IQP) provides limited, free access to IBM Quantum systems.
 Create `/etc/slurm/plugstack.conf` and ensure it has the following line (assuming `qrmi_config.json` was added to `/etc/slurm`):
 
 ```bash
-optional /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
+required /shared/spank-plugins/plugins/spank_qrmi/build/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
 `plugstack.conf`, `qrmi_config.json`, and `spank_qrmi.so` must be installed on the machines that execute slurmd (compute nodes) as well as on the machines that execute job allocation utilities such as salloc, sbatch, etc (login nodes). Refer to the [SPANK documentation](https://slurm.schedmd.com/spank.html#SECTION_CONFIGURATION) for more details.

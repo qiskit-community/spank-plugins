@@ -1,1 +1,1 @@
-optional /lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
+required /lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json

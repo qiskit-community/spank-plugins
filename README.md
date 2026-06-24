@@ -15,6 +15,7 @@ This is repository with Slurm Spank plugins for Quantum resources and jobs suppo
 1. [How to Cite This Work](#how-to-cite-this-work)
 1. [Contribution Guidelines](#contribution-guidelines)
 1. [References and Acknowledgements](#references-and-acknowledgements)
+1. [FAQ](./docs/FAQ.md)
 
 
 ----------------------------------------------------------------------------------------------------

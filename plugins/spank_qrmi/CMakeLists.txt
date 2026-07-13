@@ -128,6 +128,12 @@ target_link_libraries(spank_qrmi
 target_include_directories(spank_qrmi
     PRIVATE ${QRMI_SOURCE_DIR}
 )
+if(EXISTS "${QRMI_SOURCE_DIR}/qrmi.h")
+    file(READ "${QRMI_SOURCE_DIR}/qrmi.h" QRMI_HEADER_CONTENTS)
+    if(QRMI_HEADER_CONTENTS MATCHES "qrmi_log_callback_set")
+        target_compile_definitions(spank_qrmi PRIVATE QRMI_HAS_LOG_CALLBACK=1)
+    endif()
+endif()
 target_compile_options(spank_qrmi
     PRIVATE -Wall -Wextra -Werror -O2 -pedantic -Wconversion -Wwrite-strings -Wfloat-equal
 )

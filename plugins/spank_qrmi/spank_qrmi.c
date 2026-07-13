@@ -70,8 +70,13 @@ static qpu_resource_t *_acquired_resource_create(char *name, QrmiResourceType ty
 static void _acquired_resource_destroy(void *object);
 static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type);
 static void _release_qpu(qpu_resource_t *res);
+static void slurm_qrmi_error(const char *format, ...);
 static qrmi_error_t *_qrmi_error_create(char* message);
 static void _qrmi_error_destroy(void *object);
+#if defined(QRMI_HAS_LOG_CALLBACK)
+static void _qrmi_log_to_slurm(const char *level, const char *target, const char *message);
+#endif
+static bool _configure_qrmi_logging(spank_t spank_ctxt);
 
 /*
  * @function _dump_environ
@@ -96,6 +101,9 @@ static void _dump_environ(void) {
  */
 static bool _starts_with(const char *str, const char *prefix) {
     return strncmp(prefix, str, strlen(prefix)) == 0;
+}
+
+    return true;
 }
 
 /*
@@ -231,6 +239,59 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
 
+    for (int i = 0; i < argc; i++) {
+        slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
+    }
+
+    if (argc == 0) {
+        slurm_qrmi_error("%s, QRMI config file not specified to plugin args", plugin_name);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
+    }
+
+    /*
+     * Parses optional plugin arguments.
+     *
+     * Environment settings use --env:{variable name}={value}.
+     */
+    for (int i = 1; i < argc; i++) {
+        if (!_starts_with(argv[i], "--env:")) {
+            /* ignored. */
+            continue;
+        }
+        const char *input = &argv[i][strlen("--env:")];
+        const char *delimiter = strchr(input, '=');
+        if (delimiter == NULL) {
+            slurm_qrmi_error("%s, Invalid --env: argument. '=' delimiter not found in %s", plugin_name, argv[i]);
+            g_init_post_opt_failed = true;
+            return SLURM_SUCCESS;
+        }
+        size_t env_name_len = (size_t)(delimiter - input);
+        char *env_name = strndup(input, env_name_len);
+        if (env_name == NULL) {
+            slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld", plugin_name, env_name_len);
+            g_init_post_opt_failed = true;
+            return SLURM_SUCCESS;
+        }
+        const char *env_value = delimiter + 1;
+        if (setenv(env_name, env_value, OVERWRITE) != 0) {
+            slurm_qrmi_error("%s, Failed to set environment variable %s", plugin_name, env_name);
+            g_init_post_opt_failed = true;
+            free(env_name);
+            return SLURM_SUCCESS;
+        }
+        if (spank_setenv(spank_ctxt, env_name, env_value, OVERWRITE) != ESPANK_SUCCESS) {
+            slurm_debug("%s, unable to set SPANK environment variable %s", plugin_name,
+                        env_name);
+        }
+        free(env_name);
+    }
+
+    if (!_configure_qrmi_logging(spank_ctxt)) {
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
+    }
+
     /*
      * Set environment variable for slurm job ID and UID.
      */
@@ -261,16 +322,6 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_RESOURCES", "", OVERWRITE);
     spank_setenv(spank_ctxt, "SLURM_JOB_QPU_TYPES", "", OVERWRITE);
 
-    for (int i = 0; i < argc; i++) {
-        slurm_debug("%s: argv[%d] = [%s]", plugin_name, i, argv[i]);
-    }
-
-    if (argc == 0) {
-        slurm_qrmi_error("%s, QRMI config file not specified to plugin args", plugin_name);
-        g_init_post_opt_failed = true;
-        return SLURM_SUCCESS;
-    }
-
     QrmiConfig *cnf = qrmi_config_load(argv[0]);
     if (cnf == NULL) {
         slurm_qrmi_error("%s, Failed to load QRMI config file(%s). %s",
@@ -279,37 +330,6 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
     slurm_debug("%s, config: %p", plugin_name, (void *)cnf);
-
-    /*
-     * Parses optional plugin arguments.
-     *
-     * Currently, only environment variable settings prefixed with
-     * --env:{variable name}={value} are supported.
-     */
-    for (int i = 1; i < argc; i++) {
-        if (!_starts_with(argv[i], "--env:")) {
-            /* ignored. */
-            continue;
-        }
-        const char *input = &argv[i][strlen("--env:")];
-        const char *delimiter = strchr(input, '=');
-        if (delimiter == NULL) {
-            slurm_qrmi_error("%s, Invalid --env: argument. '=' delimiter not found in %s", plugin_name, argv[i]);
-            g_init_post_opt_failed = true;
-            return SLURM_SUCCESS;
-        }
-        size_t env_name_len = (size_t)(delimiter - input);
-        char *env_name = strndup(input, env_name_len);
-        if (env_name == NULL) {
-            slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld", plugin_name, env_name_len);
-            g_init_post_opt_failed = true;
-            return SLURM_SUCCESS;
-        }
-        const char *env_value = delimiter + 1;
-        setenv(env_name, env_value, OVERWRITE);
-        spank_setenv(spank_ctxt, env_name, env_value, OVERWRITE);
-        free(env_name);
-    }
 
     char *bufp = strdup(g_qpu_names_opt);
     if (bufp == NULL) {
@@ -474,46 +494,90 @@ static void _report_deferred_errors(void) {
  *
  * Set environment variables for QRMI runtime logging, based on SRUN_DEBUG.
  */
-static void _set_rust_loglevel(spank_t spank_ctxt) {
-    buffer buf;
-    qrmi_buf_init(&buf, MAX_INT_STRLEN + 1);
-    if (spank_getenv(spank_ctxt, "SRUN_DEBUG", buf.buffer, MAX_INT_STRLEN + 1) !=
-        ESPANK_SUCCESS) {
-        qrmi_buf_free(&buf);
-        return;
+static const char *_rust_loglevel_from_srun_debug(const char *srun_debug) {
+    if (srun_debug == NULL) {
+        return "info";
     }
         
     /* if failed, level=0 --> default level(info) */
-    int level = atoi(buf.buffer);
-    const char *level_str = NULL;
+    int level = atoi(srun_debug);
     switch (level) {
     case 2:
         /* --quiet */
-        level_str = "error";
-        break;
+        return "error";
     case 3:
         /* default */
-        level_str = "info";
-        break;
+        return "info";
     case 4:
         /* --verbose */
-        level_str = "debug";
-        break;
+        return "debug";
     default:
         if (level >= 5) {
             /* -vv or more */
-            level_str = "trace";
-        } else {
-            /* default is Info as same as srun */
-            level_str = "info";
+            return "trace";
         }
-        break;
+        /* default is Info as same as srun */
+        return "info";
+    }
+}
+
+static bool _set_rust_loglevel(spank_t spank_ctxt) {
+    buffer buf;
+    const char *level_str = NULL;
+    qrmi_buf_init(&buf, MAX_INT_STRLEN + 1);
+    if (spank_getenv(spank_ctxt, "SRUN_DEBUG", buf.buffer, MAX_INT_STRLEN + 1) !=
+        ESPANK_SUCCESS) {
+        level_str = _rust_loglevel_from_srun_debug(NULL);
+    } else {
+        level_str = _rust_loglevel_from_srun_debug(buf.buffer);
     }
     if (level_str != NULL) {
-        spank_setenv(spank_ctxt, "RUST_LOG", level_str, KEEP_IF_EXISTS);
-        slurm_debug("%s: setenv(%s, %s)", plugin_name, "RUST_LOG", level_str);
+        if (setenv("RUST_LOG", level_str, KEEP_IF_EXISTS) != 0) {
+            slurm_qrmi_error("%s, Failed to set environment variable %s", plugin_name,
+                             "RUST_LOG");
+            qrmi_buf_free(&buf);
+            return false;
+        }
+        if (spank_setenv(spank_ctxt, "RUST_LOG", level_str, KEEP_IF_EXISTS) !=
+            ESPANK_SUCCESS) {
+            slurm_debug("%s, unable to set SPANK environment variable %s", plugin_name,
+                        "RUST_LOG");
+        }
+        slurm_debug("%s: setenv(%s, %s)", plugin_name, "RUST_LOG", getenv("RUST_LOG"));
     }
     qrmi_buf_free(&buf);
+    return true;
+}
+
+#if defined(QRMI_HAS_LOG_CALLBACK)
+static void _qrmi_log_to_slurm(const char *level, const char *target, const char *message) {
+    const char *log_target = target != NULL ? target : "qrmi";
+    const char *log_message = message != NULL ? message : "";
+
+    if (level == NULL) {
+        slurm_info("%s QRMI %s: %s", plugin_name, log_target, log_message);
+    } else if (strcmp(level, "ERROR") == 0) {
+        slurm_error("%s QRMI %s: %s", plugin_name, log_target, log_message);
+    } else if (strcmp(level, "WARN") == 0) {
+        slurm_info("%s QRMI WARN %s: %s", plugin_name, log_target, log_message);
+    } else if (strcmp(level, "INFO") == 0) {
+        slurm_info("%s QRMI %s: %s", plugin_name, log_target, log_message);
+    } else if (strcmp(level, "DEBUG") == 0) {
+        slurm_debug("%s QRMI %s: %s", plugin_name, log_target, log_message);
+    } else {
+        slurm_debug2("%s QRMI %s %s: %s", plugin_name, level, log_target, log_message);
+    }
+}
+#endif
+
+static bool _configure_qrmi_logging(spank_t spank_ctxt) {
+    if (!_set_rust_loglevel(spank_ctxt)) {
+        return false;
+    }
+#if defined(QRMI_HAS_LOG_CALLBACK)
+    qrmi_log_callback_set(_qrmi_log_to_slurm);
+#endif
+    return true;
 }
 
 
@@ -604,7 +668,9 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
     /*
      * Set environment variables for QRMI runtime logging.
      */
-    _set_rust_loglevel(spank_ctxt);
+    if (!_set_rust_loglevel(spank_ctxt)) {
+        return SLURM_ERROR;
+    }
 
     SPANK_DEBUG_LEAVE();
 

@@ -103,9 +103,6 @@ static bool _starts_with(const char *str, const char *prefix) {
     return strncmp(prefix, str, strlen(prefix)) == 0;
 }
 
-    return true;
-}
-
 /*
  * @function _qpu_names_opt_cb
  *

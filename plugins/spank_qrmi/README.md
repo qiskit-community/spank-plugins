@@ -119,8 +119,43 @@ Note that administrator needs to create `qrmi_config.json` file and specify the 
 required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
+For scheduler-owned Pasqal Local slots, bind Warden's slot claim to a Slurm
+remote license:
+
+```bash
+required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --qpu-slots-license=qpu_slots@warden
+```
+
+Jobs must then request the same count from Slurm:
+
+```bash
+sbatch --licenses=qpu_slots@warden:5 --qpu=PASQAL_LOCAL job.sh
+```
+
+The plugin reads the granted license count from Slurm and exports it as
+`QRMI_JOB_QPU_SLOTS` before QRMI acquisition. If `--qpu-slots-license` is
+absent, the existing optional `QRMI_JOB_QPU_SLOTS` environment behavior
+remains unchanged.
+
+Run the external Warden usage reporter beside `slurmdbd` or from a periodic
+service account:
+
+```bash
+python3 warden_slurm_license_reporter.py \
+  --warden-url http://c1:4207/accessible \
+  --resource qpu_slots \
+  --total-slots 10
+```
+
+The reporter updates remote-license `LastConsumed`. Warden maintenance mode
+and polling errors report all slots consumed, and unchanged values do not write
+to `slurmdbd`. Warden itself
+contains no Slurm configuration or commands. The remote license should be
+loaded before accepting jobs; the Slurm 25.05 Docker test controller crashed
+once when the resource was first added while backfill was active.
+
 > [!NOTE]
-> There are optional argumentis available. It allows you to add environment variables to the Slurm process where the SPANK plugin is loaded. The format for specifying environment variables is defined as follows.
+> There are optional arguments available. They allow you to add environment variables to the Slurm process where the SPANK plugin is loaded. The format for specifying environment variables is defined as follows.
 > ```bash
 > --env:{variable name}={value}
 > ```

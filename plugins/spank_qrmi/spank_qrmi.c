@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
@@ -40,6 +41,7 @@ SPANK_PLUGIN(spank_qrmi, 1)
  * Copy of `--qpu` option value if specified, otherwise NULL.
  */
 static char *g_qpu_names_opt = NULL;
+static char *g_qpu_slots_license = NULL;
 
 /*
  * This flag indicates whether an error occurred in slurm_spank_init_post_opt().
@@ -103,6 +105,89 @@ static bool _starts_with(const char *str, const char *prefix) {
     return strncmp(prefix, str, strlen(prefix)) == 0;
 }
 
+static void _copy_job_env_to_process(spank_t spank_ctxt, const char *name) {
+    char **job_argv = NULL;
+    if (spank_get_item(spank_ctxt, S_JOB_ENV, &job_argv) != ESPANK_SUCCESS) {
+        return;
+    }
+    size_t name_len = strlen(name);
+    for (int index = 0; job_argv[index] != NULL; index++) {
+        if (strncmp(job_argv[index], name, name_len) == 0 && job_argv[index][name_len] == '=') {
+            const char *value = job_argv[index] + name_len + 1;
+            setenv(name, value, OVERWRITE);
+            spank_setenv(spank_ctxt, name, value, OVERWRITE);
+            return;
+        }
+    }
+}
+
+static int _license_count(const char *licenses, const char *wanted, uint32_t *count) {
+    if (licenses == NULL || wanted == NULL) {
+        return 0;
+    }
+    const char *cursor = licenses;
+    size_t wanted_len = strlen(wanted);
+    while (*cursor != '\0') {
+        const char *end = strchr(cursor, ',');
+        if (end == NULL) {
+            end = cursor + strlen(cursor);
+        }
+        const char *separator = memchr(cursor, ':', (size_t)(end - cursor));
+        size_t name_len = separator == NULL ? (size_t)(end - cursor)
+                                            : (size_t)(separator - cursor);
+        if (name_len == wanted_len && strncmp(cursor, wanted, wanted_len) == 0) {
+            if (separator == NULL) {
+                *count = 1;
+                return 1;
+            }
+            char *parse_end = NULL;
+            unsigned long parsed = strtoul(separator + 1, &parse_end, 10);
+            if (parse_end != end || parsed == 0 || parsed > INT32_MAX) {
+                return -1;
+            }
+            *count = (uint32_t)parsed;
+            return 1;
+        }
+        cursor = *end == '\0' ? end : end + 1;
+    }
+    return 0;
+}
+
+static bool _configure_scheduler_context(spank_t spank_ctxt, uint32_t job_id) {
+    job_info_msg_t *job_info_msg = NULL;
+    if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) != SLURM_SUCCESS ||
+        job_info_msg == NULL || job_info_msg->record_count == 0) {
+        if (g_qpu_slots_license != NULL) {
+            slurm_qrmi_error("%s, unable to load scheduler allocation for QPU slots",
+                             plugin_name);
+            return false;
+        }
+        _copy_job_env_to_process(spank_ctxt, "QRMI_JOB_QPU_SLOTS");
+        return true;
+    }
+
+    job_info_t *job = &job_info_msg->job_array[0];
+    if (g_qpu_slots_license != NULL) {
+        uint32_t count = 0;
+        const char *licenses = job->licenses_allocated != NULL
+                                   ? job->licenses_allocated
+                                   : job->licenses;
+        int found = _license_count(licenses, g_qpu_slots_license, &count);
+        if (found != 1) {
+            slurm_qrmi_error("%s, job must have a valid allocation for license %s",
+                             plugin_name, g_qpu_slots_license);
+            slurm_free_job_info_msg(job_info_msg);
+            return false;
+        }
+        char count_str[MAX_INT_STRLEN + 1];
+        snprintf(count_str, sizeof(count_str), "%u", count);
+        setenv("QRMI_JOB_QPU_SLOTS", count_str, OVERWRITE);
+        spank_setenv(spank_ctxt, "QRMI_JOB_QPU_SLOTS", count_str, OVERWRITE);
+    } else {
+        _copy_job_env_to_process(spank_ctxt, "QRMI_JOB_QPU_SLOTS");
+    }
+
+    slurm_free_job_info_msg(job_info_msg);
     return true;
 }
 
@@ -252,9 +337,25 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     /*
      * Parses optional plugin arguments.
      *
-     * Environment settings use --env:{variable name}={value}.
+     * Environment settings use --env:{variable name}={value}. An optional
+     * --qpu-slots-license={name} binds Warden slot claims to a Slurm license.
      */
     for (int i = 1; i < argc; i++) {
+        if (_starts_with(argv[i], "--qpu-slots-license=")) {
+            const char *name = &argv[i][strlen("--qpu-slots-license=")];
+            if (*name == '\0') {
+                slurm_qrmi_error("%s, --qpu-slots-license cannot be empty", plugin_name);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
+            g_qpu_slots_license = strdup(name);
+            if (g_qpu_slots_license == NULL) {
+                slurm_qrmi_error("%s, failed to store QPU slots license name", plugin_name);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
+            continue;
+        }
         if (!_starts_with(argv[i], "--env:")) {
             /* ignored. */
             continue;
@@ -316,6 +417,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     snprintf(id_str, sizeof(id_str), "%u", job_id);
     spank_setenv(spank_ctxt, "QRMI_JOB_ID", id_str, OVERWRITE);
     setenv("QRMI_JOB_ID", id_str, OVERWRITE);
+    if (!_configure_scheduler_context(spank_ctxt, job_id)) {
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
+    }
 
     spank_setenv(spank_ctxt, "QRMI_JOB_QPU_RESOURCES", "", OVERWRITE);
     spank_setenv(spank_ctxt, "QRMI_JOB_QPU_TYPES", "", OVERWRITE);
@@ -714,6 +819,10 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
     if (g_qpu_names_opt != NULL) {
         free(g_qpu_names_opt);
         g_qpu_names_opt = NULL;
+    }
+    if (g_qpu_slots_license != NULL) {
+        free(g_qpu_slots_license);
+        g_qpu_slots_license = NULL;
     }
 
     SPANK_DEBUG_LEAVE();

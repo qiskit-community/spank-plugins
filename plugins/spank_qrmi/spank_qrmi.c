@@ -408,8 +408,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             slurm_list_append(g_acquired_resources, acquired);
             qrmi_buf_envvarname_for_res_create(&keybuf, res->name,
                                                "QRMI_JOB_ACQUISITION_TOKEN");
-            slurm_debug("%s: setenv(%s, %s)", plugin_name, keybuf.buffer,
-                        acquired->acquisition_token);
+            slurm_debug("%s: setenv(%s)", plugin_name, keybuf.buffer);
             setenv(keybuf.buffer, acquired->acquisition_token, KEEP_IF_EXISTS);
             spank_setenv(spank_ctxt, keybuf.buffer, acquired->acquisition_token,
                          KEEP_IF_EXISTS);
@@ -440,8 +439,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     void *x = NULL;
     while ((x = slurm_list_next(sessions_iter)) != NULL) {
         qpu_resource_t *item = (qpu_resource_t *)x;
-        slurm_debug("%s: name(%s), type(%d), token(%s)", plugin_name, item->name, item->type,
-                    item->acquisition_token);
+        slurm_debug("%s: name(%s), type(%d)", plugin_name, item->name, item->type);
         strbuf_append_str(&qpu_resources_envvar, item->name);
         const char *type_as_str = qrmi_config_resource_type_to_str(item->type);
         slurm_debug("%s: type_as_str(%s)", plugin_name, type_as_str);
@@ -828,7 +826,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
         return NULL;
     }
 
-    slurm_debug("%s, acquisition_token: %s(%s)", plugin_name, acquisition_token, name);
+    slurm_debug("%s, acquired resource: %s", plugin_name, name);
     qpu_resource_t *res = _acquired_resource_create(name, type, acquisition_token);
     qrmi_string_free(acquisition_token);
     return res;
@@ -848,8 +846,7 @@ static void _release_qpu(qpu_resource_t *res) {
     if (res == NULL) {
         return;
     }
-    slurm_debug("%s: releasing name(%s), type(%d), token(%s)", plugin_name, res->name, res->type,
-                res->acquisition_token);
+    slurm_debug("%s: releasing name(%s), type(%d)", plugin_name, res->name, res->type);
     void *qrmi = qrmi_resource_new(res->name, res->type);
     if (qrmi == NULL) {
         slurm_error("%s, Failed to create a QRMI instance, %s",
@@ -858,14 +855,12 @@ static void _release_qpu(qpu_resource_t *res) {
     }
     rc = qrmi_resource_release(qrmi, res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), token(%s), %s",
-                    plugin_name, res->name, res->type, res->acquisition_token,
-                    qrmi_get_last_error());
+        slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), %s", plugin_name,
+                    res->name, res->type, qrmi_get_last_error());
     }
     rc = qrmi_string_free(res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s, Failed to free acquisition token string: (%s)", plugin_name,
-                    res->acquisition_token);
+        slurm_error("%s, Failed to free acquisition token string", plugin_name);
     }
     rc = qrmi_resource_free(qrmi);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {

@@ -30,8 +30,6 @@
 #include "qrmi.h"
 #include "spank_qrmi.h"
 
-extern char **environ;
-
 /*
  * Spank plugin for QRMI.
  */
@@ -79,22 +77,6 @@ static void _qrmi_error_destroy(void *object);
 static void _qrmi_log_to_slurm(const char *level, const char *target, const char *message);
 #endif
 static bool _configure_qrmi_logging(spank_t spank_ctxt);
-
-/*
- * @function _dump_environ
- *
- * Dumps all environment variables set for the current process.
- */
-static void _dump_environ(void) {
-    char **s = environ;
-    int pid = (int)getpid();
-    int uid = (int)getuid();
-
-    slurm_debug("%s(%d, %d): environment variables ---", plugin_name, pid, uid);
-    for (; *s; s++) {
-        slurm_debug("%s(%d, %d): %s", plugin_name, pid, uid, *s);
-    }
-}
 
 /*
  * @function _starts_with
@@ -467,8 +449,8 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         if (spank_get_item(spank_ctxt, S_JOB_ENV, &job_argv) == ESPANK_SUCCESS) {
             int index = 0;
             while (job_argv[index] != NULL) {
-                if (strncmp(job_argv[index], keybuf.buffer, strlen(keybuf.buffer)) == 0) {
-                    const char *kv_text = job_argv[index];
+                const char *kv_text = job_argv[index++];
+                if (strncmp(kv_text, keybuf.buffer, strlen(keybuf.buffer)) == 0) {
                     const char *eq = strchr(kv_text, '=');
                     if (!eq) {
                         continue;
@@ -484,11 +466,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                         return SLURM_SUCCESS;
                     }
                     const char *value = eq + 1;
-                    slurm_debug("%s: putenv(%s, %s)", plugin_name, key, value);
+                    slurm_debug("%s: putenv(%s)", plugin_name, key);
                     setenv(key, value, OVERWRITE);
                     free(key);
                 }
-                index++;
             }
         }
 
@@ -501,12 +482,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             /* set to the current process for subsequent QRMI.acquire() call
              */
             qrmi_buf_envvarname_for_res_create(&keybuf, res->name, envvar.key);
-            slurm_debug("%s: setenv(%s, %s)", plugin_name, keybuf.buffer, envvar.value);
+            slurm_debug("%s: setenv(%s)", plugin_name, keybuf.buffer);
             setenv(keybuf.buffer, envvar.value, KEEP_IF_EXISTS);
             spank_setenv(spank_ctxt, keybuf.buffer, envvar.value, KEEP_IF_EXISTS);
         }
-
-        _dump_environ();
 
         /*
          * Acquire QPU resource.
@@ -517,9 +496,9 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             qrmi_buf_envvarname_for_res_create(&keybuf, res->name,
                                                "QRMI_JOB_ACQUISITION_TOKEN");
             slurm_debug("%s: setenv(%s)", plugin_name, keybuf.buffer);
-            setenv(keybuf.buffer, acquired->acquisition_token, KEEP_IF_EXISTS);
+            setenv(keybuf.buffer, acquired->acquisition_token, OVERWRITE);
             spank_setenv(spank_ctxt, keybuf.buffer, acquired->acquisition_token,
-                         KEEP_IF_EXISTS);
+                         OVERWRITE);
         } else {
             slurm_qrmi_error("%s, failed to acquire resource: %s", plugin_name, res->name);
         }
@@ -970,13 +949,10 @@ static void _release_qpu(qpu_resource_t *res) {
         slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), %s", plugin_name,
                     res->name, res->type, qrmi_get_last_error());
     }
-    rc = qrmi_string_free(res->acquisition_token);
-    if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s, Failed to free acquisition token string", plugin_name);
-    }
+    free(res->acquisition_token);
+    res->acquisition_token = NULL;
     rc = qrmi_resource_free(qrmi);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
         slurm_error("%s, Failed to free QrmiQuantumResource handle: (%p)", plugin_name, qrmi);
     }
-    res->acquisition_token = NULL;
 }

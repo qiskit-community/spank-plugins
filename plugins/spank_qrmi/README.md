@@ -133,9 +133,10 @@ sbatch --licenses=qpu_slots@warden:5 --qpu=PASQAL_LOCAL job.sh
 ```
 
 The plugin reads the granted license count from Slurm and exports it as
-`QRMI_JOB_QPU_SLOTS` before QRMI acquisition. If `--qpu-slots-license` is
-absent, the existing optional `QRMI_JOB_QPU_SLOTS` environment behavior
-remains unchanged.
+`QRMI_JOB_QPU_SLOTS` before QRMI acquisition. Configure this option whenever
+Warden enforces `qpu_slots_total`; without it, `QRMI_JOB_QPU_SLOTS` comes from
+the user-controlled job environment and is not a scheduler grant. Sites that
+do not use Warden slot accounting may omit the option.
 
 Run the external Warden usage reporter beside `slurmdbd` or from a periodic
 service account:

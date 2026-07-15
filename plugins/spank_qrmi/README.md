@@ -1,20 +1,5 @@
 # SPANK Plugin for QRMI
 
-> [!IMPORTANT]
-> **New Deprecations(Since 0.5.1)**
->
-> The **IBM Direct Access API** has been renamed to the **IBM Quantum System API**.
-> 
-> As part of this change, **the resource names and the prefixes of environment variables** used by QRMI have been updated accordingly.
->
-> | Items | Deprecated names | New names |
-> | :--- | :--- | :--- |
-> | Resource type text | direct-access | ibm-quantum-system |
-> | Environment variable prefixes | QRMI_IBM_DA_ | QRMI_IBM_QS_ |
-> 
-> A transition period will be in effect until **July 2, 2026**. During this period, both the legacy and the new resource names and environment variable prefixes are supported to ensure backward compatibility. After the transition period ends, support for the legacy names will be removed, and users are expected to migrate fully to the new naming scheme.
-
-
 This is a [SPANK plugin](https://slurm.schedmd.com/spank.html) that configures access to Quantum Resources from user jobs. It handles the acquisition and release of access to Quantum Resources and sets the necessary environment variables for executing Quantum workloads. The available Quantum Resources are specified in the qrmi_config.json file, which is managed by the administrator.
 
 ## Prerequisites
@@ -97,11 +82,6 @@ If a user specifies a resource with the --qpu option that is not defined in the 
 
 If the user sets the necessary environment variables for job execution themselves, it is not required to specify them in this file. In this case, the environment property will be `{}`.
 
-> [!IMPORTANT]
-> The IBM Direct Access API has been renamed to the IBM Quantum System API.
-> As part of this change, the previously available resource type name has been updated from `direct-access` to `ibm-quantum-system`.
-> During a transition period, both `direct-access` and `ibm-quantum-system` resource type names will be supported.
-> After the transition period ends, support for the `direct-access` resource type name will be discontinued. 
 
 > [!NOTE]
 > If you are using a QPU resource with the resource type `qiskit-runtime-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
@@ -213,11 +193,6 @@ This plugin also set the following 2 environment variables which will be referre
 | SLURM_JOB_QPU_RESOURCES | Legacy alias for `QRMI_JOB_QPU_RESOURCES`. |
 | SLURM_JOB_QPU_TYPES | Legacy alias for `QRMI_JOB_QPU_TYPES`. |
 
-> [!IMPORTANT]
-> The IBM Direct Access API has been renamed to the IBM Quantum System API.
-> As part of this change, the previously available resource type name has been updated from `direct-access` to `ibm-quantum-system`.
-> During a transition period, both `direct-access` and `ibm-quantum-system` resource type names will be supported.
-> After the transition period ends, support for the `direct-access` resource type name will be discontinued. 
 
 ## License
 

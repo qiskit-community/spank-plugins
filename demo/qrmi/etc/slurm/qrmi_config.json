@@ -37,7 +37,7 @@
       "name": "PASQAL_LOCAL",
       "type": "pasqal-local",
       "environment": {
-        "QRMI_URL": "http://localhost:4207"
+        "QRMI_WARDEN_URL": "http://localhost:8006"
       }
     },
     {

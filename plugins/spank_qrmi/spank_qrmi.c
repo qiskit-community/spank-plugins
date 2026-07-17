@@ -557,7 +557,13 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
 
     char limit_as_str[MAX_INT_STRLEN + 1] = {0}; /* max uint32_t value is (2147483647) = 10 chars */
     if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) == ESPANK_SUCCESS) {
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+        slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+        step_id.job_id = job_id;
+        if (slurm_load_job(&job_info_msg, step_id, SHOW_DETAIL) == SLURM_SUCCESS) {
+#else
         if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) == SLURM_SUCCESS) {
+#endif
             /*
              * Slurm's time limit is represented in minutes
              */

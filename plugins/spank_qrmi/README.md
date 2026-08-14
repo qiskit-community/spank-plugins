@@ -109,6 +109,12 @@ required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 > ```bash
 > required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:http_proxy=http://192.168.1.128:3128 --env:https_proxy=http://192.168.1.128:3128
 > ```
+>
+> The same mechanism can be used to control QRMI runtime logging for the Slurm daemon process, for example:
+> ```bash
+> required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:RUST_LOG=qrmi=debug,reqwest=warn
+> ```
+>
 
 For allocator node, your don't need to specify the path to qrmi_config.json like below.
 
@@ -154,7 +160,17 @@ This plugin uses Slurm logger for logging. Log messages from this plugin can be 
 [2025-07-31T09:43:34.020] [21.batch] debug:  spank_qrmi_c: name(ibm_sherbrooke), type(1) found in qrmi_config
 ```
 
-You can enable QRMI runtime log by specifying the following `srun` arguments.
+The plugin also routes QRMI runtime logs from the daemon-side acquire/release
+path through Slurm logging. These records are emitted with a `spank_qrmi QRMI`
+prefix in the Slurm daemon logs, for example:
+
+```bash
+[2026-06-22T12:21:24.012] [17.batch] debug:  spank_qrmi QRMI reqwest::connect: starting new connection: http://c1:4207/
+```
+
+By default, QRMI itself logs at `warn`. For QPU jobs, this plugin sets
+`RUST_LOG` from Slurm's `SRUN_DEBUG` level when `RUST_LOG` has not already been
+set:
 
 |  sbatch/srun option | Slurm log level (SRUN_DEBUG) | QRMI log level (RUST_LOG) |
 | ---- | ---- | ---- |
@@ -163,6 +179,29 @@ You can enable QRMI runtime log by specifying the following `srun` arguments.
 | --verbose | 4 | debug |
 | -vv or more | 5 | trace |
 
+You can override QRMI logging independently of Slurm logging by setting
+`RUST_LOG` in `plugstack.conf` with `--env:RUST_LOG=...`. The plugin applies
+`--env:` arguments before QRMI is initialized, so the setting applies to both
+daemon-side acquire/release calls and the job environment.
+
+Examples:
+
+```bash
+# Slurm debug logs, but keep QRMI less verbose.
+required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:RUST_LOG=warn
+
+# QRMI debug logs without increasing Slurm's requested job verbosity.
+required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:RUST_LOG=debug
+
+# Target QRMI while keeping HTTP client logs quieter.
+required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:RUST_LOG=qrmi=debug,reqwest=warn
+
+```
+
+QRMI records still pass through Slurm's logging APIs. QRMI `debug` records are
+written with `slurm_debug()`, so Slurm's daemon log level must allow debug logs
+for them to appear in `slurmd.log`. QRMI `info`, `warn`, and `error` records are
+sent through Slurm info/error logging.
 
 Example:
 

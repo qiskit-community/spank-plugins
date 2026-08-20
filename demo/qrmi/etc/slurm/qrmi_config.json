@@ -17,12 +17,12 @@
     },
     {
       "name": "ibm_sherbrooke",
-      "type": "qiskit-runtime-service",
+      "type": "ibm-quantum-compute-service",
       "environment": {
-        "QRMI_IBM_QRS_ENDPOINT": "https://quantum.cloud.ibm.com/api/v1",
-        "QRMI_IBM_QRS_IAM_ENDPOINT": "https://iam.cloud.ibm.com",
-        "QRMI_IBM_QRS_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
-        "QRMI_IBM_QRS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>"
+        "QRMI_IBM_QCS_ENDPOINT": "https://quantum.cloud.ibm.com/api/v1",
+        "QRMI_IBM_QCS_IAM_ENDPOINT": "https://iam.cloud.ibm.com",
+        "QRMI_IBM_QCS_IAM_APIKEY": "<YOUR IAM APIKEY FOR THIS BACKEND>",
+        "QRMI_IBM_QCS_SERVICE_CRN": "<YOUR IQP INSTANCE CRN>"
       }
     },
     {

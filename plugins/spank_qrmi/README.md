@@ -75,7 +75,7 @@ The `resources` array contains a set of available Quantum Resources which can be
 | properties | descriptions |
 | ---- | ---- |
 | name | Quantum resource name. e.g. Quantum backend name. |
-| type | Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`) |
+| type | Resource type (`ibm-quantum-system`, `ibm-quantum-compute-service`, `qiskit-runtime-service`(deprecated) and `pasqal-cloud`) |
 | environment | A set of environment variables to work with QRMI. Current implementations assume API endpoint and credentials are specified via environment variable setting. |
 
 If a user specifies a resource with the --qpu option that is not defined in the qrmi_config.json file, the specification will be ignored.
@@ -84,7 +84,11 @@ If the user sets the necessary environment variables for job execution themselve
 
 
 > [!NOTE]
-> If you are using a QPU resource with the resource type `qiskit-runtime-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
+> If you are using a QPU resource with the resource type `ibm-quantum-compute-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
+> If you are using an account that does not support opening a session, such as an Open plan account, add `QRMI_IBM_QCS_SESSION_MODE="batch"` to the environment variable list in qrmi_config.json as workaround:
+
+> [!NOTE]
+> If you are using a QPU resource with the resource type `qiskit-runtime-service`(deprecated), use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
 > If you are using an account that does not support opening a session, such as an Open plan account, add `QRMI_IBM_QRS_SESSION_MODE="batch"` to the environment variable list in qrmi_config.json as workaround:
 
 ## Installation
@@ -228,7 +232,7 @@ This plugin also set the following 2 environment variables which will be referre
 | environment varilables | descriptions |
 | ---- | ---- |
 | QRMI_JOB_QPU_RESOURCES | Comma separated list of QPU resources to use at runtime. Undocumented resources will be filtered out. For example, `qpu1,qpu2`. |
-| QRMI_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
+| QRMI_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `ibm-quantum-compute-service`, `qiskit-runtime-service`(deprecated) and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
 | SLURM_JOB_QPU_RESOURCES | Legacy alias for `QRMI_JOB_QPU_RESOURCES`. |
 | SLURM_JOB_QPU_TYPES | Legacy alias for `QRMI_JOB_QPU_TYPES`. |
 

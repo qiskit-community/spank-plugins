@@ -111,14 +111,14 @@ source /shared/pyenv/bin/activate
 pip install --upgrade pip
 ```
 
-3. Building and installing [QRMI](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md) **on c1**
+3. Building and installing [QRMI](https://github.com/qiskit-community/qrmi/blob/main/INSTALL.md) **on c1**. Replace `NAME` by the quantum resource name(s) as described [here](https://github.com/qiskit-community/qrmi#python)
 
 ```bash
 source ~/.cargo/env
 cd /shared/qrmi
 pip install -r requirements-dev.txt
 maturin build --release
-pip install /shared/qrmi/target/wheels/qrmi-*.whl
+pip install --no-index --find-link=/shared/qrmi/target/wheels/ "qrmi[NAME]"
 ```
 
 4. Building the [SPANK plugin](../../../plugins/spank_qrmi/README.md) **on c1**

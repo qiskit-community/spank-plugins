@@ -7,7 +7,7 @@ Every `spank_qrmi.so` build embeds version information directly into the binary,
 ### Using `strings`
 
 ```shell-session
-$ strings /path/to/spank_qrmi.so | grep QRMI
+$ strings /path/to/spank_qrmi.so | grep QRMI_CRATE_VERSION
 SPANK_QRMI_VERSION=0.11.0;QRMI_CRATE_VERSION=0.24.0;QRMI_GIT_HASH=66b69cec87de
 ```
 

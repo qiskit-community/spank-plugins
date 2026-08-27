@@ -8,7 +8,7 @@ Every `spank_qrmi.so` build embeds version information directly into the binary,
 
 ```shell-session
 $ strings /path/to/spank_qrmi.so | grep QRMI
-SPANK_QRMI_VERSION=0.1.0;QRMI_CRATE_VERSION=0.10.3;QRMI_GIT_HASH=b7f7cb8253b3
+SPANK_QRMI_VERSION=0.11.0;QRMI_CRATE_VERSION=0.24.0;QRMI_GIT_HASH=66b69cec87de
 ```
 
 ### Using `readelf`
@@ -17,7 +17,7 @@ SPANK_QRMI_VERSION=0.1.0;QRMI_CRATE_VERSION=0.10.3;QRMI_GIT_HASH=b7f7cb8253b3
 $ readelf -p .version_info /path/to/spank_qrmi.so
 
 String dump of section '.version_info':
-  [     0]  SPANK_QRMI_VERSION=0.1.0;QRMI_CRATE_VERSION=0.10.3;QRMI_GIT_HASH=b7f7cb8253b3
+  [     0]  SPANK_QRMI_VERSION=0.11.0;QRMI_CRATE_VERSION=0.24.0;QRMI_GIT_HASH=66b69cec87de
 ```
 
 ### What each field means

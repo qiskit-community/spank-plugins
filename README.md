@@ -30,6 +30,7 @@ This is repository with Slurm Spank plugins for Quantum resources and jobs suppo
 1. [HPC user experience, HPC developer experience and usage patterns](./docs/ux.md)
 1. [Installation](INSTALL.md)
 1. [How-Tos](./docs/howtos/)
+1. [FAQ](./docs/FAQ.md)
 1. [How to Give Feedback](#how-to-give-feedback)
 1. [How to Cite This Work](#how-to-cite-this-work)
 1. [Contribution Guidelines](#contribution-guidelines)

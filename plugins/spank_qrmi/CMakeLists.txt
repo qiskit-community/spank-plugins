@@ -83,6 +83,57 @@ else()
   )
 endif()
 
+# --------------------------------------------------
+# Generate qrmi_version.h once QRMI has been fetched
+# --------------------------------------------------
+# QRMI's own Cargo.toml version (and, if it's a git checkout, the exact
+# commit) is only known AFTER the ExternalProject step has run - i.e. at
+# build time, not at `cmake ..` configure time. So this runs as a build
+# step that depends on the QRMI target, and generates a header that
+# spank_qrmi.c can #include.
+set(QRMI_VERSION_HEADER "${CMAKE_BINARY_DIR}/generated/qrmi_version.h")
+
+# Version of this plugin itself: read from VERSION.txt, a plain one-line
+# file checked into the repo (see VERSION.txt next to this CMakeLists.txt).
+# This is deliberately NOT derived from `git describe`: it works the same
+# way whether built from a full git clone, a release tarball, or a zip
+# export with no .git directory, and a version bump shows up as a normal,
+# reviewable one-line diff in the PR instead of depending on someone
+# remembering to push a tag.
+set(SPANK_QRMI_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt")
+if(EXISTS "${SPANK_QRMI_VERSION_FILE}")
+  file(STRINGS "${SPANK_QRMI_VERSION_FILE}" SPANK_QRMI_VERSION LIMIT_COUNT 1)
+  string(STRIP "${SPANK_QRMI_VERSION}" SPANK_QRMI_VERSION)
+else()
+  message(WARNING "VERSION.txt not found next to CMakeLists.txt; falling back to 'unknown'")
+  set(SPANK_QRMI_VERSION "unknown")
+endif()
+if(SPANK_QRMI_VERSION STREQUAL "")
+  set(SPANK_QRMI_VERSION "unknown")
+endif()
+message(STATUS "spank_qrmi plugin version: ${SPANK_QRMI_VERSION}")
+
+# SPANK_QRMI_VERSION above is only re-read when CMake reconfigures. This
+# configure_file(COPYONLY) registers VERSION.txt as a dependency of the
+# generated build system itself, so `make` auto-reruns `cmake` (picking up
+# a new version) whenever VERSION.txt is edited - not just when someone
+# remembers to rerun `cmake ..` by hand.
+configure_file("${SPANK_QRMI_VERSION_FILE}" "${CMAKE_BINARY_DIR}/VERSION.txt.stamp" COPYONLY)
+
+add_custom_command(
+  OUTPUT "${QRMI_VERSION_HEADER}"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/generated"
+  COMMAND ${CMAKE_COMMAND}
+          -DQRMI_SOURCE_DIR=${QRMI_SOURCE_DIR}
+          -DOUTPUT_FILE=${QRMI_VERSION_HEADER}
+          -DSPANK_QRMI_VERSION=${SPANK_QRMI_VERSION}
+          -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_version_header.cmake
+  DEPENDS QRMI "${SPANK_QRMI_VERSION_FILE}"
+  COMMENT "Recording plugin/QRMI version into ${QRMI_VERSION_HEADER}"
+  VERBATIM
+)
+add_custom_target(qrmi_version_header DEPENDS "${QRMI_VERSION_HEADER}")
+
 # --------------------------------
 # Find SLURM headers
 # --------------------------------
@@ -111,8 +162,9 @@ include_directories (BEFORE ${SLURM_INCLUDE_DIRS})
 # Build spank_qrmi module
 # -----------------------
 add_library (spank_qrmi MODULE spank_qrmi.c buf.c strbuf.c)
-add_dependencies(spank_qrmi QRMI)
+add_dependencies(spank_qrmi QRMI qrmi_version_header)
 set_target_properties (spank_qrmi PROPERTIES PREFIX "" SUFFIX "" OUTPUT_NAME "spank_qrmi.so")
+target_include_directories(spank_qrmi PRIVATE "${CMAKE_BINARY_DIR}/generated")
 
 
 if(ENABLE_MUNGE)

@@ -38,7 +38,7 @@
  * to be duplicated here - see the QRMI crate for that.
  */
 __attribute__((section(".version_info"), used)) static const char
-    version_info[] = "SPANK_QRMI_VERSION=" SPANK_QRMI_VERSION
+    version_info[] = "SPANK_QRMI_BUILD_VERSION=" SPANK_QRMI_VERSION
                       ";SPANK_QRMI_GIT_HASH=" SPANK_QRMI_GIT_HASH;
 
 extern char **environ;

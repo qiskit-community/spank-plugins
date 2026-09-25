@@ -119,6 +119,19 @@ required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 > required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:RUST_LOG=qrmi=debug,reqwest=warn
 > ```
 >
+>
+> A QPU resource can also take its QPU slot count from a Slurm license. The format is defined as follows, and the argument can be repeated for several resources.
+> ```bash
+> --qpu-slots-license:{resource name}={license name}
+> ```
+>
+> For example, with a `pasqal_local_qpu_slots@warden` remote license for the `PASQAL_LOCAL` resource:
+> ```bash
+> required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --qpu-slots-license:PASQAL_LOCAL=pasqal_local_qpu_slots@warden
+> ```
+>
+> Jobs using `PASQAL_LOCAL` must then request the license, e.g. `sbatch --qpu=PASQAL_LOCAL --licenses=pasqal_local_qpu_slots@warden:5 job.sh`. The plugin passes the granted count to QRMI as `QRMI_JOB_QPU_SLOTS` when it acquires that resource, and the job fails if the license is missing. Resources without a slot license are unaffected and use the QRMI default. Keeping the license count in line with the QPU's own capacity (for example, a remote license updated by a poller daemon) is outside this plugin.
+>
 
 For allocator node, your don't need to specify the path to qrmi_config.json like below.
 
@@ -235,6 +248,7 @@ This plugin also set the following 2 environment variables which will be referre
 | QRMI_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `ibm-quantum-compute-service`, `qiskit-runtime-service`(deprecated) and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
 | SLURM_JOB_QPU_RESOURCES | Legacy alias for `QRMI_JOB_QPU_RESOURCES`. |
 | SLURM_JOB_QPU_TYPES | Legacy alias for `QRMI_JOB_QPU_TYPES`. |
+| {resource name}_QRMI_JOB_QPU_SLOTS | QPU slots granted by the resource's `--qpu-slots-license` license. Only set for resources with a slot license. |
 
 
 ## License

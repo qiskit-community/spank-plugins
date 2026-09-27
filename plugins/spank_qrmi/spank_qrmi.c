@@ -83,6 +83,7 @@ static void _acquired_resource_destroy(void *object);
 static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResourceType type);
 static void _release_qpu(qpu_resource_t *res);
 static void slurm_qrmi_error(const char *format, ...);
+static const char *_qrmi_last_error(void);
 static qrmi_error_t *_qrmi_error_create(char* message);
 static void _qrmi_error_destroy(void *object);
 #if defined(QRMI_HAS_LOG_CALLBACK)
@@ -164,6 +165,25 @@ static void slurm_qrmi_error(const char *format, ...) {
         slurm_list_append(g_init_post_opt_errors, qrmi_err);
     }
     slurm_error("%s", buf);
+}
+
+/*
+ * @function _qrmi_last_error
+ *
+ * Returns a copy of the most recent QRMI error message, or "" if there is none.
+ * qrmi_get_last_error() hands over ownership of its string, so it is copied and
+ * freed here. The copy is overwritten by the next call.
+ */
+static const char *_qrmi_last_error(void) {
+    static char buf[MAX_ERROR_STRLEN+1];
+    char *err = qrmi_get_last_error();
+
+    if (err == NULL) {
+        return "";
+    }
+    snprintf(buf, sizeof(buf), "%s", err);
+    qrmi_string_free(err);
+    return buf;
 }
 
 /*
@@ -334,7 +354,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     QrmiConfig *cnf = qrmi_config_load(argv[0]);
     if (cnf == NULL) {
         slurm_qrmi_error("%s, Failed to load QRMI config file(%s). %s",
-                    plugin_name, argv[0], qrmi_get_last_error());
+                    plugin_name, argv[0], _qrmi_last_error());
         g_init_post_opt_failed = true;
         return SLURM_SUCCESS;
     }
@@ -471,7 +491,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         strbuf_append_str(&qpu_resources_envvar, item->name);
         const char *type_as_str = qrmi_config_resource_type_to_str(item->type);
         slurm_debug("%s: type_as_str(%s)", plugin_name, type_as_str);
-        strbuf_append_str(&qpu_types_envvar, qrmi_config_resource_type_to_str(item->type));
+        strbuf_append_str(&qpu_types_envvar, type_as_str);
         qrmi_string_free((char *)type_as_str);
     }
     slurm_list_iterator_destroy(sessions_iter);
@@ -842,7 +862,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     void *qrmi = qrmi_resource_new(name, type);
     if (qrmi == NULL) {
         slurm_qrmi_error("%s, Failed to create a QRMI instance, %s",
-                         plugin_name, qrmi_get_last_error());
+                         plugin_name, _qrmi_last_error());
         return NULL;
     }
 
@@ -850,7 +870,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     rc = qrmi_resource_is_accessible(qrmi, &is_accessible);
     if ((rc != QRMI_RETURN_CODE_SUCCESS) || (is_accessible == false)) {
         slurm_qrmi_error("%s, %s is not accessible. %s",
-                         plugin_name, name, qrmi_get_last_error());
+                         plugin_name, name, _qrmi_last_error());
         qrmi_resource_free(qrmi);
         return NULL;
     }
@@ -858,7 +878,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
     qrmi_resource_free(qrmi);
     if ((rc != QRMI_RETURN_CODE_SUCCESS) || (acquisition_token == NULL)) {
         slurm_qrmi_error("%s, resource acquisition failed: %s. %s",
-                         plugin_name, name, qrmi_get_last_error());
+                         plugin_name, name, _qrmi_last_error());
         return NULL;
     }
 
@@ -887,14 +907,14 @@ static void _release_qpu(qpu_resource_t *res) {
     void *qrmi = qrmi_resource_new(res->name, res->type);
     if (qrmi == NULL) {
         slurm_error("%s, Failed to create a QRMI instance, %s",
-                    plugin_name, qrmi_get_last_error());
+                    plugin_name, _qrmi_last_error());
         return;
     }
     rc = qrmi_resource_release(qrmi, res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
         slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), token(%s), %s",
                     plugin_name, res->name, res->type, res->acquisition_token,
-                    qrmi_get_last_error());
+                    _qrmi_last_error());
     }
     /* allocated with strdup() in _acquired_resource_create() */
     free(res->acquisition_token);

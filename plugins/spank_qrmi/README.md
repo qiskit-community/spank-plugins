@@ -82,6 +82,8 @@ If a user specifies a resource with the --qpu option that is not defined in the 
 
 If the user sets the necessary environment variables for job execution themselves, it is not required to specify them in this file. In this case, the environment property will be `{}`.
 
+`{resource}_QRMI_JOB_ACQUISITION_TOKEN` is the exception: the plugin ignores it in the user's job environment and always exports the token from its own acquisition. The plugin does not log environment variable values, acquisition tokens or `--env:` values.
+
 
 > [!NOTE]
 > If you are using a QPU resource with the resource type `ibm-quantum-compute-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.

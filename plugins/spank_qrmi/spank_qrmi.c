@@ -278,7 +278,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         size_t env_name_len = (size_t)(delimiter - input);
         char *env_name = strndup(input, env_name_len);
         if (env_name == NULL) {
-            slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld", plugin_name, env_name_len);
+            slurm_qrmi_error("%s, Failed to allocate buffer with length = %zu", plugin_name, env_name_len);
             g_init_post_opt_failed = true;
             return SLURM_SUCCESS;
         }
@@ -342,9 +342,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
     char *bufp = strdup(g_qpu_names_opt);
     if (bufp == NULL) {
-        slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld",
+        slurm_qrmi_error("%s, Failed to allocate buffer with length = %zu",
                          plugin_name, strlen(g_qpu_names_opt));
         g_init_post_opt_failed = true;
+        qrmi_config_free(cnf);
         return SLURM_SUCCESS;
     }
     char *rest = bufp;
@@ -369,8 +370,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         qrmi_buf_envvarname_for_res_create(&keybuf, res->name, "QRMI_");
         char **job_argv = NULL;
         if (spank_get_item(spank_ctxt, S_JOB_ENV, &job_argv) == ESPANK_SUCCESS) {
-            int index = 0;
-            while (job_argv[index] != NULL) {
+            for (int index = 0; job_argv[index] != NULL; index++) {
                 if (strncmp(job_argv[index], keybuf.buffer, strlen(keybuf.buffer)) == 0) {
                     const char *kv_text = job_argv[index];
                     const char *eq = strchr(kv_text, '=');
@@ -380,11 +380,13 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
                     char *key = strndup(kv_text, (size_t)(eq - kv_text));
                     if (key == NULL) {
-                        slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld",
+                        slurm_qrmi_error("%s, Failed to allocate buffer with length = %td",
                                          plugin_name, eq - kv_text);
                         g_init_post_opt_failed = true;
+                        qrmi_config_resource_def_free(res);
                         free(bufp);
                         qrmi_buf_free(&keybuf);
+                        qrmi_config_free(cnf);
                         return SLURM_SUCCESS;
                     }
                     const char *value = eq + 1;
@@ -392,7 +394,6 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                     setenv(key, value, OVERWRITE);
                     free(key);
                 }
-                index++;
             }
         }
 
@@ -432,6 +433,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     }
     free(bufp);
     qrmi_buf_free(&keybuf);
+    qrmi_config_free(cnf);
 
     if (slurm_list_count(g_acquired_resources) == 0) {
         slurm_qrmi_error("%s, No QPU resource available", plugin_name);
@@ -650,11 +652,13 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
                 /* time limit too large or INFINITE; clamp to max or handle as error */
                 snprintf(limit_as_str, sizeof(limit_as_str), "%u", UINT32_MAX);
             }
+            slurm_free_job_info_msg(job_info_msg);
         }
     }
 
     if (strlen(limit_as_str) == 0) {
         /* time limit should be there, something wrong in Slurm */
+        slurm_error("%s, unable to read the time limit of job %u", plugin_name, job_id);
         return SLURM_ERROR;
     }
 
@@ -880,11 +884,8 @@ static void _release_qpu(qpu_resource_t *res) {
                     plugin_name, res->name, res->type, res->acquisition_token,
                     qrmi_get_last_error());
     }
-    rc = qrmi_string_free(res->acquisition_token);
-    if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s, Failed to free acquisition token string: (%s)", plugin_name,
-                    res->acquisition_token);
-    }
+    /* allocated with strdup() in _acquired_resource_create() */
+    free(res->acquisition_token);
     rc = qrmi_resource_free(qrmi);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
         slurm_error("%s, Failed to free QrmiQuantumResource handle: (%p)", plugin_name, qrmi);

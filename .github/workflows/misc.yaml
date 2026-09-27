@@ -23,10 +23,10 @@ jobs:
           sudo apt-get install -y shellcheck shfmt
 
       - name: Run ShellCheck
-        run: shellcheck **/*.sh || true
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck --severity=warning
 
       - name: Run shfmt (Shell script formatting check)
-        run: shfmt -d **/*.sh || true
+        run: git ls-files -z '*.sh' | xargs -0 shfmt -d
 
       - name: Report Shell linting status
         run: |

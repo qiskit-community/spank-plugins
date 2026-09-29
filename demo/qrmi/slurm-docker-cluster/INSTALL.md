@@ -207,7 +207,7 @@ sbatch /shared/spank-plugins/demo/qrmi/jobs/run_pulser_qrmi.sh
 
 5. Running Pasqal Qiskit Provider `SamplerV2` job on the **login node**
 
-Install the [Pasqal sampler dependencies](https://github.com/qiskit-community/qrmi/tree/main/examples/qiskit_primitives/pasqal) in the Python environment used by the job. Both scripts below use `python` from the job's `PATH`. If using a virtual environment, activate it before submitting and make sure it is accessible on the compute nodes. `/shared/pyenv` from the development setup above is one option, not a requirement.
+Install the [Pasqal sampler dependencies](https://github.com/qiskit-community/qrmi/tree/main/examples/qiskit_primitives/pasqal) in the Python environment used by the job. Like the other example scripts, both scripts below activate `/shared/pyenv`. To use a different environment, change the `source` line to point to it.
 
 ```bash
 sbatch /shared/spank-plugins/demo/qrmi/jobs/run_qpp_sampler.sh

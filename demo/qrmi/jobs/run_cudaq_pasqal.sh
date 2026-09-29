@@ -7,4 +7,6 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --qpu=EMU_FREE
 
+# Your script goes here
+source /shared/pyenv/bin/activate
 srun python /shared/qrmi/examples/qrmi/python/cudaq/pasqal.py

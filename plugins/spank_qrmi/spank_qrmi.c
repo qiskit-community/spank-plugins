@@ -427,13 +427,25 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             spank_setenv(spank_ctxt, keybuf.buffer, acquired->acquisition_token,
                          KEEP_IF_EXISTS);
         } else {
+            /*
+             * Fail the whole job instead of running it with a subset of the
+             * requested resources. Resources acquired so far are released in
+             * slurm_spank_exit().
+             */
             slurm_qrmi_error("%s, failed to acquire resource: %s", plugin_name, res->name);
+            g_init_post_opt_failed = true;
+            qrmi_config_resource_def_free(res);
+            break;
         }
         qrmi_config_resource_def_free(res);
     }
     free(bufp);
     qrmi_buf_free(&keybuf);
     qrmi_config_free(cnf);
+
+    if (g_init_post_opt_failed) {
+        return SLURM_SUCCESS;
+    }
 
     if (slurm_list_count(g_acquired_resources) == 0) {
         slurm_qrmi_error("%s, No QPU resource available", plugin_name);

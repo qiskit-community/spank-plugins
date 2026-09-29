@@ -495,7 +495,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         size_t env_name_len = (size_t)(delimiter - input);
         char *env_name = strndup(input, env_name_len);
         if (env_name == NULL) {
-            slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld", plugin_name, env_name_len);
+            slurm_qrmi_error("%s, Failed to allocate buffer with length = %zu", plugin_name, env_name_len);
             g_init_post_opt_failed = true;
             return SLURM_SUCCESS;
         }
@@ -559,9 +559,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
     char *bufp = strdup(g_qpu_names_opt);
     if (bufp == NULL) {
-        slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld",
+        slurm_qrmi_error("%s, Failed to allocate buffer with length = %zu",
                          plugin_name, strlen(g_qpu_names_opt));
         g_init_post_opt_failed = true;
+        qrmi_config_free(cnf);
         return SLURM_SUCCESS;
     }
     char *rest = bufp;
@@ -582,6 +583,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             }
             free(bufp);
             qrmi_buf_free(&keybuf);
+            qrmi_config_free(cnf);
             g_init_post_opt_failed = true;
             return SLURM_SUCCESS;
         }
@@ -604,10 +606,9 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         qrmi_buf_envvarname_for_res_create(&keybuf, res->name, "QRMI_");
         char **job_argv = NULL;
         if (spank_get_item(spank_ctxt, S_JOB_ENV, &job_argv) == ESPANK_SUCCESS) {
-            int index = 0;
-            while (job_argv[index] != NULL) {
-                const char *kv_text = job_argv[index++];
-                if (strncmp(kv_text, keybuf.buffer, strlen(keybuf.buffer)) == 0) {
+            for (int index = 0; job_argv[index] != NULL; index++) {
+                if (strncmp(job_argv[index], keybuf.buffer, strlen(keybuf.buffer)) == 0) {
+                    const char *kv_text = job_argv[index];
                     const char *eq = strchr(kv_text, '=');
                     if (!eq) {
                         continue;
@@ -615,14 +616,16 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
                     char *key = strndup(kv_text, (size_t)(eq - kv_text));
                     if (key == NULL) {
-                        slurm_qrmi_error("%s, Failed to allocate buffer with length = %ld",
+                        slurm_qrmi_error("%s, Failed to allocate buffer with length = %td",
                                          plugin_name, eq - kv_text);
                         g_init_post_opt_failed = true;
+                        qrmi_config_resource_def_free(res);
                         free(bufp);
                         qrmi_buf_free(&keybuf);
                         if (job_info_msg != NULL) {
                             slurm_free_job_info_msg(job_info_msg);
                         }
+                        qrmi_config_free(cnf);
                         return SLURM_SUCCESS;
                     }
                     const char *value = eq + 1;
@@ -650,7 +653,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         if (!_configure_qpu_slots(spank_ctxt, res->name, job_info_msg, &keybuf)) {
             g_init_post_opt_failed = true;
             qrmi_config_resource_def_free(res);
-            continue;
+            break;
         }
 
         /*
@@ -666,7 +669,15 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             spank_setenv(spank_ctxt, keybuf.buffer, acquired->acquisition_token,
                          OVERWRITE);
         } else {
+            /*
+             * Fail the whole job instead of running it with a subset of the
+             * requested resources. Resources acquired so far are released in
+             * slurm_spank_exit().
+             */
             slurm_qrmi_error("%s, failed to acquire resource: %s", plugin_name, res->name);
+            g_init_post_opt_failed = true;
+            qrmi_config_resource_def_free(res);
+            break;
         }
         qrmi_config_resource_def_free(res);
     }
@@ -676,6 +687,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     }
     free(bufp);
     qrmi_buf_free(&keybuf);
+    qrmi_config_free(cnf);
 
     if (g_init_post_opt_failed) {
         return SLURM_SUCCESS;
@@ -897,11 +909,13 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
                 /* time limit too large or INFINITE; clamp to max or handle as error */
                 snprintf(limit_as_str, sizeof(limit_as_str), "%u", UINT32_MAX);
             }
+            slurm_free_job_info_msg(job_info_msg);
         }
     }
 
     if (strlen(limit_as_str) == 0) {
         /* time limit should be there, something wrong in Slurm */
+        slurm_error("%s, unable to read the time limit of job %u", plugin_name, job_id);
         return SLURM_ERROR;
     }
 
@@ -1134,6 +1148,7 @@ static void _release_qpu(qpu_resource_t *res) {
         slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), %s", plugin_name,
                     res->name, res->type, qrmi_get_last_error());
     }
+    /* allocated with strdup() in _acquired_resource_create() */
     free(res->acquisition_token);
     res->acquisition_token = NULL;
     rc = qrmi_resource_free(qrmi);

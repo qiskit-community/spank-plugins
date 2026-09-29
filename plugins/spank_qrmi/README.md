@@ -75,10 +75,12 @@ The `resources` array contains a set of available Quantum Resources which can be
 | properties | descriptions |
 | ---- | ---- |
 | name | Quantum resource name. e.g. Quantum backend name. |
-| type | Resource type (`ibm-quantum-system`, `ibm-quantum-compute-service`, `qiskit-runtime-service`(deprecated) and `pasqal-cloud`) |
+| type | Resource type (`ibm-quantum-system`, `ibm-quantum-compute-service`, `qiskit-runtime-service`(deprecated), `pasqal-cloud`, `pasqal-local`, `iqm-server` and `alice-bob-felis`) |
 | environment | A set of environment variables to work with QRMI. Current implementations assume API endpoint and credentials are specified via environment variable setting. |
 
 If a user specifies a resource with the --qpu option that is not defined in the qrmi_config.json file, the specification will be ignored.
+
+If acquiring any of the resources given with `--qpu` fails, the job fails with the acquisition error; it does not run with the remaining resources. Resources acquired before the failure are released when the job step exits.
 
 If the user sets the necessary environment variables for job execution themselves, it is not required to specify them in this file. In this case, the environment property will be `{}`.
 

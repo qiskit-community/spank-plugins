@@ -1,20 +1,5 @@
 # SPANK Plugin for QRMI
 
-> [!IMPORTANT]
-> **New Deprecations(Since 0.5.1)**
->
-> The **IBM Direct Access API** has been renamed to the **IBM Quantum System API**.
-> 
-> As part of this change, **the resource names and the prefixes of environment variables** used by QRMI have been updated accordingly.
->
-> | Items | Deprecated names | New names |
-> | :--- | :--- | :--- |
-> | Resource type text | direct-access | ibm-quantum-system |
-> | Environment variable prefixes | QRMI_IBM_DA_ | QRMI_IBM_QS_ |
-> 
-> A transition period will be in effect until **July 2, 2026**. During this period, both the legacy and the new resource names and environment variable prefixes are supported to ensure backward compatibility. After the transition period ends, support for the legacy names will be removed, and users are expected to migrate fully to the new naming scheme.
-
-
 This is a [SPANK plugin](https://slurm.schedmd.com/spank.html) that configures access to Quantum Resources from user jobs. It handles the acquisition and release of access to Quantum Resources and sets the necessary environment variables for executing Quantum workloads. The available Quantum Resources are specified in the qrmi_config.json file, which is managed by the administrator.
 
 ## Prerequisites
@@ -90,21 +75,20 @@ The `resources` array contains a set of available Quantum Resources which can be
 | properties | descriptions |
 | ---- | ---- |
 | name | Quantum resource name. e.g. Quantum backend name. |
-| type | Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`) |
+| type | Resource type (`ibm-quantum-system`, `ibm-quantum-compute-service`, `qiskit-runtime-service`(deprecated) and `pasqal-cloud`) |
 | environment | A set of environment variables to work with QRMI. Current implementations assume API endpoint and credentials are specified via environment variable setting. |
 
 If a user specifies a resource with the --qpu option that is not defined in the qrmi_config.json file, the specification will be ignored.
 
 If the user sets the necessary environment variables for job execution themselves, it is not required to specify them in this file. In this case, the environment property will be `{}`.
 
-> [!IMPORTANT]
-> The IBM Direct Access API has been renamed to the IBM Quantum System API.
-> As part of this change, the previously available resource type name has been updated from `direct-access` to `ibm-quantum-system`.
-> During a transition period, both `direct-access` and `ibm-quantum-system` resource type names will be supported.
-> After the transition period ends, support for the `direct-access` resource type name will be discontinued. 
 
 > [!NOTE]
-> If you are using a QPU resource with the resource type `qiskit-runtime-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
+> If you are using a QPU resource with the resource type `ibm-quantum-compute-service`, use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
+> If you are using an account that does not support opening a session, such as an Open plan account, add `QRMI_IBM_QCS_SESSION_MODE="batch"` to the environment variable list in qrmi_config.json as workaround:
+
+> [!NOTE]
+> If you are using a QPU resource with the resource type `qiskit-runtime-service`(deprecated), use an account that supports [opening a session](https://quantum.cloud.ibm.com/docs/en/guides/run-jobs-session#open-a-session), such as a Premium plan.
 > If you are using an account that does not support opening a session, such as an Open plan account, add `QRMI_IBM_QRS_SESSION_MODE="batch"` to the environment variable list in qrmi_config.json as workaround:
 
 ## Installation
@@ -170,6 +154,18 @@ once when the resource was first added while backfill was active.
 > ```bash
 > required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --env:RUST_LOG=qrmi=debug,reqwest=warn
 > ```
+>
+> A QPU resource can also take its QPU slot count from a Slurm license. The format is defined as follows, and the argument can be repeated for several resources (one license per resource).
+> ```bash
+> --qpu-slots-license:{resource name}={license name}
+> ```
+>
+> For example, with a `pasqal_local_qpu_slots@warden` remote license for the `PASQAL_LOCAL` resource:
+> ```bash
+> required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --qpu-slots-license:PASQAL_LOCAL=pasqal_local_qpu_slots@warden
+> ```
+>
+> Jobs using `PASQAL_LOCAL` must then request the license, e.g. `sbatch --qpu=PASQAL_LOCAL --licenses=pasqal_local_qpu_slots@warden:5 job.sh`. The plugin checks the licenses of all requested resources before acquiring any of them, and passes the granted count to QRMI as `QRMI_JOB_QPU_SLOTS` when it acquires that resource. The job fails if the license is missing or a resource with a slot license is requested more than once. Resources without a slot license are unaffected and use the QRMI default. The slot count only comes from the Slurm grant: `QRMI_JOB_QPU_SLOTS` set in the job environment or with `--env:` is not used for acquisition. Keeping the license count in line with the QPU's own capacity (for example, a remote license updated by a poller daemon) is outside this plugin.
 >
 
 For allocator node, your don't need to specify the path to qrmi_config.json like below.
@@ -284,15 +280,11 @@ This plugin also set the following 2 environment variables which will be referre
 | environment varilables | descriptions |
 | ---- | ---- |
 | QRMI_JOB_QPU_RESOURCES | Comma separated list of QPU resources to use at runtime. Undocumented resources will be filtered out. For example, `qpu1,qpu2`. |
-| QRMI_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `qiskit-runtime-service` and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
+| QRMI_JOB_QPU_TYPES | Comma separated list of Resource type (`ibm-quantum-system`, `ibm-quantum-compute-service`, `qiskit-runtime-service`(deprecated) and `pasqal-cloud`). For example, `ibm-quantum-system,ibm-quantum-system` |
 | SLURM_JOB_QPU_RESOURCES | Legacy alias for `QRMI_JOB_QPU_RESOURCES`. |
 | SLURM_JOB_QPU_TYPES | Legacy alias for `QRMI_JOB_QPU_TYPES`. |
+| {resource name}_QRMI_JOB_QPU_SLOTS | QPU slots granted by the resource's `--qpu-slots-license` license. Set by the plugin for resources with a slot license. |
 
-> [!IMPORTANT]
-> The IBM Direct Access API has been renamed to the IBM Quantum System API.
-> As part of this change, the previously available resource type name has been updated from `direct-access` to `ibm-quantum-system`.
-> During a transition period, both `direct-access` and `ibm-quantum-system` resource type names will be supported.
-> After the transition period ends, support for the `direct-access` resource type name will be discontinued. 
 
 ## License
 

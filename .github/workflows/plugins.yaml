@@ -57,12 +57,14 @@ jobs:
           pushd build
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           make
+          readelf -p .version_info spank_qrmi.so
+          strings spank_qrmi.so | grep SPANK_QRMI_BUILD_VERSION
           popd
 
       - name: Run clang-tidy (spank_qrmi)
         working-directory: plugins/spank_qrmi
         run: |
-          clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.* -- -Ibuild/deps/src/QRMI
+          clang-tidy *.c -p ./build --checks=-*,modrnize-*,readability-*,performance-*,portability-*,-readability-magic-numbers,-readability-identifier-length  -header-filter=.* -- -Ibuild/deps/src/QRMI -Ibuild/generated
 
       - name: Test spank_qrmi
         working-directory: plugins/tests/metadata
@@ -88,6 +90,8 @@ jobs:
           rm -rf *
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DQRMI_ROOT=$GITHUB_WORKSPACE/external/qrmi
           make
+          readelf -p .version_info spank_qrmi.so
+          strings spank_qrmi.so | grep SPANK_QRMI_BUILD_VERSION
           popd
 
       - name: Test spank_qrmi (w/QRMI_ROOT)

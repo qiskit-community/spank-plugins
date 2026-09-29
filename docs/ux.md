@@ -10,7 +10,7 @@ HPC user experience, HPC developer experience and usage patterns
   - [HPC application scope](#hpc-application-scope)
   - [Backend specifics](#backend-specifics)
     - [IBM Quantum System API](#ibm-quantum-system-api)
-    - [Qiskit Runtime Service](#qiskit-runtime-service)
+    - [IBM Quantum Compute(formerly Qiskit Runtime) Service](#ibm-quantum-compute-service)
     - [IQM Server API](#iqm-server-api)
     - [Pasqal](#pasqal)
     - [Alice and Bob Felis API](#alice-and-bob-felis-api)
@@ -28,8 +28,8 @@ Slurm QPU resource definitions determine what physical resources can be used by 
 User source code should be agnostic to specific backend instances and even backend types as far as possible.
 This keeps source code portable while the QPU selection criteria are part of the resource definition (which is considered configuration as opposed to source code).
 The source code does not have to take care resp. is not involved in resource reservation handling (that is done when Slurm jobs are assigned QPU resources and start running, if applicable on the backend) or execution modes like sessions (these are automatically in place while the job is running, if applicable on the backend).
-This makes the source code more portable between similar QPU resource types through different backend access methods (such as IBM's Quantum System API and IBM's Qiskit Runtime service through IBM Quantum Platform).
-All backend types (such as IBM's Quantum System API, IBM's Qiskit Runtime service, IQM Server API, or Pasqal's backends) follow these principles.
+This makes the source code more portable between similar QPU resource types through different backend access methods (such as IBM Quantum System API and IBM Quantum Compute Service through IBM Quantum Platform).
+All backend types (such as IBM Quantum System API, IBM Quantum Compute Service, IQM Server API, or Pasqal's backends) follow these principles.
 
 ## Connecting physical resources to Slurm resources and how to use them
 
@@ -161,18 +161,18 @@ Instead, mid term, there can be two different modes that HPC users can specify:
 * `exclusive=true` specifies that no other jobs can use the resource at the same time. An exclusive mode job gets all execution lanes and can not run at the same time as a non-exclusive job
 * `exclusive=false` allows other jobs to run in parallel. In that case, there can be as many jobs as there are execution lanes at the same time, and the job essentially only gets one lane
 
-#### Qiskit Runtime Service
+#### IBM Quantum Compute(formerly Qiskit Runtime) Service
 ##### HPC user scope
 
 It is expected, that users specify additional access details in environment variables.
 Specifically, this includes
 
-* Qiskit Runtime service instance (CRN, Cloud Resource Name)
-* Endpoint for Qiskit Runtime (unless auto-detected from the CRN)
+* IBM Quantum Compute Service instance (CRN, Cloud Resource Name)
+* Endpoint for IBM Quantum Compute Service (unless auto-detected from the CRN)
 * API key which has access to the CRN
 * S3 instance, bucket and access token/credentials for data transfers
 
-This determines under which user and service instance the Qiskit Runtime service is used
+This determines under which user and service instance the IBM Quantum Compute Service is used
 Accordingly, IBM Quantum Platform's scheduling considers the user's and service instance's capabilities for scheduling.
 
 At this time, users have to provide the above details (no shared cluster-wide Quantum access).

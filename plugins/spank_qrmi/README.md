@@ -105,32 +105,15 @@ Note that administrator needs to create `qrmi_config.json` file and specify the 
 required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json
 ```
 
-For scheduler-owned Pasqal Local slots, bind Warden's slot claim to a Slurm
-remote license:
-
-```bash
-required /usr/lib64/slurm/spank_qrmi.so /etc/slurm/qrmi_config.json --qpu-slots-license=qpu_slots@warden
-```
-
-Jobs must then request the same count from Slurm:
-
-```bash
-sbatch --licenses=qpu_slots@warden:5 --qpu=PASQAL_LOCAL job.sh
-```
-
-The plugin reads the granted license count from Slurm and exports it as
-`QRMI_JOB_QPU_SLOTS` before QRMI acquisition. Configure this option whenever
-Warden enforces `qpu_slots_total`; without it, `QRMI_JOB_QPU_SLOTS` comes from
-the user-controlled job environment and is not a scheduler grant. Sites that
-do not use Warden slot accounting may omit the option.
-
-Run the external Warden usage reporter beside `slurmdbd` or from a periodic
-service account:
+To keep a `--qpu-slots-license:` remote license (see the note below) in line
+with Warden's slot usage, run the external Warden usage reporter beside
+`slurmdbd` or from a periodic service account:
 
 ```bash
 python3 warden_slurm_license_reporter.py \
   --warden-url http://c1:4207/accessible \
-  --resource qpu_slots \
+  --warden-slots-url http://c1:4207/qpu-slots \
+  --resource pasqal_local_qpu_slots \
   --total-slots 10
 ```
 

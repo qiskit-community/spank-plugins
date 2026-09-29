@@ -10,24 +10,30 @@ import urllib.request
 from collections.abc import Sequence
 
 
-def read_warden_usage(url: str, timeout_seconds: float) -> tuple[int, int]:
+def read_warden_usage(
+    accessible_url: str, slots_url: str, timeout_seconds: float
+) -> tuple[int, int]:
     """Read validated QPU slot totals and usage from Warden.
 
     Args:
-        url (str): Warden accessible endpoint URL.
+        accessible_url (str): Warden accessible endpoint URL.
+        slots_url (str): Warden QPU slots endpoint URL.
         timeout_seconds (float): HTTP request timeout in seconds.
 
     Returns:
         total (int): Configured total QPU slots.
         used (int): Currently used QPU slots.
     """
-    with urllib.request.urlopen(url, timeout=timeout_seconds) as response:
+    with urllib.request.urlopen(accessible_url, timeout=timeout_seconds) as response:
         if response.status < 200 or response.status >= 300:
             raise RuntimeError(f"Warden returned HTTP {response.status}")
-        payload = json.load(response)
-    total = payload.get("qpu_slots_total")
-    used = payload.get("qpu_slots_used")
-    accessible = payload.get("is_accessible")
+        accessible = json.load(response).get("is_accessible")
+    with urllib.request.urlopen(slots_url, timeout=timeout_seconds) as response:
+        if response.status < 200 or response.status >= 300:
+            raise RuntimeError(f"Warden returned HTTP {response.status}")
+        capacity = json.load(response)
+    total = capacity.get("qpu_slots_total")
+    used = capacity.get("qpu_slots_used")
     if (
         not isinstance(accessible, bool)
         or not isinstance(total, int)
@@ -73,14 +79,18 @@ def report_once(args: argparse.Namespace, previous: int | None) -> int:
         (int): Reported consumed count.
     """
     try:
-        total, used = read_warden_usage(args.warden_url, args.timeout_seconds)
+        total, used = read_warden_usage(
+            args.warden_url, args.warden_slots_url, args.timeout_seconds
+        )
         if total != args.total_slots:
             raise ValueError(
                 f"Warden total {total} does not match configured total {args.total_slots}"
             )
     except Exception as exc:
         used = args.total_slots
-        print(f"Warden poll failed; reporting all slots consumed: {exc}", file=sys.stderr)
+        print(
+            f"Warden poll failed; reporting all slots consumed: {exc}", file=sys.stderr
+        )
     if used != previous:
         update_last_consumed(args.sacctmgr, args.resource, used)
         print(
@@ -101,6 +111,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--warden-url", required=True)
+    parser.add_argument("--warden-slots-url")
     parser.add_argument("--resource", required=True)
     parser.add_argument("--total-slots", required=True, type=int)
     parser.add_argument("--timeout-seconds", type=float, default=3)
@@ -108,6 +119,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--sacctmgr", default="sacctmgr")
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args(argv)
+    if args.warden_slots_url is None:
+        base_url, separator, endpoint = args.warden_url.rstrip("/").rpartition("/")
+        if not separator or endpoint != "accessible":
+            parser.error(
+                "--warden-slots-url is required when --warden-url does not end in /accessible"
+            )
+        args.warden_slots_url = f"{base_url}/qpu-slots"
     if args.total_slots < 1 or args.timeout_seconds <= 0 or args.interval_seconds <= 0:
         parser.error("slot total, timeout, and interval must be greater than zero")
     return args

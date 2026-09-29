@@ -98,6 +98,7 @@ static void _qrmi_log_to_slurm(const char *level, const char *target, const char
 #endif
 static bool _configure_qrmi_logging(spank_t spank_ctxt);
 
+
 /*
  * @function _starts_with
  *
@@ -716,8 +717,7 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         strbuf_append_str(&qpu_resources_envvar, item->name);
         const char *type_as_str = qrmi_config_resource_type_to_str(item->type);
         slurm_debug("%s: type_as_str(%s)", plugin_name, type_as_str);
-        strbuf_append_str(&qpu_types_envvar, qrmi_config_resource_type_to_str(item->type));
-        qrmi_string_free((char *)type_as_str);
+        strbuf_append_str(&qpu_types_envvar, type_as_str);
     }
     slurm_list_iterator_destroy(sessions_iter);
 

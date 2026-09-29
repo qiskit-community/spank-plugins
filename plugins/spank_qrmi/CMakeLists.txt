@@ -179,7 +179,7 @@ target_include_directories(spank_qrmi
 )
 if(EXISTS "${QRMI_SOURCE_DIR}/qrmi.h")
     file(READ "${QRMI_SOURCE_DIR}/qrmi.h" QRMI_HEADER_CONTENTS)
-    if(QRMI_HEADER_CONTENTS MATCHES "qrmi_log_callback_set")
+    if(QRMI_HEADER_CONTENTS MATCHES "qrmi_log_callback_set" AND NOT QRMI_HEADER_CONTENTS MATCHES "define QRMI_HAS_LOG_CALLBACK")
         target_compile_definitions(spank_qrmi PRIVATE QRMI_HAS_LOG_CALLBACK=1)
     endif()
 endif()

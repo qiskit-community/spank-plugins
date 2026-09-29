@@ -8,7 +8,9 @@ from unittest.mock import patch
 
 
 MODULE_PATH = Path(__file__).with_name("warden_slurm_license_reporter.py")
-SPEC = importlib.util.spec_from_file_location("warden_slurm_license_reporter", MODULE_PATH)
+SPEC = importlib.util.spec_from_file_location(
+    "warden_slurm_license_reporter", MODULE_PATH
+)
 reporter = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(reporter)
 
@@ -17,6 +19,7 @@ def reporter_args() -> argparse.Namespace:
     """Build nominal reporter arguments."""
     return argparse.Namespace(
         warden_url="http://warden/accessible",
+        warden_slots_url="http://warden/qpu-slots",
         resource="qpu_slots@warden",
         total_slots=10,
         timeout_seconds=3,
@@ -71,8 +74,11 @@ def test_read_warden_usage_blocks_slots_during_maintenance():
         def __exit__(self, *_args):
             self.close()
 
-    response = Response(
-        b'{"is_accessible":false,"qpu_slots_total":10,"qpu_slots_used":0}'
-    )
-    with patch.object(reporter.urllib.request, "urlopen", return_value=response):
-        assert reporter.read_warden_usage("http://warden/accessible", 3) == (10, 10)
+    responses = [
+        Response(b'{"is_accessible":false}'),
+        Response(b'{"qpu_slots_total":10,"qpu_slots_used":0}'),
+    ]
+    with patch.object(reporter.urllib.request, "urlopen", side_effect=responses):
+        assert reporter.read_warden_usage(
+            "http://warden/accessible", "http://warden/qpu-slots", 3
+        ) == (10, 10)

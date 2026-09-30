@@ -356,8 +356,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     while ((token = strtok_r(rest, ",", &rest))) {
         QrmiResourceDef *res = qrmi_config_resource_def_get(cnf, token);
         if (res == NULL) {
-            slurm_qrmi_error("resource %s not found in %s", token, argv[0]);
-            continue;
+            /* Same as a failed acquire: do not run with the remaining resources */
+            slurm_qrmi_error("%s, resource %s not found in %s", plugin_name, token, argv[0]);
+            g_init_post_opt_failed = true;
+            break;
         }
         slurm_debug("%s: name(%s), type(%d) found in %s", plugin_name, res->name, res->type,
                     argv[0]);

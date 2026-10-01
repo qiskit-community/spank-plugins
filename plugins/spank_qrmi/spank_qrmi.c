@@ -18,7 +18,9 @@
  */
 #include <stdlib.h>
 #include <stdarg.h>
+#include <errno.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
@@ -41,8 +43,6 @@ __attribute__((section(".version_info"), used)) static const char
     version_info[] = "SPANK_QRMI_BUILD_VERSION=" SPANK_QRMI_VERSION
                       ";SPANK_QRMI_GIT_HASH=" SPANK_QRMI_GIT_HASH;
 
-extern char **environ;
-
 /*
  * Spank plugin for QRMI.
  */
@@ -52,6 +52,14 @@ SPANK_PLUGIN(spank_qrmi, 1)
  * Copy of `--qpu` option value if specified, otherwise NULL.
  */
 static char *g_qpu_names_opt = NULL;
+
+/*
+ * QPU slot licenses from `--qpu-slots-license:{resource}={license}` plugin
+ * arguments. g_qpu_slot_resources[i] is claimed through g_qpu_slot_licenses[i].
+ */
+static char **g_qpu_slot_resources = NULL;
+static char **g_qpu_slot_licenses = NULL;
+static size_t g_qpu_slot_license_count = 0;
 
 /*
  * This flag indicates whether an error occurred in slurm_spank_init_post_opt().
@@ -90,21 +98,6 @@ static void _qrmi_log_to_slurm(const char *level, const char *target, const char
 #endif
 static bool _configure_qrmi_logging(spank_t spank_ctxt);
 
-/*
- * @function _dump_environ
- *
- * Dumps all environment variables set for the current process.
- */
-static void _dump_environ(void) {
-    char **s = environ;
-    int pid = (int)getpid();
-    int uid = (int)getuid();
-
-    slurm_debug("%s(%d, %d): environment variables ---", plugin_name, pid, uid);
-    for (; *s; s++) {
-        slurm_debug("%s(%d, %d): %s", plugin_name, pid, uid, *s);
-    }
-}
 
 /*
  * @function _starts_with
@@ -113,6 +106,220 @@ static void _dump_environ(void) {
  */
 static bool _starts_with(const char *str, const char *prefix) {
     return strncmp(prefix, str, strlen(prefix)) == 0;
+}
+
+/*
+ * @function _add_qpu_slot_license
+ *
+ * Stores a `{resource}={license}` pair given with --qpu-slots-license:.
+ */
+static bool _add_qpu_slot_license(const char *input) {
+    const char *delimiter = strchr(input, '=');
+    if (delimiter == NULL || delimiter == input || delimiter[1] == '\0') {
+        return false;
+    }
+    for (size_t i = 0; i < g_qpu_slot_license_count; i++) {
+        if (strlen(g_qpu_slot_resources[i]) == (size_t)(delimiter - input) &&
+            strncmp(g_qpu_slot_resources[i], input, (size_t)(delimiter - input)) == 0) {
+            /* one slot license per resource */
+            return false;
+        }
+    }
+    size_t count = g_qpu_slot_license_count + 1;
+    char **resources = realloc(g_qpu_slot_resources, count * sizeof(char *));
+    if (resources == NULL) {
+        return false;
+    }
+    g_qpu_slot_resources = resources;
+    char **licenses = realloc(g_qpu_slot_licenses, count * sizeof(char *));
+    if (licenses == NULL) {
+        return false;
+    }
+    g_qpu_slot_licenses = licenses;
+    char *resource = strndup(input, (size_t)(delimiter - input));
+    char *license = strdup(delimiter + 1);
+    if (resource == NULL || license == NULL) {
+        free(resource);
+        free(license);
+        return false;
+    }
+    g_qpu_slot_resources[g_qpu_slot_license_count] = resource;
+    g_qpu_slot_licenses[g_qpu_slot_license_count] = license;
+    g_qpu_slot_license_count = count;
+    return true;
+}
+
+/*
+ * @function _qpu_slot_license_for
+ *
+ * Returns the slot license configured for a QPU resource, or NULL.
+ */
+static const char *_qpu_slot_license_for(const char *resource) {
+    for (size_t i = 0; i < g_qpu_slot_license_count; i++) {
+        if (strcmp(g_qpu_slot_resources[i], resource) == 0) {
+            return g_qpu_slot_licenses[i];
+        }
+    }
+    return NULL;
+}
+
+/*
+ * @function _license_count
+ *
+ * Finds `wanted` in a Slurm license string and stores its count. Entries are
+ * separated by ',', ';' (AND) or '|' (OR), as in "a@srv:5;b(node1):2|c=3".
+ * Returns 1 if found, 0 if absent and -1 if the count is invalid.
+ */
+static int _license_count(const char *licenses, const char *wanted, uint32_t *count) {
+    if (licenses == NULL) {
+        return 0;
+    }
+    const char *cursor = licenses;
+    size_t wanted_len = strlen(wanted);
+    while (*cursor != '\0') {
+        const char *end = cursor + strcspn(cursor, ",;|");
+        size_t name_len = strcspn(cursor, ":=(,;|");
+        if (name_len == wanted_len && strncmp(cursor, wanted, wanted_len) == 0) {
+            const char *rest = cursor + name_len;
+            if (*rest == '(') {
+                /* node-scoped license, e.g. "name(node1):2" */
+                const char *close = memchr(rest, ')', (size_t)(end - rest));
+                if (close == NULL) {
+                    return -1;
+                }
+                rest = close + 1;
+            }
+            if (rest == end) {
+                *count = 1;
+                return 1;
+            }
+            if (*rest != ':' && *rest != '=') {
+                return -1;
+            }
+            char *parse_end = NULL;
+            unsigned long parsed = strtoul(rest + 1, &parse_end, 10);
+            if (parse_end != end || parsed == 0 || parsed > INT32_MAX) {
+                return -1;
+            }
+            *count = (uint32_t)parsed;
+            return 1;
+        }
+        cursor = *end == '\0' ? end : end + 1;
+    }
+    return 0;
+}
+
+/*
+ * @function _load_job
+ *
+ * Loads the Slurm job record. Free with slurm_free_job_info_msg().
+ */
+static int _load_job(uint32_t job_id, job_info_msg_t **job_info_msg) {
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+    slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+    step_id.job_id = job_id;
+    return slurm_load_job(job_info_msg, step_id, SHOW_DETAIL);
+#else
+    return slurm_load_job(job_info_msg, job_id, SHOW_DETAIL);
+#endif
+}
+
+/*
+ * @function _qpu_slot_grant
+ *
+ * Reads the count Slurm granted for the slot license of `resource`.
+ */
+static bool _qpu_slot_grant(const char *resource, const char *license,
+                            const job_info_msg_t *job_info_msg, uint32_t *count) {
+    if (job_info_msg == NULL || job_info_msg->record_count == 0) {
+        slurm_qrmi_error("%s, unable to load the Slurm job to read license %s", plugin_name,
+                         license);
+        return false;
+    }
+    const job_info_t *job = &job_info_msg->job_array[0];
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25, 5, 0)
+    /* Since 25.05, `licenses` may list alternatives; use the allocated ones. */
+    const char *licenses = job->licenses_allocated != NULL ? job->licenses_allocated
+                                                           : job->licenses;
+#else
+    const char *licenses = job->licenses;
+#endif
+    if (_license_count(licenses, license, count) != 1) {
+        slurm_qrmi_error("%s, resource %s requires a valid allocation of license %s",
+                         plugin_name, resource, license);
+        return false;
+    }
+    return true;
+}
+
+/*
+ * @function _check_qpu_slot_licenses
+ *
+ * Verifies, before any resource is acquired, that every requested resource
+ * with a slot license holds a grant for it and is requested only once.
+ */
+static bool _check_qpu_slot_licenses(const char *qpu_names,
+                                     const job_info_msg_t *job_info_msg) {
+    char *names = strdup(qpu_names);
+    bool *requested = calloc(g_qpu_slot_license_count, sizeof(bool));
+    if (names == NULL || requested == NULL) {
+        slurm_qrmi_error("%s, Failed to allocate buffers to check QPU slot licenses",
+                         plugin_name);
+        free(names);
+        free(requested);
+        return false;
+    }
+    bool ok = true;
+    char *rest = names;
+    char *token;
+    while (ok && (token = strtok_r(rest, ",", &rest))) {
+        for (size_t i = 0; i < g_qpu_slot_license_count; i++) {
+            if (strcmp(g_qpu_slot_resources[i], token) != 0) {
+                continue;
+            }
+            if (requested[i]) {
+                /* each request would claim the granted slots again */
+                slurm_qrmi_error("%s, resource %s is requested more than once",
+                                 plugin_name, token);
+                ok = false;
+                break;
+            }
+            requested[i] = true;
+            uint32_t count = 0;
+            ok = _qpu_slot_grant(token, g_qpu_slot_licenses[i], job_info_msg, &count);
+            break;
+        }
+    }
+    free(names);
+    free(requested);
+    return ok;
+}
+
+/*
+ * @function _configure_qpu_slots
+ *
+ * Sets QRMI_JOB_QPU_SLOTS for the next QRMI acquire of `resource`. Resources
+ * with a slot license claim the count Slurm granted for it; other resources
+ * leave it unset so QRMI uses its default.
+ */
+static bool _configure_qpu_slots(spank_t spank_ctxt, const char *resource,
+                                 const job_info_msg_t *job_info_msg, buffer *keybuf) {
+    unsetenv("QRMI_JOB_QPU_SLOTS");
+    const char *license = _qpu_slot_license_for(resource);
+    if (license == NULL) {
+        return true;
+    }
+    uint32_t count = 0;
+    if (!_qpu_slot_grant(resource, license, job_info_msg, &count)) {
+        return false;
+    }
+    char count_str[MAX_INT_STRLEN + 1];
+    snprintf(count_str, sizeof(count_str), "%u", count);
+    setenv("QRMI_JOB_QPU_SLOTS", count_str, OVERWRITE);
+    qrmi_buf_envvarname_for_res_create(keybuf, resource, "QRMI_JOB_QPU_SLOTS");
+    spank_setenv(spank_ctxt, keybuf->buffer, count_str, OVERWRITE);
+    slurm_debug("%s: setenv(%s, %s)", plugin_name, keybuf->buffer, count_str);
+    return true;
 }
 
 /*
@@ -262,8 +469,19 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
      * Parses optional plugin arguments.
      *
      * Environment settings use --env:{variable name}={value}.
+     * QPU slot licenses use --qpu-slots-license:{resource}={license}.
      */
     for (int i = 1; i < argc; i++) {
+        if (_starts_with(argv[i], "--qpu-slots-license:")) {
+            if (!_add_qpu_slot_license(&argv[i][strlen("--qpu-slots-license:")])) {
+                slurm_qrmi_error("%s, Invalid argument %s, expected one "
+                                 "--qpu-slots-license:{resource}={license} per resource",
+                                 plugin_name, argv[i]);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
+            continue;
+        }
         if (!_starts_with(argv[i], "--env:")) {
             /* ignored. */
             continue;
@@ -353,6 +571,25 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     buffer keybuf;
     qrmi_buf_init(&keybuf, 1024);
 
+    job_info_msg_t *job_info_msg = NULL;
+    if (g_qpu_slot_license_count > 0) {
+        if (_load_job(job_id, &job_info_msg) != SLURM_SUCCESS) {
+            slurm_error("%s, failed to load job %u: %s", plugin_name, job_id,
+                        slurm_strerror(errno));
+            job_info_msg = NULL;
+        }
+        if (!_check_qpu_slot_licenses(g_qpu_names_opt, job_info_msg)) {
+            if (job_info_msg != NULL) {
+                slurm_free_job_info_msg(job_info_msg);
+            }
+            free(bufp);
+            qrmi_buf_free(&keybuf);
+            qrmi_config_free(cnf);
+            g_init_post_opt_failed = true;
+            return SLURM_SUCCESS;
+        }
+    }
+
     while ((token = strtok_r(rest, ",", &rest))) {
         QrmiResourceDef *res = qrmi_config_resource_def_get(cnf, token);
         if (res == NULL) {
@@ -388,11 +625,14 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
                         qrmi_config_resource_def_free(res);
                         free(bufp);
                         qrmi_buf_free(&keybuf);
+                        if (job_info_msg != NULL) {
+                            slurm_free_job_info_msg(job_info_msg);
+                        }
                         qrmi_config_free(cnf);
                         return SLURM_SUCCESS;
                     }
                     const char *value = eq + 1;
-                    slurm_debug("%s: putenv(%s, %s)", plugin_name, key, value);
+                    slurm_debug("%s: putenv(%s)", plugin_name, key);
                     setenv(key, value, OVERWRITE);
                     free(key);
                 }
@@ -408,12 +648,16 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             /* set to the current process for subsequent QRMI.acquire() call
              */
             qrmi_buf_envvarname_for_res_create(&keybuf, res->name, envvar.key);
-            slurm_debug("%s: setenv(%s, %s)", plugin_name, keybuf.buffer, envvar.value);
+            slurm_debug("%s: setenv(%s)", plugin_name, keybuf.buffer);
             setenv(keybuf.buffer, envvar.value, KEEP_IF_EXISTS);
             spank_setenv(spank_ctxt, keybuf.buffer, envvar.value, KEEP_IF_EXISTS);
         }
 
-        _dump_environ();
+        if (!_configure_qpu_slots(spank_ctxt, res->name, job_info_msg, &keybuf)) {
+            g_init_post_opt_failed = true;
+            qrmi_config_resource_def_free(res);
+            break;
+        }
 
         /*
          * Acquire QPU resource.
@@ -423,11 +667,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             slurm_list_append(g_acquired_resources, acquired);
             qrmi_buf_envvarname_for_res_create(&keybuf, res->name,
                                                "QRMI_JOB_ACQUISITION_TOKEN");
-            slurm_debug("%s: setenv(%s, %s)", plugin_name, keybuf.buffer,
-                        acquired->acquisition_token);
-            setenv(keybuf.buffer, acquired->acquisition_token, KEEP_IF_EXISTS);
+            slurm_debug("%s: setenv(%s)", plugin_name, keybuf.buffer);
+            setenv(keybuf.buffer, acquired->acquisition_token, OVERWRITE);
             spank_setenv(spank_ctxt, keybuf.buffer, acquired->acquisition_token,
-                         KEEP_IF_EXISTS);
+                         OVERWRITE);
         } else {
             /*
              * Fail the whole job instead of running it with a subset of the
@@ -440,6 +683,10 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
             break;
         }
         qrmi_config_resource_def_free(res);
+    }
+    unsetenv("QRMI_JOB_QPU_SLOTS");
+    if (job_info_msg != NULL) {
+        slurm_free_job_info_msg(job_info_msg);
     }
     free(bufp);
     qrmi_buf_free(&keybuf);
@@ -468,13 +715,11 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     void *x = NULL;
     while ((x = slurm_list_next(sessions_iter)) != NULL) {
         qpu_resource_t *item = (qpu_resource_t *)x;
-        slurm_debug("%s: name(%s), type(%d), token(%s)", plugin_name, item->name, item->type,
-                    item->acquisition_token);
+        slurm_debug("%s: name(%s), type(%d)", plugin_name, item->name, item->type);
         strbuf_append_str(&qpu_resources_envvar, item->name);
         const char *type_as_str = qrmi_config_resource_type_to_str(item->type);
         slurm_debug("%s: type_as_str(%s)", plugin_name, type_as_str);
-        strbuf_append_str(&qpu_types_envvar, qrmi_config_resource_type_to_str(item->type));
-        qrmi_string_free((char *)type_as_str);
+        strbuf_append_str(&qpu_types_envvar, type_as_str);
     }
     slurm_list_iterator_destroy(sessions_iter);
 
@@ -748,6 +993,15 @@ int slurm_spank_exit(spank_t spank_ctxt, int argc, char **argv) {
         free(g_qpu_names_opt);
         g_qpu_names_opt = NULL;
     }
+    for (size_t i = 0; i < g_qpu_slot_license_count; i++) {
+        free(g_qpu_slot_resources[i]);
+        free(g_qpu_slot_licenses[i]);
+    }
+    free(g_qpu_slot_resources);
+    free(g_qpu_slot_licenses);
+    g_qpu_slot_resources = NULL;
+    g_qpu_slot_licenses = NULL;
+    g_qpu_slot_license_count = 0;
 
     SPANK_DEBUG_LEAVE();
 
@@ -864,7 +1118,7 @@ static qpu_resource_t *_acquire_qpu(spank_t spank_ctxt, char *name, QrmiResource
         return NULL;
     }
 
-    slurm_debug("%s, acquisition_token: %s(%s)", plugin_name, acquisition_token, name);
+    slurm_debug("%s, acquired resource: %s", plugin_name, name);
     qpu_resource_t *res = _acquired_resource_create(name, type, acquisition_token);
     qrmi_string_free(acquisition_token);
     return res;
@@ -884,8 +1138,7 @@ static void _release_qpu(qpu_resource_t *res) {
     if (res == NULL) {
         return;
     }
-    slurm_debug("%s: releasing name(%s), type(%d), token(%s)", plugin_name, res->name, res->type,
-                res->acquisition_token);
+    slurm_debug("%s: releasing name(%s), type(%d)", plugin_name, res->name, res->type);
     void *qrmi = qrmi_resource_new(res->name, res->type);
     if (qrmi == NULL) {
         slurm_error("%s, Failed to create a QRMI instance, %s",
@@ -894,15 +1147,14 @@ static void _release_qpu(qpu_resource_t *res) {
     }
     rc = qrmi_resource_release(qrmi, res->acquisition_token);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
-        slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), token(%s), %s",
-                    plugin_name, res->name, res->type, res->acquisition_token,
-                    qrmi_get_last_error());
+        slurm_error("%s, Failed to release acquired resource: name(%s), type(%d), %s", plugin_name,
+                    res->name, res->type, qrmi_get_last_error());
     }
     /* allocated with strdup() in _acquired_resource_create() */
     free(res->acquisition_token);
+    res->acquisition_token = NULL;
     rc = qrmi_resource_free(qrmi);
     if (rc != QRMI_RETURN_CODE_SUCCESS) {
         slurm_error("%s, Failed to free QrmiQuantumResource handle: (%p)", plugin_name, qrmi);
     }
-    res->acquisition_token = NULL;
 }

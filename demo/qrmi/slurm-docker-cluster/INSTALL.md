@@ -262,3 +262,49 @@ cat slurm-81.out # Assuming job_id is 81
 It is possible to run JSON-serialized jobs directly using a commandline utility called `qrmi_task_runner`. See the [task_runner examples](https://github.com/qiskit-community/qrmi/blob/main/python/qrmi/tools/task_runner/README.md) for details.
 
 ## END OF DOCUMENT
+
+## Local IBM System/Direct Access and Runtime protocol mocks (2026-09-20)
+
+The current QRMI 0.23.1 names are `ibm-quantum-system` with `QRMI_IBM_QS_*`
+and `qiskit-runtime-service` with `QRMI_IBM_QRS_*`. The former replaces the
+old Direct Access resource name. From the host, run:
+
+```bash
+./spank-plugins/demo/qrmi/jobs/setup_ibm_da_local.sh
+```
+
+It starts the cluster and MinIO, preserves existing resources, backs up the
+original config once, and adds `IBM_QS_MOCK` and `IBM_QRS_MOCK` to each node's
+`/etc/slurm/qrmi_config.json`. It restarts only the demo mock server it owns;
+run setup when no mock jobs are active. The mock listens on the container
+network for the test runner; its IAM token is a dummy and it is not a security
+or production-service implementation.
+
+The System API path reads the actual input through its presigned MinIO URL,
+executes it with installed Qiskit `StatevectorSampler(seed=7)`, and stages
+results/logs back to MinIO. Runtime accepts the actual HTTP primitive input,
+creates a session, returns the simulated result and closes the session.
+Empty or malformed positive fixtures are no longer accepted. Both paths use
+`support_qiskit: false` and version-2 Sampler input.
+
+Build the CQ and Qiskit generators in the two integration projects first (see
+their READMEs), then run inside login as the regular Slurm user:
+
+```bash
+docker exec -u aleks login /shared/pyenv/bin/python \
+  /shared/spank-plugins/demo/qrmi/jobs/test_ibm_frontends.py \
+  --output /data/ibm-frontends-results.json
+```
+
+This executes the 16-case OpenMP/MPI x System/Runtime x Qiskit/CQ x Bell/X
+matrix. It checks returned counts, task identities against the service audit,
+all four MPI ranks, and Runtime session closure. Per-job logs and the JSON
+ledger retain complete generated inputs and job logs, input/log hashes, and
+simulator version. The driver independently checks the input hash before and
+after transport and exactly one service submission per job. Run without other
+jobs targeting these mock resources. This is protocol and local-simulation
+evidence, not execution on IBM Cloud or an on-prem QPU. No hardware ISA
+transpilation, authentication security, latency or fidelity claim follows.
+The development plugstack currently also requires the existing Warden license
+for IBM jobs; that is a site limitation, not an IBM slot-reservation guarantee.
+

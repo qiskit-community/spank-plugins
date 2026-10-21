@@ -230,6 +230,9 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
 
     SPANK_DEBUG_ENTER(spank_ctxt, argc);
 
+    if (spank_context() == S_CTX_ALLOCATOR && g_qpu_names_opt)
+        return spank_job_control_setenv(spank_ctxt, "QRMI_QPU", g_qpu_names_opt, 1);
+
     if (!spank_remote(spank_ctxt)) {
         /* never occurred. just for safe. */
         return SLURM_SUCCESS;

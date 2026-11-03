@@ -1,6 +1,13 @@
 Quantum spank plugins for Slurm
 ===============================
 
+[![License](https://img.shields.io/github/license/qiskit-community/spank-plugins.svg?)](https://opensource.org/licenses/gpl-3.0)
+[![Current Release](https://img.shields.io/github/release/qiskit-community/spank-plugins.svg?)](https://github.com/qiskit-community/spank-plugins/releases)
+![Platform](https://img.shields.io/badge/%F0%9F%92%BB_Platform-Linux-blue)
+[![C99](https://img.shields.io/badge/C-C99-blue.svg?logo=c&logoColor=white)](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.10052-b31b1b.svg)](https://arxiv.org/abs/2506.10052)
+[![DOI](https://zenodo.org/badge/921922890.svg)](https://doi.org/10.5281/zenodo.23907194)
+
 > [!IMPORTANT]
 > **New Deprecations(Since 0.10.0)**
 >

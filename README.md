@@ -8,25 +8,6 @@ Quantum spank plugins for Slurm
 [![arXiv](https://img.shields.io/badge/arXiv-2506.10052-b31b1b.svg)](https://arxiv.org/abs/2506.10052)
 [![DOI](https://zenodo.org/badge/921922890.svg)](https://doi.org/10.5281/zenodo.23907194)
 
-> [!IMPORTANT]
-> **New Deprecations(Since 0.10.0)**
->
-> The **IBM Qiskit Runtime Service API** has been renamed to the **IBM Quantum Compute Service API**.
-> 
-> As part of this change, **the resource names and the prefixes of environment variables** used by QRMI have been updated accordingly.
->
-> | Items | Deprecated names | New names |
-> | :--- | :--- | :--- |
-> | Resource type text | qiskit-runtime-service | ibm-quantum-compute-service |
-> | Resource type(C) | QRMI_RESOURCE_TYPE_QISKIT_RUNTIME_SERVICE | QRMI_RESOURCE_TYPE_IBM_QUANTUM_COMPUTE_SERVICE |
-> | Resource type(Python) | ResourceType.IBMQiskitRuntimeService | ResourceType.IBMQuantumComputeService |
-> | Resource type(Rust) | ResourceType::QiskitRuntimeService | ResourceType::IBMQuantumComputeService |
-> | QuantumResource trait implementator(Rust) | qrmi::ibm::IBMQiskitRuntimeService | qrmi::ibm::IBMQuantumComputeService |
-> | Environment variable prefixes | QRMI_IBM_QRS_ | QRMI_IBM_QCS_ |
-> 
-> A transition period will be in effect until **November 21, 2026**. During this period, both the legacy and the new resource names and environment variable prefixes are supported to ensure backward compatibility. After the transition period ends, support for the legacy names will be removed, and users are expected to migrate fully to the new naming scheme.
-
-
 This is repository with Slurm Spank plugins for Quantum resources and jobs support.
 
 ### Table of Contents

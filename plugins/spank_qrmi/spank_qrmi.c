@@ -62,6 +62,11 @@ static char *g_qpu_names_opt = NULL;
  */
 static bool g_init_post_opt_failed = false;
 
+/* Job record fields cached by _load_job_info(). */
+static bool g_job_info_loaded = false;
+static bool g_job_has_batch_script = false;
+static uint32_t g_job_time_limit_mins = 0;
+
 #ifndef PRIOR_TO_V24_05_5_1
 /* List of acquired QPU resources. */
 static list_t *g_acquired_resources = NULL;
@@ -214,6 +219,35 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
 }
 
 /*
+ * @function _load_job_info
+ *
+ * Fetches the job record from slurmctld and caches the fields used by this
+ * plugin. Called once per step from slurm_spank_init_post_opt(); tasks are
+ * forked afterwards, so slurm_spank_task_init() reads the cached values
+ * instead of querying slurmctld again.
+ * Returns false if the job record could not be loaded.
+ */
+static bool _load_job_info(uint32_t job_id) {
+    job_info_msg_t *job_info_msg = NULL;
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+    slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+    step_id.job_id = job_id;
+    if (slurm_load_job(&job_info_msg, step_id, SHOW_ALL) != SLURM_SUCCESS) {
+#else
+    if (slurm_load_job(&job_info_msg, job_id, SHOW_ALL) != SLURM_SUCCESS) {
+#endif
+        return false;
+    }
+    if (job_info_msg->record_count > 0) {
+        g_job_has_batch_script = job_info_msg->job_array[0].batch_flag != 0;
+        g_job_time_limit_mins = job_info_msg->job_array[0].time_limit;
+        g_job_info_loaded = true;
+    }
+    slurm_free_job_info_msg(job_info_msg);
+    return g_job_info_loaded;
+}
+
+/*
  * @function slurm_spank_init_post_opt
  *
  * Called at the same point as slurm_spank_init, but after all user options to
@@ -238,16 +272,40 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
 
-    if (spank_get_item(spank_ctxt, S_JOB_STEPID, &job_stepid) == ESPANK_SUCCESS) {
-        /* skip if this is slurm task steps */
-        slurm_debug("%s, job_stepid = %x", plugin_name, job_stepid);
-        if (job_stepid != SLURM_BATCH_SCRIPT) {
-            return SLURM_SUCCESS;
-        }
-    }
-
     if (g_qpu_names_opt == NULL) {
         /* noop if this is not QPU job */
+        return SLURM_SUCCESS;
+    }
+
+    bool is_batch_step = true;
+    if (spank_get_item(spank_ctxt, S_JOB_STEPID, &job_stepid) == ESPANK_SUCCESS) {
+        slurm_debug("%s, job_stepid = %x", plugin_name, job_stepid);
+        if (job_stepid == SLURM_EXTERN_CONT) {
+            return SLURM_SUCCESS;
+        }
+        is_batch_step = job_stepid == SLURM_BATCH_SCRIPT;
+    }
+
+    uint32_t job_id;
+    if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) != ESPANK_SUCCESS) {
+        slurm_qrmi_error("%s, unable to get job ID", plugin_name);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
+    }
+
+    if (!_load_job_info(job_id)) {
+        slurm_qrmi_error("%s, unable to load job %u info from slurmctld", plugin_name, job_id);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
+    }
+
+    if (!is_batch_step && g_job_has_batch_script) {
+        /*
+         * Steps of a batch job inherit the resources acquired by the batch
+         * step through its environment. A job without a batch step (direct
+         * srun, or srun under salloc) has nothing to inherit, so each of its
+         * steps acquires its own resources.
+         */
         return SLURM_SUCCESS;
     }
 
@@ -318,12 +376,6 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     spank_setenv(spank_ctxt, "QRMI_JOB_UID", uid_str, OVERWRITE);
     setenv("QRMI_JOB_UID", uid_str, OVERWRITE);
 
-    uint32_t job_id;
-    if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) != ESPANK_SUCCESS) {
-        slurm_qrmi_error("%s, unable to get job ID", plugin_name);
-        g_init_post_opt_failed = true;
-        return SLURM_SUCCESS;
-    }
     char id_str[12];
     snprintf(id_str, sizeof(id_str), "%u", job_id);
     spank_setenv(spank_ctxt, "QRMI_JOB_ID", id_str, OVERWRITE);
@@ -618,8 +670,6 @@ static bool _configure_qrmi_logging(spank_t spank_ctxt) {
  */
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
     UNUSED_PARAM(argv);
-    uint32_t job_id = 0;
-    job_info_msg_t *job_info_msg = NULL;
 
     SPANK_DEBUG_ENTER(spank_ctxt, argc);
 
@@ -647,36 +697,22 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
 
-    char limit_as_str[MAX_INT_STRLEN + 1] = {0}; /* max uint32_t value is (2147483647) = 10 chars */
-    if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) == ESPANK_SUCCESS) {
-#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
-        slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
-        step_id.job_id = job_id;
-        if (slurm_load_job(&job_info_msg, step_id, SHOW_DETAIL) == SLURM_SUCCESS) {
-#else
-        if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) == SLURM_SUCCESS) {
-#endif
-            /*
-             * Slurm's time limit is represented in minutes
-             */
-            uint32_t time_limit_mins = job_info_msg->job_array[0].time_limit;
-            /*
-             * Convert minutes to seconds, uint32_t to char*
-             */
-            if (time_limit_mins != INFINITE && time_limit_mins <= (UINT32_MAX / 60)) {
-                snprintf(limit_as_str, sizeof(limit_as_str), "%u", time_limit_mins * 60);
-            } else {
-                /* time limit too large or INFINITE; clamp to max or handle as error */
-                snprintf(limit_as_str, sizeof(limit_as_str), "%u", UINT32_MAX);
-            }
-            slurm_free_job_info_msg(job_info_msg);
-        }
+    if (!g_job_info_loaded) {
+        /* loaded by slurm_spank_init_post_opt() for every QPU step */
+        slurm_error("%s, unable to read the time limit of the job", plugin_name);
+        return SLURM_ERROR;
     }
 
-    if (strlen(limit_as_str) == 0) {
-        /* time limit should be there, something wrong in Slurm */
-        slurm_error("%s, unable to read the time limit of job %u", plugin_name, job_id);
-        return SLURM_ERROR;
+    /*
+     * Slurm's time limit is represented in minutes.
+     * Convert minutes to seconds, uint32_t to char*
+     */
+    char limit_as_str[MAX_INT_STRLEN + 1] = {0}; /* max uint32_t value is (2147483647) = 10 chars */
+    if (g_job_time_limit_mins != INFINITE && g_job_time_limit_mins <= (UINT32_MAX / 60)) {
+        snprintf(limit_as_str, sizeof(limit_as_str), "%u", g_job_time_limit_mins * 60);
+    } else {
+        /* time limit too large or INFINITE; clamp to max or handle as error */
+        snprintf(limit_as_str, sizeof(limit_as_str), "%u", UINT32_MAX);
     }
 
     /*

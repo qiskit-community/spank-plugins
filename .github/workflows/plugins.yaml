@@ -76,6 +76,13 @@ jobs:
           ./test ../../../spank_qrmi/build/spank_qrmi.so
           popd
 
+      - name: Unit test spank_qrmi
+        working-directory: plugins/tests/spank_qrmi
+        run: |
+          cmake -S . -B build
+          cmake --build build
+          ctest --test-dir build --output-on-failure
+
       - name: Checkout QRMI repository
         uses: actions/checkout@v4.1.4
         with:

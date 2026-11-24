@@ -214,6 +214,54 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
 }
 
 /*
+ * @function _job_has_batch_script
+ *
+ * Returns true if the job was submitted with sbatch (i.e. it has a batch
+ * step). Sets *has_batch and returns false if the job record could not be
+ * loaded from slurmctld.
+ */
+static bool _job_has_batch_script(uint32_t job_id, bool *has_batch) {
+    job_info_msg_t *job_info_msg = NULL;
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+    slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+    step_id.job_id = job_id;
+    if (slurm_load_job(&job_info_msg, step_id, SHOW_DETAIL) != SLURM_SUCCESS) {
+#else
+    if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) != SLURM_SUCCESS) {
+#endif
+        return false;
+    }
+    bool ok = false;
+    if (job_info_msg->record_count > 0) {
+        *has_batch = job_info_msg->job_array[0].batch_flag != 0;
+        ok = true;
+    }
+    slurm_free_job_info_msg(job_info_msg);
+    return ok;
+}
+
+/*
+ * @function _qpu_inherited_from_parent
+ *
+ * Returns true if the step environment already carries QPU resources
+ * acquired by an enclosing step (batch step, or salloc's interactive step).
+ */
+static bool _qpu_inherited_from_parent(spank_t spank_ctxt) {
+    static const char key[] = "QRMI_JOB_QPU_RESOURCES=";
+    const size_t keylen = sizeof(key) - 1;
+    char **job_env = NULL;
+    if (spank_get_item(spank_ctxt, S_JOB_ENV, &job_env) != ESPANK_SUCCESS || job_env == NULL) {
+        return false;
+    }
+    for (int i = 0; job_env[i] != NULL; i++) {
+        if (strncmp(job_env[i], key, keylen) == 0 && job_env[i][keylen] != '\0') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
  * @function slurm_spank_init_post_opt
  *
  * Called at the same point as slurm_spank_init, but after all user options to
@@ -238,17 +286,59 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
 
-    if (spank_get_item(spank_ctxt, S_JOB_STEPID, &job_stepid) == ESPANK_SUCCESS) {
-        /* skip if this is slurm task steps */
-        slurm_debug("%s, job_stepid = %x", plugin_name, job_stepid);
-        if (job_stepid != SLURM_BATCH_SCRIPT) {
-            return SLURM_SUCCESS;
-        }
-    }
-
     if (g_qpu_names_opt == NULL) {
         /* noop if this is not QPU job */
         return SLURM_SUCCESS;
+    }
+
+    /*
+     * Decide whether this slurmstepd acquires QPU resources. Acquisition must
+     * happen exactly once per job (or per interactive session):
+     *
+     *  - batch step (sbatch): acquire. Steps launched by srun inside the
+     *    batch script inherit the resources through the environment.
+     *  - extern step: never.
+     *  - other steps (srun --pty, salloc's interactive step, srun under
+     *    salloc): skip if the job has a batch step or the resources were
+     *    inherited from an enclosing step; otherwise acquire, but only for
+     *    single-node steps, because slurmstepd on each node would acquire
+     *    its own resources and the token cannot be shared across nodes.
+     */
+    if (spank_get_item(spank_ctxt, S_JOB_STEPID, &job_stepid) == ESPANK_SUCCESS) {
+        slurm_debug("%s, job_stepid = %x", plugin_name, job_stepid);
+        if (job_stepid == SLURM_EXTERN_CONT) {
+            return SLURM_SUCCESS;
+        }
+        if (job_stepid != SLURM_BATCH_SCRIPT) {
+            if (_qpu_inherited_from_parent(spank_ctxt)) {
+                slurm_debug("%s, QPU resources inherited from parent step", plugin_name);
+                return SLURM_SUCCESS;
+            }
+
+            uint32_t step_job_id = 0;
+            bool has_batch = false;
+            if (spank_get_item(spank_ctxt, S_JOB_ID, &step_job_id) != ESPANK_SUCCESS ||
+                !_job_has_batch_script(step_job_id, &has_batch)) {
+                slurm_qrmi_error("%s, unable to load job info from slurmctld", plugin_name);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
+            if (has_batch) {
+                /* e.g. srun --export=NONE inside a batch script */
+                slurm_debug("%s, step of a batch job, skip acquisition", plugin_name);
+                return SLURM_SUCCESS;
+            }
+
+            uint32_t nnodes = 0;
+            if (spank_get_item(spank_ctxt, S_JOB_NNODES, &nnodes) == ESPANK_SUCCESS &&
+                nnodes > 1) {
+                slurm_qrmi_error("%s, --qpu on a multi-node step (%u nodes) outside a "
+                                 "batch job is not supported. Use sbatch, or salloc "
+                                 "with an interactive step.", plugin_name, nnodes);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
+        }
     }
 
     for (int i = 0; i < argc; i++) {

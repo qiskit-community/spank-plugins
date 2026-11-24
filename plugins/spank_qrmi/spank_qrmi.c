@@ -62,11 +62,6 @@ static char *g_qpu_names_opt = NULL;
  */
 static bool g_init_post_opt_failed = false;
 
-/* Job record fields cached by _load_job_info(). */
-static bool g_job_info_loaded = false;
-static bool g_job_has_batch_script = false;
-static uint32_t g_job_time_limit_mins = 0;
-
 #ifndef PRIOR_TO_V24_05_5_1
 /* List of acquired QPU resources. */
 static list_t *g_acquired_resources = NULL;
@@ -219,32 +214,106 @@ int slurm_spank_init(spank_t spank_ctxt, int argc, char *argv[]) {
 }
 
 /*
- * @function _load_job_info
- *
- * Fetches the job record from slurmctld and caches the fields used by this
- * plugin. Called once per step from slurm_spank_init_post_opt(); tasks are
- * forked afterwards, so slurm_spank_task_init() reads the cached values
- * instead of querying slurmctld again.
- * Returns false if the job record could not be loaded.
+ * Appended to the job's AdminComment once a step of a job without a batch
+ * script acquires the QPU resources. Only SlurmUser, root and Slurm admins
+ * can modify AdminComment, so unlike the job environment users cannot tamper
+ * with it to trigger a second acquisition.
  */
-static bool _load_job_info(uint32_t job_id) {
+static const char ACQUIRED_MARKER[] = "spank_qrmi:acquired";
+
+/*
+ * @function _load_job_qpu_state
+ *
+ * Sets *has_batch if the job was submitted with sbatch (i.e. it has a batch
+ * step), and *acquired if a previous step of the job already acquired the
+ * QPU resources (ACQUIRED_MARKER in AdminComment). Returns false if the job
+ * record could not be loaded from slurmctld.
+ */
+static bool _load_job_qpu_state(uint32_t job_id, bool *has_batch, bool *acquired) {
     job_info_msg_t *job_info_msg = NULL;
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
     slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
     step_id.job_id = job_id;
-    if (slurm_load_job(&job_info_msg, step_id, SHOW_ALL) != SLURM_SUCCESS) {
+    if (slurm_load_job(&job_info_msg, step_id, SHOW_DETAIL) != SLURM_SUCCESS) {
 #else
-    if (slurm_load_job(&job_info_msg, job_id, SHOW_ALL) != SLURM_SUCCESS) {
+    if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) != SLURM_SUCCESS) {
 #endif
         return false;
     }
+    bool ok = false;
     if (job_info_msg->record_count > 0) {
-        g_job_has_batch_script = job_info_msg->job_array[0].batch_flag != 0;
-        g_job_time_limit_mins = job_info_msg->job_array[0].time_limit;
-        g_job_info_loaded = true;
+        const char *comment = job_info_msg->job_array[0].admin_comment;
+        *has_batch = job_info_msg->job_array[0].batch_flag != 0;
+        *acquired = comment != NULL && strstr(comment, ACQUIRED_MARKER) != NULL;
+        ok = true;
     }
     slurm_free_job_info_msg(job_info_msg);
-    return g_job_info_loaded;
+    return ok;
+}
+
+/*
+ * @function _load_admin_comment
+ *
+ * Fetches the job's AdminComment from slurmctld into *comment ("" if unset),
+ * which the caller frees. Returns false if the job record could not be
+ * loaded.
+ */
+static bool _load_admin_comment(uint32_t job_id, char **comment) {
+    job_info_msg_t *job_info_msg = NULL;
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+    slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+    step_id.job_id = job_id;
+    if (slurm_load_job(&job_info_msg, step_id, SHOW_DETAIL) != SLURM_SUCCESS) {
+#else
+    if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) != SLURM_SUCCESS) {
+#endif
+        return false;
+    }
+    bool ok = false;
+    if (job_info_msg->record_count > 0) {
+        const char *current = job_info_msg->job_array[0].admin_comment;
+        *comment = strdup(current != NULL ? current : "");
+        ok = *comment != NULL;
+    }
+    slurm_free_job_info_msg(job_info_msg);
+    return ok;
+}
+
+/*
+ * @function _mark_qpu_acquired
+ *
+ * Appends ACQUIRED_MARKER to the job's AdminComment, or sets *already_marked
+ * if a concurrent step did it first. The comment is re-read right before the
+ * update so that changes made in the meantime are kept. slurmctld only
+ * accepts the update because slurmstepd runs as root. Returns false on
+ * failure.
+ */
+static bool _mark_qpu_acquired(uint32_t job_id, bool *already_marked) {
+    char *comment = NULL;
+    if (!_load_admin_comment(job_id, &comment)) {
+        return false;
+    }
+    *already_marked = strstr(comment, ACQUIRED_MARKER) != NULL;
+    if (*already_marked) {
+        free(comment);
+        return true;
+    }
+    size_t size = strlen(comment) + sizeof(ACQUIRED_MARKER) + 1;
+    char *new_comment = malloc(size);
+    if (new_comment == NULL) {
+        free(comment);
+        return false;
+    }
+    snprintf(new_comment, size, "%s%s%s", comment, comment[0] ? "," : "", ACQUIRED_MARKER);
+    free(comment);
+
+    job_desc_msg_t job_desc;
+    slurm_init_job_desc_msg(&job_desc);
+    job_desc.job_id = job_id;
+    job_desc.admin_comment = new_comment;
+    int rc = slurm_update_job(&job_desc);
+    free(new_comment);
+    return rc == SLURM_SUCCESS;
 }
 
 /*
@@ -277,36 +346,73 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
 
-    bool is_batch_step = true;
+    /*
+     * Decide whether this slurmstepd acquires QPU resources. Acquisition must
+     * happen exactly once per job (or per interactive session):
+     *
+     *  - batch step (sbatch): acquire. Steps launched by srun inside the
+     *    batch script inherit the resources through the environment.
+     *  - extern step: never.
+     *  - other steps (srun --pty, salloc's interactive step, srun under
+     *    salloc): skip if the job has a batch step or a previous step
+     *    acquired the resources (ACQUIRED_MARKER in AdminComment); otherwise
+     *    mark the job and acquire, but only for single-node steps, because
+     *    slurmstepd on each node would acquire its own resources and the
+     *    token cannot be shared across nodes.
+     */
     if (spank_get_item(spank_ctxt, S_JOB_STEPID, &job_stepid) == ESPANK_SUCCESS) {
         slurm_debug("%s, job_stepid = %x", plugin_name, job_stepid);
         if (job_stepid == SLURM_EXTERN_CONT) {
             return SLURM_SUCCESS;
         }
-        is_batch_step = job_stepid == SLURM_BATCH_SCRIPT;
-    }
+        if (job_stepid != SLURM_BATCH_SCRIPT) {
+            uint32_t step_job_id = 0;
+            bool acquired = false;
+            bool has_batch = false;
+            if (spank_get_item(spank_ctxt, S_JOB_ID, &step_job_id) != ESPANK_SUCCESS ||
+                !_load_job_qpu_state(step_job_id, &has_batch, &acquired)) {
+                slurm_qrmi_error("%s, unable to load job info from slurmctld", plugin_name);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
+            if (acquired) {
+                slurm_debug("%s, QPU resources acquired by a previous step", plugin_name);
+                return SLURM_SUCCESS;
+            }
+            if (has_batch) {
+                /* e.g. srun --export=NONE inside a batch script */
+                slurm_debug("%s, step of a batch job, skip acquisition", plugin_name);
+                return SLURM_SUCCESS;
+            }
 
-    uint32_t job_id;
-    if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) != ESPANK_SUCCESS) {
-        slurm_qrmi_error("%s, unable to get job ID", plugin_name);
-        g_init_post_opt_failed = true;
-        return SLURM_SUCCESS;
-    }
+            uint32_t nnodes = 0;
+            if (spank_get_item(spank_ctxt, S_JOB_NNODES, &nnodes) == ESPANK_SUCCESS &&
+                nnodes > 1) {
+                slurm_qrmi_error("%s, --qpu on a multi-node step (%u nodes) outside a "
+                                 "batch job is not supported. Use sbatch, or salloc "
+                                 "with an interactive step.", plugin_name, nnodes);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
 
-    if (!_load_job_info(job_id)) {
-        slurm_qrmi_error("%s, unable to load job %u info from slurmctld", plugin_name, job_id);
-        g_init_post_opt_failed = true;
-        return SLURM_SUCCESS;
-    }
-
-    if (!is_batch_step && g_job_has_batch_script) {
-        /*
-         * Steps of a batch job inherit the resources acquired by the batch
-         * step through its environment. A job without a batch step (direct
-         * srun, or srun under salloc) has nothing to inherit, so each of its
-         * steps acquires its own resources.
-         */
-        return SLURM_SUCCESS;
+            /*
+             * Mark before acquiring to keep the window in which two steps can
+             * both acquire as small as possible.
+             * shortcut: slurmctld has no compare-and-swap, so two steps
+             * marking within the same few milliseconds can still both
+             * acquire; add a lock if that matters.
+             */
+            if (!_mark_qpu_acquired(step_job_id, &acquired)) {
+                slurm_qrmi_error("%s, unable to record QPU acquisition for job %u",
+                                 plugin_name, step_job_id);
+                g_init_post_opt_failed = true;
+                return SLURM_SUCCESS;
+            }
+            if (acquired) {
+                slurm_debug("%s, QPU resources acquired by a concurrent step", plugin_name);
+                return SLURM_SUCCESS;
+            }
+        }
     }
 
     for (int i = 0; i < argc; i++) {
@@ -376,6 +482,12 @@ int slurm_spank_init_post_opt(spank_t spank_ctxt, int argc, char **argv) {
     spank_setenv(spank_ctxt, "QRMI_JOB_UID", uid_str, OVERWRITE);
     setenv("QRMI_JOB_UID", uid_str, OVERWRITE);
 
+    uint32_t job_id;
+    if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) != ESPANK_SUCCESS) {
+        slurm_qrmi_error("%s, unable to get job ID", plugin_name);
+        g_init_post_opt_failed = true;
+        return SLURM_SUCCESS;
+    }
     char id_str[12];
     snprintf(id_str, sizeof(id_str), "%u", job_id);
     spank_setenv(spank_ctxt, "QRMI_JOB_ID", id_str, OVERWRITE);
@@ -670,6 +782,8 @@ static bool _configure_qrmi_logging(spank_t spank_ctxt) {
  */
 int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
     UNUSED_PARAM(argv);
+    uint32_t job_id = 0;
+    job_info_msg_t *job_info_msg = NULL;
 
     SPANK_DEBUG_ENTER(spank_ctxt, argc);
 
@@ -697,22 +811,36 @@ int slurm_spank_task_init(spank_t spank_ctxt, int argc, char **argv) {
         return SLURM_SUCCESS;
     }
 
-    if (!g_job_info_loaded) {
-        /* loaded by slurm_spank_init_post_opt() for every QPU step */
-        slurm_error("%s, unable to read the time limit of the job", plugin_name);
-        return SLURM_ERROR;
+    char limit_as_str[MAX_INT_STRLEN + 1] = {0}; /* max uint32_t value is (2147483647) = 10 chars */
+    if (spank_get_item(spank_ctxt, S_JOB_ID, &job_id) == ESPANK_SUCCESS) {
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+        slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+        step_id.job_id = job_id;
+        if (slurm_load_job(&job_info_msg, step_id, SHOW_DETAIL) == SLURM_SUCCESS) {
+#else
+        if (slurm_load_job(&job_info_msg, job_id, SHOW_DETAIL) == SLURM_SUCCESS) {
+#endif
+            /*
+             * Slurm's time limit is represented in minutes
+             */
+            uint32_t time_limit_mins = job_info_msg->job_array[0].time_limit;
+            /*
+             * Convert minutes to seconds, uint32_t to char*
+             */
+            if (time_limit_mins != INFINITE && time_limit_mins <= (UINT32_MAX / 60)) {
+                snprintf(limit_as_str, sizeof(limit_as_str), "%u", time_limit_mins * 60);
+            } else {
+                /* time limit too large or INFINITE; clamp to max or handle as error */
+                snprintf(limit_as_str, sizeof(limit_as_str), "%u", UINT32_MAX);
+            }
+            slurm_free_job_info_msg(job_info_msg);
+        }
     }
 
-    /*
-     * Slurm's time limit is represented in minutes.
-     * Convert minutes to seconds, uint32_t to char*
-     */
-    char limit_as_str[MAX_INT_STRLEN + 1] = {0}; /* max uint32_t value is (2147483647) = 10 chars */
-    if (g_job_time_limit_mins != INFINITE && g_job_time_limit_mins <= (UINT32_MAX / 60)) {
-        snprintf(limit_as_str, sizeof(limit_as_str), "%u", g_job_time_limit_mins * 60);
-    } else {
-        /* time limit too large or INFINITE; clamp to max or handle as error */
-        snprintf(limit_as_str, sizeof(limit_as_str), "%u", UINT32_MAX);
+    if (strlen(limit_as_str) == 0) {
+        /* time limit should be there, something wrong in Slurm */
+        slurm_error("%s, unable to read the time limit of job %u", plugin_name, job_id);
+        return SLURM_ERROR;
     }
 
     /*
